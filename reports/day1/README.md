@@ -27,7 +27,7 @@ I want to make testing an important aspect of the whole project. I see automated
 - Integration tests only for (complex) queries and for driving the implementation of the DB integration code.
 - I am going to try to rely more on E2E tests, and am curious how this is going to turn out. 
 
-## Unknowns, Open questions and Hypotheses
+## Unknowns, open Questions and Hypotheses
 As in every such undertaking, a number of initial unknowns, open questions and hypotheses popped up in my head, which I brain-dumped here, to not lose keep track of them and to guide the whole undertaking.
 
 - How to interact with DB? Using sqlx or an ORM such as diesel or seaorm? 
@@ -74,7 +74,9 @@ Also in this tool there is no need for explicitly implementing *Users*, that is,
 
 ### Event Storming
 
-TODO
+I did a quick Event Storming to model the domain before fleshing out User Stories. [Event Storming](https://en.wikipedia.org/wiki/Event_storming) is a light-weight deliberate discovery technique, to quickly find out what is happening in the domain.
+
+![Volleyball Referee Management Event Storming](referee_evenstorming_rust_ddd.jpg "Volleyball Referee Management Event Storming")
 
 ### User Stories
 
@@ -115,6 +117,8 @@ Yes, we shouldn't use *User* in User Stories and focus on more specific roles/pe
 
 - **Declare Availability.** As a Referee I want to declare Availability to a given Fixture, so that the admin knows for which Fixture I am available and which not.
 - **Withdraw Availability.** As a Referee I want to be able to withdraw a previously declared Availability, so that I am flexible with declaring my Availabilities.
+- **Lock Availabilities.** As a User I want to lock Availabilities, so that Referees are not able to concurrently change them while I am working on Assignments.
+- **Unlock Availabilities.** As a User I want to unlock Availabilities after I have locked them, so that Referees can declare or withdraw their Availabilities again.
 
 #### Assignment
 
@@ -127,4 +131,3 @@ Yes, we shouldn't use *User* in User Stories and focus on more specific roles/pe
 Below I have added a Diagram of the Domain to show all Domain concepts and their relationships. Note that it is an initial design that serves only as starting point and might differ from the final implementation. The diagram was created using draw.io
 
 ![Volleyball Referee Management Domain](referee_domain_rust_ddd.png "Volleyball Referee Management Domain")
-
