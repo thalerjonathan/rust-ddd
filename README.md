@@ -21,3 +21,7 @@ I have written daily markdown entries to reflect on and report the progress.
 - Event Storming
 - User Stories
 - Domain Model Diagram
+
+## [Day 2](reports/day2/README.md)
+
+Experimented bootstrapping the code base with LLMs.
