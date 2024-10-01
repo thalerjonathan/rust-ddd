@@ -1,4 +1,4 @@
-# Day 1
+# Day 1: Motivation, Aim & Objectives, Domain and Requirements
 
 On Day 1 the focus is on explicitly stating my motivation, aims and objectives, as well as fleshing out the domain both via high-level textual description and using more structured approaches such as Event Storming, User Stories and UML Diagrams.
 

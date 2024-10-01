@@ -1,0 +1,21 @@
+# Day 2: Bootstrapping the code base with LLMs
+
+After having established the requirements in [Day 1](../day1/README.md), the goal of Day 2 was to bootstrap the code base with LLMs. Basically, I wanted to see how far LLMs are able to generate basic code fragments, what quality they have and if they are useful to build upon. Essentially, my hope was to generate basic boilerplate code such as REST handlers and initial application structure, to save me the typing effort: [Software Engineering is not a production process but a learning process](https://www.lambdabytes.io/posts/selearning/). Thus, Software Engineering is not about typing but about thinking - therefore my expectation was that the AI shall be doing the typing for me, guided by my thoughts and instructions.
+
+Having written requirements in the form of a high-level description and User Stories, I was curious to see what LLMs produce when fed with them. After some playing around with ChatGPT, Copilot and Cursor it became clear that the way to approach this is to use ChatGPT "globally / in the big", that is, more bootstrapping tasks such as fleshing out the initial application structure, boilerplate, SQL tables and then to use Copilot and/or Cursor more "in the small" fleshing out and refining individual functionality. I am also expecting ChatGPT to be of use in being a discussion partner when figuring out how to map various DDD concepts to Rust, but we will get into that on another day.
+
+## Results
+
+As a first step I fed the High-Level Domain Description of Day 1 into ChatGPT and asked it to generate a REST backend in Rust. ChatGPT generated some pretty generic stuff, with a few REST handlers based on the Actix Web crate, as well as some SQL tables for Postgres. However, the fragments were basically useless, and also, I favour the axum crate for REST endpoints, so I told it to use axum. The code that ChatGPT generated then was actually very useful boilerplate that I could copy directly into the repo - but of course it didn't compile, as ChatGPT was simply making up things how to initialise axum, so I had to correct it (also the versions of the dependencies were outdated, so I had to update them manually). I then fed ChatGPT all User Stories from Day 1, which tremendously improved things.
+
+I was pretty happy with the output of ChatGPT. However, generating the whole model, REST endpoints and basic structure initially makes only limited sense, as generally one would start with a simple User Story, and iterate from there. Having the generated code for ALL endpoints already in the repo is actually more a liability and becomes a drag. Therefore I told it to focus on Referees first. What I wanted to get done today was to have REST endpoints for Referees (get by id, get all, create) implemented in a very basic, non-DDD way, interacting already with a local Postgres.
+
+After having copied the referee code from ChatGPT into the repo, I switched over to Cursor and continued from there. More specifically, I started fixing the compilation errors and then proceeded to implement the actual REST handlers, setting up Postgres and implementing the integration with Postgres. What impressed me was that Cursor was able to automatically generate the sqlx query code. All I had to do was start typing sqlx::query_as!(...) and then Cursor generated the code for me, knowing the context and the types and properly generating SQL queries that actually worked out of the box.
+
+## Conclusion
+
+One thing became pretty quickly clear: without a good understanding of Rust and various crates such as sqlx, axum and others, there is no chance to properly direct ChatGPT and Cursor towards something properly. Therefore for this kind of work ChatGPT and Cursor are really just like interns that save you from typing. What is also interesting to see is that with repeated prompting, ChatGPT change/improve their output, so that it actually becomes more and more useful: at first the REST handlers were very generic and initialisation of axum was not correct, but after a few iterations they became more and more useful and actually worked.
+
+## What's next
+
+Tomorrow the plan is to add the leptos UI for Referees endpoints in the same vein as we did for the backend: starting out with ChatGPT generating a first version, and then using Cursor to refine things.
