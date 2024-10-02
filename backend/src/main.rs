@@ -5,6 +5,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+
 use sqlx::PgPool;
 use std::sync::Arc;
 mod config;
