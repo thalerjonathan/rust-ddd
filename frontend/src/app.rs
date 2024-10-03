@@ -1,4 +1,4 @@
-use crate::components::{home::Home, referee_list::RefereeList};
+use crate::components::{home::Home, referee_details::RefereeDetails, referee_list::RefereeList};
 use leptos::*;
 use leptos_router::*;
 
@@ -9,6 +9,7 @@ pub fn App() -> impl IntoView {
             <Routes>
                 <Route path="/" view=Home />
                 <Route path="/refereelist" view=RefereeList />
+                <Route path="/referee/:id" view=RefereeDetails />
             </Routes>
         </Router>
     }
