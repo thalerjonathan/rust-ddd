@@ -7,6 +7,7 @@ use axum::{
     Router,
 };
 
+use handlers::referee::update_referee_club;
 use sqlx::PgPool;
 use std::sync::Arc;
 mod config;
@@ -30,6 +31,7 @@ async fn main() {
         .route("/referee", post(create_referee))
         .route("/referee/:id", get(get_referee_by_id))
         .route("/referees", get(get_all_referees))
+        .route("/referee/:id/club", post(update_referee_club))
         .layer(cors)
         .with_state(state_arc);
 

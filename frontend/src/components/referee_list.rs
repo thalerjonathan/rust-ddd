@@ -1,7 +1,7 @@
 use leptos::*;
 use log::{debug, error};
 use reqwest::Url;
-use shared::RefereeDTO;
+use shared::{RefereeCreationDTO, RefereeDTO};
 
 #[component]
 pub fn RefereeList() -> impl IntoView {
@@ -23,9 +23,10 @@ pub fn RefereeList() -> impl IntoView {
         // get the values from the form fields outside of the async block, otherwise leptos complains in browser console
         let name = referee_name.get();
         let club = referee_club.get();
+        let ref_creation = RefereeCreationDTO { name, club };
         let mut referees_previous = referees.get();
         spawn_local(async move {
-            let res = create_referee((name, club)).await;
+            let res = create_referee(ref_creation).await;
             match res {
                 Ok(r) => {
                     // update the list of referees in the UI, which will result in re-rendering
@@ -82,11 +83,11 @@ async fn fetch_referees() -> Vec<RefereeDTO> {
     response.unwrap().json().await.unwrap()
 }
 
-async fn create_referee(input: (String, String)) -> Result<RefereeDTO, reqwest::Error> {
+async fn create_referee(ref_creation: RefereeCreationDTO) -> Result<RefereeDTO, reqwest::Error> {
     let url = Url::parse("http://localhost:3001/referee").unwrap();
     let response = reqwest::Client::new()
         .post(url)
-        .json(&input.0)
+        .json(&ref_creation)
         .send()
         .await?;
     response.json().await

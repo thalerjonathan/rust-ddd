@@ -12,7 +12,7 @@ I then spent a bit of time to make the "create referee" functionality "reactive"
 
 Afer creating Referees worked, I wanted to refactor the code into DTOs that are shared between the frontend and backend. I wasn't parcitularly successful in telling Cursor to produced DTOs - it either didnt get the context or ended up writing TypeScript code. Therefore I decided to do it by hand.
 
-Another thing I did was to add a *Club* string field to the Referee, which should indicate the Club the Referee is currently working for, and which should be changeable via a form in the UI. I am explicitly modelling it as a "free form" text field, since I don't want to go to the lengths of representing Clubs as separate entities in the application. The reason I am adding it, is to have a case for changing a field of the referee, without changing its identity - something fundamentally important in DDD.
+Another thing I did was to add a *Club* string field to the Referee, which should indicate the Club the Referee is currently working for, and which should be changeable via a form in the UI. I am explicitly modelling it as a "free form" text field, since I don't want to go to the lengths of representing Clubs as separate entities in the application. The reason I am adding it, is to have a case for changing a field of the referee, without changing its identity - something fundamentally important in DDD. Adding the club field was extremely easy with the help of Cursor, because due its contextual awareness, it correctly inferred everwhere immediately what I wanted to do and produced the code for it.
 
 ## Conlusion
 
@@ -20,3 +20,4 @@ Thus todays learning lesson was that despite how impressive the capabilities of 
 
 Pretty impressive though was that Cursor generated code for creating a new referee that worked basically out of the box.
 
+Also, the context awareness of Cursor is just insane: adding the club field basically didnt require any typing, just using "TAB" to apply the suggestions made by Cursor, which were all correct.
