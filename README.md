@@ -29,8 +29,3 @@ Experimented bootstrapping the backend code base with LLMs.
 ## [Day 3](reports/day3/README.md)
 
 Bootstrapped the UI with Leptos.
-
-## [Day 4](reports/day4/README.md)
-
-Continued bootstrapping the UI with Leptos.
-
