@@ -1,13 +1,7 @@
 use leptos::*;
 use leptos_router::use_params_map;
 use reqwest::Url;
-use serde::Deserialize;
-
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
-struct RefereeDetails {
-    id: String,
-    name: String,
-}
+use shared::RefereeDTO;
 
 #[component]
 pub fn RefereeDetails() -> impl IntoView {
@@ -37,7 +31,7 @@ pub fn RefereeDetails() -> impl IntoView {
     }
 }
 
-async fn fetch_referee(id: &str) -> RefereeDetails {
+async fn fetch_referee(id: &str) -> RefereeDTO {
     let url = Url::parse(&format!("http://localhost:3001/referee/{}", id));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()

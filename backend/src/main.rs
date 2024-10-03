@@ -11,7 +11,6 @@ use sqlx::PgPool;
 use std::sync::Arc;
 mod config;
 mod handlers;
-mod models;
 
 #[tokio::main]
 async fn main() {

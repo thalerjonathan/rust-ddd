@@ -1,22 +1,17 @@
 use leptos::*;
 use log::{debug, error};
 use reqwest::Url;
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-struct Referee {
-    id: String,
-    name: String,
-}
+use shared::RefereeDTO;
 
 #[component]
 pub fn RefereeList() -> impl IntoView {
-    let (referees, set_referees) = create_signal(Vec::<Referee>::new());
+    let (referees, set_referees) = create_signal(Vec::<RefereeDTO>::new());
     let (referee_name, set_referee_name) = create_signal(String::new());
     let (referee_club, set_referee_club) = create_signal(String::new());
 
     create_effect(move |_| {
-        set_referees(Vec::<Referee>::new());
+        // set referees to "use" the signal, so that leptos knows to rerun the effect when it changes after fetching
+        set_referees(Vec::<RefereeDTO>::new());
         spawn_local(async move {
             let res = fetch_referees().await;
             set_referees(res);
@@ -25,6 +20,7 @@ pub fn RefereeList() -> impl IntoView {
 
     let on_submit = move |ev: ev::SubmitEvent| {
         ev.prevent_default();
+        // get the values from the form fields outside of the async block, otherwise leptos complains in browser console
         let name = referee_name.get();
         let club = referee_club.get();
         let mut referees_previous = referees.get();
@@ -32,6 +28,7 @@ pub fn RefereeList() -> impl IntoView {
             let res = create_referee((name, club)).await;
             match res {
                 Ok(r) => {
+                    // update the list of referees in the UI, which will result in re-rendering
                     debug!("Referee created: {} {}", r.name, r.id);
                     referees_previous.push(r);
                     set_referees(referees_previous);
@@ -42,6 +39,7 @@ pub fn RefereeList() -> impl IntoView {
             }
         });
 
+        // reset the form fields
         set_referee_name(String::new());
         set_referee_club(String::new());
     };
@@ -78,13 +76,13 @@ pub fn RefereeList() -> impl IntoView {
     }
 }
 
-async fn fetch_referees() -> Vec<Referee> {
+async fn fetch_referees() -> Vec<RefereeDTO> {
     let url = Url::parse("http://localhost:3001/referees");
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
 
-async fn create_referee(input: (String, String)) -> Result<Referee, reqwest::Error> {
+async fn create_referee(input: (String, String)) -> Result<RefereeDTO, reqwest::Error> {
     let url = Url::parse("http://localhost:3001/referee").unwrap();
     let response = reqwest::Client::new()
         .post(url)
