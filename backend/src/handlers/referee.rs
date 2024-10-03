@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use super::shared::AppError;
 use super::state::AppState;
+
 pub async fn create_referee(
     State(state): State<Arc<AppState>>,
     Json(name): Json<String>,

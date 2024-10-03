@@ -17,7 +17,6 @@ pub fn RefereeDetails() -> impl IntoView {
 
     let id = move || params.with(|params| params.get("id").cloned());
 
-    // NOTE: using create_effect here instead of create_resource to see the difference
     create_effect(move |_| {
         let id = id().unwrap_or_default();
         spawn_local(async move {
