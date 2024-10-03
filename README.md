@@ -24,4 +24,13 @@ I have written daily markdown entries to reflect on and report the progress.
 
 ## [Day 2](reports/day2/README.md)
 
-Experimented bootstrapping the code base with LLMs.
+Experimented bootstrapping the backend code base with LLMs.
+
+## [Day 3](reports/day3/README.md)
+
+Bootstrapped the UI with Leptos.
+
+## [Day 4](reports/day4/README.md)
+
+Continued bootstrapping the UI with Leptos.
+
