@@ -32,5 +32,5 @@ Bootstrapped the UI with Leptos.
 
 ## [Day 4](reports/day4/README.md)
 
-Continued and finishedbootstrapping the UI with Leptos.
+Continued and finished bootstrapping the UI with Leptos.
 
