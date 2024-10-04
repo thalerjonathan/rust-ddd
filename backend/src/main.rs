@@ -1,17 +1,21 @@
 use crate::config::AppConfig;
-use crate::handlers::referee::{create_referee, get_all_referees, get_referee_by_id};
-use crate::handlers::state::AppState;
 use axum::http::Method;
 use axum::{
     routing::{get, post},
     Router,
 };
 
-use handlers::referee::update_referee_club;
+use ports::rest::referee::{
+    create_referee, get_all_referees, get_referee_by_id, update_referee_club,
+};
+use ports::rest::state::AppState;
 use sqlx::PgPool;
 use std::sync::Arc;
+
+mod application;
 mod config;
-mod handlers;
+mod domain;
+mod ports;
 
 #[tokio::main]
 async fn main() {
@@ -105,6 +109,7 @@ mod tests {
         );
     }
 
+    #[allow(dead_code)]
     async fn clear_db() {
         let db_url = std::env::var("DB_URL").expect("DB_URL not set");
         let connection_pool = PgPool::connect(&db_url).await.unwrap();
