@@ -1,3 +1,3 @@
 . config/config.sh
 
-cargo run --release 
+cargo run --release

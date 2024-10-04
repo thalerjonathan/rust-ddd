@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use log::{debug, info};
+use log::debug;
 use shared::{RefereeCreationDTO, RefereeDTO};
 use uuid::Uuid;
 
@@ -15,7 +15,7 @@ pub async fn create_referee(
     State(state): State<Arc<AppState>>,
     Json(ref_creation): Json<RefereeCreationDTO>,
 ) -> Result<Json<RefereeDTO>, AppError> {
-    info!("Creating referee: {}", ref_creation.name);
+    debug!("Creating referee: {:?}", ref_creation);
     let referee = RefereeDTO {
         id: Uuid::new_v4(),
         name: ref_creation.name,
@@ -41,7 +41,7 @@ pub async fn get_referee_by_id(
     State(state): State<Arc<AppState>>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Option<RefereeDTO>>, AppError> {
-    info!("Getting referee by id: {}", id);
+    debug!("Getting referee by id: {}", id);
 
     let referee = sqlx::query_as!(
         RefereeDTO,
@@ -52,13 +52,15 @@ pub async fn get_referee_by_id(
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
 
+    debug!("Referee found: {:?}", referee);
+
     Ok(Json(referee))
 }
 
 pub async fn get_all_referees(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<RefereeDTO>>, AppError> {
-    info!("Getting all referees");
+    debug!("Getting all referees");
 
     let referees = sqlx::query_as!(
         RefereeDTO,
@@ -76,7 +78,7 @@ pub async fn update_referee_club(
     Path(id): Path<Uuid>,
     Json(club): Json<String>,
 ) -> Result<Json<String>, AppError> {
-    info!("Updating referee club: {}", id);
+    debug!("Updating referee club: {}", id);
 
     let result = sqlx::query!(
         "UPDATE rustddd.referees SET club = $1 WHERE referee_id = $2",

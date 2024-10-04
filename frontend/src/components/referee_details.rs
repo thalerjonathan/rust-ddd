@@ -1,8 +1,7 @@
 use leptos::*;
 use leptos_router::use_params_map;
 use log::{debug, error};
-use reqwest::Url;
-use shared::RefereeDTO;
+use shared::{change_referee_club, fetch_referee, RefereeDTO};
 
 #[component]
 pub fn RefereeDetails() -> impl IntoView {
@@ -14,19 +13,19 @@ pub fn RefereeDetails() -> impl IntoView {
 
     let on_submit = move |ev: ev::SubmitEvent| {
         ev.prevent_default();
-        let club = referee_club.get();
+        let club: Option<String> = referee_club.get();
         match club {
             Some(club) => {
                 let referee_id = id().unwrap_or_default();
                 let referee_old_club = referee.get().unwrap();
                 spawn_local(async move {
-                    let res = change_referee_club(referee_id, club).await;
+                    let res = change_referee_club(&referee_id, &club).await;
                     match res {
                         Ok(club) => {
                             // update referee which will result in re-rendering
                             debug!("Referee club changed to {}", club);
                             set_referee(Some(RefereeDTO {
-                                club,
+                                club: club.to_string(),
                                 ..referee_old_club
                             }));
 
@@ -78,19 +77,4 @@ pub fn RefereeDetails() -> impl IntoView {
             </form>
         </div>
     }
-}
-
-async fn fetch_referee(id: &str) -> RefereeDTO {
-    let url = Url::parse(&format!("http://localhost:3001/referee/{}", id));
-    let response = reqwest::Client::new().get(url.unwrap()).send().await;
-    response.unwrap().json().await.unwrap()
-}
-async fn change_referee_club(referee_id: String, club: String) -> Result<String, reqwest::Error> {
-    let url = Url::parse(&format!(
-        "http://localhost:3001/referee/{}/club",
-        referee_id
-    ))
-    .unwrap();
-    let response = reqwest::Client::new().post(url).json(&club).send().await?;
-    response.json().await
 }

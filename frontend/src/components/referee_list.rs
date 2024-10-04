@@ -1,7 +1,6 @@
 use leptos::*;
 use log::{debug, error};
-use reqwest::Url;
-use shared::{RefereeCreationDTO, RefereeDTO};
+use shared::{create_referee, fetch_referees, RefereeCreationDTO, RefereeDTO};
 
 #[component]
 pub fn RefereeList() -> impl IntoView {
@@ -75,20 +74,4 @@ pub fn RefereeList() -> impl IntoView {
             </ul>
         </div>
     }
-}
-
-async fn fetch_referees() -> Vec<RefereeDTO> {
-    let url = Url::parse("http://localhost:3001/referees");
-    let response = reqwest::Client::new().get(url.unwrap()).send().await;
-    response.unwrap().json().await.unwrap()
-}
-
-async fn create_referee(ref_creation: RefereeCreationDTO) -> Result<RefereeDTO, reqwest::Error> {
-    let url = Url::parse("http://localhost:3001/referee").unwrap();
-    let response = reqwest::Client::new()
-        .post(url)
-        .json(&ref_creation)
-        .send()
-        .await?;
-    response.json().await
 }

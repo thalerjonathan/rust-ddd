@@ -34,3 +34,6 @@ Bootstrapped the UI with Leptos.
 
 Continued and finished bootstrapping the UI with Leptos.
 
+## [Day 5](reports/day5/README.md)
+
+First steps towards DDD.
