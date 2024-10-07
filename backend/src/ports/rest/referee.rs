@@ -9,12 +9,12 @@ use shared::{RefereeCreationDTO, RefereeDTO};
 use uuid::Uuid;
 
 use crate::{
+    adapters::db::referee_repo_pg::RefereeRepositoryPg,
     application,
     domain::{
         aggregates::referee::{Referee, RefereeId},
         repositories::referee_repo::RefereeRepository,
     },
-    ports::db::referee_repo_pg::RefereeRepositoryPg,
 };
 
 use super::shared::AppError;

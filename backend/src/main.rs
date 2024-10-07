@@ -12,6 +12,7 @@ use ports::rest::state::AppState;
 use sqlx::PgPool;
 use std::sync::Arc;
 
+mod adapters;
 mod application;
 mod config;
 mod domain;
