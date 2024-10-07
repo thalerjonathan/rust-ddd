@@ -13,7 +13,7 @@ Note that in the implementation of this project I have used LLMs in my coding fo
 # Progress Reports
 I have written daily markdown entries to reflect on and report the progress.
 
-## [Day 1](reports/day1/README.md)
+## [Day 1](reports/week1/day1/README.md)
 
 - Motivation, Aim & Objectives
 - Unknowns, open Questions and Hypotheses
@@ -22,18 +22,22 @@ I have written daily markdown entries to reflect on and report the progress.
 - User Stories
 - Domain Model Diagram
 
-## [Day 2](reports/day2/README.md)
+## [Day 2](reports/week1/day2/README.md)
 
 Experimented bootstrapping the backend code base with LLMs.
 
-## [Day 3](reports/day3/README.md)
+## [Day 3](reports/week1/day3/README.md)
 
 Bootstrapped the UI with Leptos.
 
-## [Day 4](reports/day4/README.md)
+## [Day 4](reports/week1/day4/README.md)
 
 Continued and finished bootstrapping the UI with Leptos.
 
-## [Day 5](reports/day5/README.md)
+## [Day 5](reports/week1/day5/README.md)
 
 First steps towards DDD.
+
+## [Day 6](reports/week2/day6/README.md)
+
+Implementing the *Venue* part, based on the existing *Referee* part.
