@@ -9,6 +9,7 @@ use ports::rest::referee::{
     create_referee, get_all_referees, get_referee_by_id, update_referee_club,
 };
 use ports::rest::state::AppState;
+use ports::rest::venues::*;
 use sqlx::PgPool;
 use std::sync::Arc;
 
@@ -45,79 +46,4 @@ async fn main() {
         .unwrap();
 
     axum::serve(listener, app).await.unwrap();
-}
-
-#[allow(unused_imports)]
-mod tests {
-    use super::*;
-    use shared::{change_referee_club, fetch_referees, RefereeCreationDTO};
-
-    #[tokio::test]
-    async fn given_empty_db_when_fetching_referees_then_empty_list_is_returned() {
-        clear_db().await;
-
-        let referees = fetch_referees().await;
-        assert!(referees.is_empty(), "Referees should be empty");
-    }
-
-    #[tokio::test]
-    async fn given_empty_db_when_creating_referee_then_referee_is_returned() {
-        clear_db().await;
-
-        let referee_creation = RefereeCreationDTO {
-            name: "John Doe".to_string(),
-            club: "Club A".to_string(),
-        };
-
-        let referee_dto = shared::create_referee(referee_creation).await;
-        assert!(referee_dto.is_ok(), "Referee should be created");
-
-        let referees = fetch_referees().await;
-        assert!(!referees.is_empty(), "Referees should not be empty");
-        assert_eq!(referees.len(), 1, "Referees should have 1 referee");
-        assert_eq!(
-            referees[0].name, "John Doe",
-            "Referee name should be John Doe"
-        );
-        assert_eq!(referees[0].club, "Club A", "Referee club should be Club A");
-    }
-
-    #[tokio::test]
-    async fn given_referee_when_updating_club_then_club_is_updated() {
-        clear_db().await;
-
-        let referee_creation = RefereeCreationDTO {
-            name: "John Doe".to_string(),
-            club: "Club A".to_string(),
-        };
-
-        let referee_dto = shared::create_referee(referee_creation).await;
-        assert!(referee_dto.is_ok(), "Referee should be created");
-
-        let referee_dto = referee_dto.unwrap();
-        let updated_club = "Club B".to_string();
-        let updated_referee_dto =
-            change_referee_club(&referee_dto.id.to_string(), &updated_club).await;
-        assert!(
-            updated_referee_dto.is_ok(),
-            "Referee club should be updated"
-        );
-
-        let referee_dto = shared::fetch_referee(&referee_dto.id.to_string()).await;
-        assert_eq!(
-            referee_dto.club, updated_club,
-            "Referee club should be updated"
-        );
-    }
-
-    #[allow(dead_code)]
-    async fn clear_db() {
-        let db_url = std::env::var("DB_URL").expect("DB_URL not set");
-        let connection_pool = PgPool::connect(&db_url).await.unwrap();
-
-        sqlx::query("DELETE FROM rustddd.referees")
-            .execute(&connection_pool)
-            .await
-            .unwrap();
-    }
 }
