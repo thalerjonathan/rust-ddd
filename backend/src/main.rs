@@ -5,9 +5,7 @@ use axum::{
     Router,
 };
 
-use ports::rest::referee::{
-    create_referee, get_all_referees, get_referee_by_id, update_referee_club,
-};
+use ports::rest::referee::*;
 use ports::rest::state::AppState;
 use ports::rest::venues::*;
 use sqlx::PgPool;
@@ -34,10 +32,13 @@ async fn main() {
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
-        .route("/referee", post(create_referee))
-        .route("/referee/:id", get(get_referee_by_id))
-        .route("/referees", get(get_all_referees))
-        .route("/referee/:id/club", post(update_referee_club))
+        .route("/referee", post(create_referee_handler))
+        .route("/referee/:id", get(get_referee_by_id_handler))
+        .route("/referees", get(get_all_referees_handler))
+        .route("/referee/:id/club", post(update_referee_club_handler))
+        .route("/venue", post(create_venue_handler))
+        .route("/venue/:id", get(get_venue_by_id_handler))
+        .route("/venues", get(get_all_venues_handler))
         .layer(cors)
         .with_state(state_arc);
 

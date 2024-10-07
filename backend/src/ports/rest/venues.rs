@@ -1,3 +1,105 @@
+use std::sync::Arc;
+
+use axum::{
+    extract::{Path, State},
+    Json,
+};
+use log::debug;
+use shared::{VenueCreationDTO, VenueDTO};
+use uuid::Uuid;
+
+use crate::{
+    adapters::db::venue_repo_pg::VenueRepositoryPg,
+    application,
+    domain::{
+        aggregates::venue::{Venue, VenueId},
+        repositories::venue_repo::VenueRepository,
+    },
+};
+
+use super::{shared::AppError, state::AppState};
+
+impl From<Venue> for VenueDTO {
+    fn from(venue: Venue) -> Self {
+        VenueDTO {
+            id: venue.id().0,
+            name: venue.name().to_string(),
+            street: venue.street().to_string(),
+            zip: venue.zip().to_string(),
+            city: venue.city().to_string(),
+            telephone: venue.telephone(),
+            email: venue.email(),
+        }
+    }
+}
+
+pub async fn create_venue_handler(
+    State(state): State<Arc<AppState>>,
+    Json(venue_creation): Json<VenueCreationDTO>,
+) -> Result<Json<VenueDTO>, AppError> {
+    debug!("Creating venue: {:?}", venue_creation);
+
+    let repo = VenueRepositoryPg::new(&state.connection_pool);
+
+    let venue = application::venue_services::create_venue(
+        &venue_creation.name,
+        &venue_creation.street,
+        &venue_creation.zip,
+        &venue_creation.city,
+        venue_creation.telephone,
+        venue_creation.email,
+        &repo,
+    )
+    .await
+    .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    let venue = VenueDTO::from(venue);
+
+    debug!("Venue created: {:?}", venue);
+
+    Ok(Json::from(venue))
+}
+
+pub async fn get_venue_by_id_handler(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Option<VenueDTO>>, AppError> {
+    debug!("Getting venue by id: {}", id);
+
+    let repo = VenueRepositoryPg::new(&state.connection_pool);
+
+    // NOTE: we are not using an application service here, because the logic is so simple
+    let venue = repo
+        .find_by_id(&VenueId::from(id))
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    debug!("Venue found: {:?}", venue);
+
+    Ok(Json::from(venue.map(|v| v.into())))
+}
+
+pub async fn get_all_venues_handler(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<VenueDTO>>, AppError> {
+    debug!("Getting all venues");
+
+    let repo = VenueRepositoryPg::new(&state.connection_pool);
+
+    // NOTE: we are not using an application service here, because the logic is so simple
+    let venues = repo
+        .get_all()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    Ok(Json::from(
+        venues
+            .into_iter()
+            .map(|v| v.into())
+            .collect::<Vec<VenueDTO>>(),
+    ))
+}
+
 #[cfg(test)]
 mod venues_tests {
     use shared::{create_venue, fetch_venue, fetch_venues, VenueCreationDTO};

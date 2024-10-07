@@ -30,7 +30,7 @@ impl From<Referee> for RefereeDTO {
     }
 }
 
-pub async fn create_referee(
+pub async fn create_referee_handler(
     State(state): State<Arc<AppState>>,
     Json(ref_creation): Json<RefereeCreationDTO>,
 ) -> Result<Json<RefereeDTO>, AppError> {
@@ -46,18 +46,14 @@ pub async fn create_referee(
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-    let referee = RefereeDTO {
-        id: referee.id().0,
-        name: referee.name().to_string(),
-        club: referee.club().to_string(),
-    };
+    let referee = RefereeDTO::from(referee);
 
     debug!("Referee created: {:?}", referee);
 
     Ok(Json(referee))
 }
 
-pub async fn get_referee_by_id(
+pub async fn get_referee_by_id_handler(
     State(state): State<Arc<AppState>>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Option<RefereeDTO>>, AppError> {
@@ -76,7 +72,7 @@ pub async fn get_referee_by_id(
     Ok(Json(referee.map(|r| r.into())))
 }
 
-pub async fn get_all_referees(
+pub async fn get_all_referees_handler(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<RefereeDTO>>, AppError> {
     debug!("Getting all referees");
@@ -92,7 +88,7 @@ pub async fn get_all_referees(
     Ok(Json(referees.into_iter().map(|r| r.into()).collect()))
 }
 
-pub async fn update_referee_club(
+pub async fn update_referee_club_handler(
     State(state): State<Arc<AppState>>,
     Path(id): Path<Uuid>,
     Json(club): Json<String>,
