@@ -1,6 +1,7 @@
 use crate::components::{
     home::Home, referee_details::RefereeDetails, referee_list::RefereeList,
-    venue_details::VenueDetails, venue_list::VenueList,
+    team_details::TeamDetails, team_list::TeamList, venue_details::VenueDetails,
+    venue_list::VenueList,
 };
 use leptos::*;
 use leptos_router::*;
@@ -11,10 +12,12 @@ pub fn App() -> impl IntoView {
         <Router>
             <Routes>
                 <Route path="/" view=Home />
-                <Route path="/refereelist" view=RefereeList />
+                <Route path="/referees" view=RefereeList />
                 <Route path="/referee/:id" view=RefereeDetails />
-                <Route path="/venuelist" view=VenueList />
+                <Route path="/venues" view=VenueList />
                 <Route path="/venue/:id" view=VenueDetails />
+                <Route path="/teams" view=TeamList />
+                <Route path="/team/:id" view=TeamDetails />
             </Routes>
         </Router>
     }

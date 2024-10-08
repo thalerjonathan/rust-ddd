@@ -15,6 +15,8 @@ Then followed the Team Aggregate, repository and DB adapter.
 Finally the application service and their usage in the REST handlers.
 This took me less than 30 minutes (including the README for Day 7).
 
+After this I started working on the frontend and followed the same approach as for the other parts. In less than 15 minutes I had the whole Team UI functionality done.
+
 ## Conclusions
 
 As previously, Cursor proved to be very useful for generating the code and I had this stuff done in less than 1 hour.
