@@ -7,6 +7,7 @@ use axum::{
 
 use ports::rest::referee::*;
 use ports::rest::state::AppState;
+use ports::rest::team::{create_team_handler, get_all_teams_handler, get_team_by_id_handler};
 use ports::rest::venues::*;
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -39,6 +40,9 @@ async fn main() {
         .route("/venue", post(create_venue_handler))
         .route("/venue/:id", get(get_venue_by_id_handler))
         .route("/venues", get(get_all_venues_handler))
+        .route("/team", post(create_team_handler))
+        .route("/team/:id", get(get_team_by_id_handler))
+        .route("/teams", get(get_all_teams_handler))
         .layer(cors)
         .with_state(state_arc);
 

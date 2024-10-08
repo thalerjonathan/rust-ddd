@@ -36,6 +36,19 @@ pub struct VenueCreationDTO {
     pub email: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TeamDTO {
+    pub id: Uuid,
+    pub name: String,
+    pub club: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TeamCreationDTO {
+    pub name: String,
+    pub club: String,
+}
+
 pub async fn fetch_referees() -> Vec<RefereeDTO> {
     let url = Url::parse("http://localhost:3001/referees");
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
@@ -89,5 +102,27 @@ pub async fn create_venue(venue_creation: VenueCreationDTO) -> Result<VenueDTO, 
 pub async fn fetch_venue(id: &str) -> Result<VenueDTO, reqwest::Error> {
     let url = Url::parse(&format!("http://localhost:3001/venue/{}", id));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
+    response.json().await
+}
+
+pub async fn fetch_teams() -> Vec<TeamDTO> {
+    let url = Url::parse("http://localhost:3001/teams");
+    let response = reqwest::Client::new().get(url.unwrap()).send().await;
+    response.unwrap().json().await.unwrap()
+}
+
+pub async fn fetch_team(id: &str) -> Result<TeamDTO, reqwest::Error> {
+    let url = Url::parse(&format!("http://localhost:3001/team/{}", id));
+    let response = reqwest::Client::new().get(url.unwrap()).send().await?;
+    response.json().await
+}
+
+pub async fn create_team(team_creation: TeamCreationDTO) -> Result<TeamDTO, reqwest::Error> {
+    let url = Url::parse("http://localhost:3001/team").unwrap();
+    let response = reqwest::Client::new()
+        .post(url)
+        .json(&team_creation)
+        .send()
+        .await?;
     response.json().await
 }

@@ -15,3 +15,9 @@ CREATE TABLE IF NOT EXISTS rustddd.venues (
     telephone VARCHAR,
     email VARCHAR
 );
+
+CREATE TABLE IF NOT EXISTS rustddd.teams (
+    team_id UUID NOT NULL PRIMARY KEY,
+    name VARCHAR NOT NULL,
+    club VARCHAR NOT NULL
+);

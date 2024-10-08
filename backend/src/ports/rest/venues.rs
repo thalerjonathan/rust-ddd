@@ -104,6 +104,7 @@ pub async fn get_all_venues_handler(
 mod venues_tests {
     use shared::{create_venue, fetch_venue, fetch_venues, VenueCreationDTO};
     use sqlx::PgPool;
+
     #[tokio::test]
     async fn given_empty_db_when_fetching_venues_then_empty_list_is_returned() {
         clear_venue_table().await;
