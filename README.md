@@ -41,3 +41,7 @@ First steps towards DDD.
 ## [Day 6](reports/week2/day6/README.md)
 
 Implementing the *Venue* part, based on the existing *Referee* part.
+
+## [Day 7](reports/week2/day7/README.md)
+
+Implemented the *Team* part.
