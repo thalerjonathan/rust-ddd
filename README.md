@@ -45,3 +45,7 @@ Implementing the *Venue* part, based on the existing *Referee* part.
 ## [Day 7](reports/week2/day7/README.md)
 
 Implemented the *Team* part.
+
+## [Day 8](reports/week2/day8/README.md)
+
+Started implementing the *Fixture* part.

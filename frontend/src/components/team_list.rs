@@ -18,14 +18,13 @@ pub fn TeamList() -> impl IntoView {
         });
     });
 
-
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
         let team = TeamCreationDTO {
             name: team_name.get(),
             club: team_club.get(),
         };
-        
+
         let mut teams_previous = teams.get();
         spawn_local(async move {
             let res = create_team(team).await;
@@ -45,7 +44,7 @@ pub fn TeamList() -> impl IntoView {
 
     view! {
         <div>
-            <h2>"Team List"</h2>
+            <h2>"Teams"</h2>
 
             <form on:submit=on_submit>
                 <input
@@ -63,7 +62,7 @@ pub fn TeamList() -> impl IntoView {
                     on:input=move |ev| set_team_club.set(event_target_value(&ev))
                 />
                 <button type="submit">"Create Team"</button>
-            </form> 
+            </form>
 
             <ul>
                 {move || teams.get().into_iter().map(|t| view! {

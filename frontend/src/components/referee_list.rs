@@ -46,7 +46,7 @@ pub fn RefereeList() -> impl IntoView {
 
     view! {
         <div>
-            <h2>"Referee List"</h2>
+            <h2>"Referees"</h2>
             <form on:submit=on_submit>
                 <input
                     id="referee-name"

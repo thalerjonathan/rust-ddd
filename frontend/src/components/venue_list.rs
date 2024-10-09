@@ -65,7 +65,7 @@ pub fn VenueList() -> impl IntoView {
 
     view! {
         <div>
-            <h2>"Venue List"</h2>
+            <h2>"Venues"</h2>
 
             <form on:submit=on_submit>
                 <input
