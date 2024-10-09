@@ -1,3 +1,9 @@
+use crate::adapters::db::fixture_repo_pg::FixtureRepositoryPg;
+use crate::adapters::db::team_repo_pg::TeamRepositoryPg;
+use crate::adapters::db::venue_repo_pg::VenueRepositoryPg;
+use crate::application;
+use crate::domain::aggregates::fixture::FixtureId;
+use crate::domain::repositories::fixture_repo::FixtureRepository;
 use crate::ports::rest::state::AppState;
 use axum::extract::{Path, State};
 use axum::Json;
@@ -13,7 +19,27 @@ pub async fn create_fixture_handler(
     Json(fixture_creation): Json<FixtureCreationDTO>,
 ) -> Result<Json<FixtureDTO>, AppError> {
     debug!("Creating fixture: {:?}", fixture_creation);
-    Err(AppError::from_error("Not implemented"))
+
+    // TODO: we must pass the same connection to each of them, otherwise each query would have different transactional context
+    let fixture_repo = FixtureRepositoryPg::new(&state.connection_pool);
+    let venue_repo = VenueRepositoryPg::new(&state.connection_pool);
+    let team_repo = TeamRepositoryPg::new(&state.connection_pool);
+
+    let fixture = application::fixture_services::create_fixture(
+        fixture_creation.date,
+        fixture_creation.venue_id.into(),
+        fixture_creation.team_home_id.into(),
+        fixture_creation.team_away_id.into(),
+        &fixture_repo,
+        &venue_repo,
+        &team_repo,
+    )
+    .await
+    .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    debug!("Fixture created: {:?}", fixture);
+
+    Ok(Json(fixture.into()))
 }
 
 pub async fn get_fixture_by_id_handler(
@@ -21,27 +47,45 @@ pub async fn get_fixture_by_id_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<Option<FixtureDTO>>, AppError> {
     debug!("Getting fixture by id: {}", id);
-    Err(AppError::from_error("Not implemented"))
+
+    let repo = FixtureRepositoryPg::new(&state.connection_pool);
+
+    let fixture = repo
+        .find_by_id(&FixtureId::from(id))
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    Ok(Json(fixture.map(|f| f.into())))
 }
 
 pub async fn get_all_fixtures_handler(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<FixtureDTO>>, AppError> {
     debug!("Getting all fixtures");
-    Err(AppError::from_error("Not implemented"))
+
+    let repo = FixtureRepositoryPg::new(&state.connection_pool);
+
+    let fixtures = repo
+        .get_all()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    Ok(Json(fixtures.into_iter().map(|f| f.into()).collect()))
 }
 
 #[cfg(test)]
 mod fixture_tests {
+    use std::panic;
+
     use chrono::Utc;
     use shared::{
-        create_team, create_venue, fetch_fixture, fetch_fixtures, FixtureCreationDTO, FixtureDTO,
+        create_team, create_venue, fetch_fixture, fetch_fixtures, FixtureCreationDTO,
         TeamCreationDTO, VenueCreationDTO,
     };
     use sqlx::PgPool;
 
     #[tokio::test]
-    async fn given_empty_db_when_creating_fixture_then_empty_list_is_returned() {
+    async fn given_empty_db_when_fetch_fixture_then_empty_list_is_returned() {
         clear_fixtures_venues_teams_table().await;
 
         let fixtures = fetch_fixtures().await;
@@ -52,6 +96,7 @@ mod fixture_tests {
     async fn given_empty_db_when_creating_fixture_then_fixture_is_returned() {
         clear_fixtures_venues_teams_table().await;
 
+        // TODO: https://docs.rs/futures/0.3.5/futures/future/trait.FutureExt.html#method.catch_unwind
         let team_home = create_team(TeamCreationDTO {
             name: "Team A".to_string(),
             club: "Club A".to_string(),
@@ -117,20 +162,22 @@ mod fixture_tests {
             fixture_dto.venue.id, venue.id,
             "Fixture venue should be venue"
         );
+
+        clear_fixtures_venues_teams_table().await;
     }
 
     async fn clear_fixtures_venues_teams_table() {
         let db_url = std::env::var("DB_URL").expect("DB_URL not set");
         let pool = PgPool::connect(&db_url).await.unwrap();
-        sqlx::query!("DELETE FROM fixtures")
+        sqlx::query!("DELETE FROM rustddd.fixtures")
             .execute(&pool)
             .await
             .unwrap();
-        sqlx::query!("DELETE FROM venues")
+        sqlx::query!("DELETE FROM rustddd.venues")
             .execute(&pool)
             .await
             .unwrap();
-        sqlx::query!("DELETE FROM teams")
+        sqlx::query!("DELETE FROM rustddd.teams")
             .execute(&pool)
             .await
             .unwrap();

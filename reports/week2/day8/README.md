@@ -4,9 +4,10 @@ Today the plan is to implement the *Fixture* part - the arguably most complex pa
 
 The reason for the complexity lies in the fact that a *Fixture* contains a *Venue* and 2 *Teams*, both being Entities - therefore we need an efficient way to fetch them when loading *Fixtures*. 
 Also a *Fixture* allows to change date, venue, be cancelled and when creating a new one the following constraints have to be respected:
-- both teams have to be different 
-- no other *Fixture* can be scheduled at the same venue and time
-- the teams cannot have other *Fixtures* scheduled at the same time
+- Both teams have to be different.
+- No other *Fixture* is scheduled at the same venue and time.
+- The teams cannot have other *Fixtures* scheduled at the same time.
+- Check if date is in the future.
 
 The challenge is to how to implement this via DDD.
 

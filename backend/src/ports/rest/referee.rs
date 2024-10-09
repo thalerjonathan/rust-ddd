@@ -11,24 +11,11 @@ use uuid::Uuid;
 use crate::{
     adapters::db::referee_repo_pg::RefereeRepositoryPg,
     application,
-    domain::{
-        aggregates::referee::{Referee, RefereeId},
-        repositories::referee_repo::RefereeRepository,
-    },
+    domain::{aggregates::referee::RefereeId, repositories::referee_repo::RefereeRepository},
 };
 
 use super::shared::AppError;
 use super::state::AppState;
-
-impl From<Referee> for RefereeDTO {
-    fn from(referee: Referee) -> Self {
-        RefereeDTO {
-            id: referee.id().0,
-            name: referee.name().to_string(),
-            club: referee.club().to_string(),
-        }
-    }
-}
 
 pub async fn create_referee_handler(
     State(state): State<Arc<AppState>>,

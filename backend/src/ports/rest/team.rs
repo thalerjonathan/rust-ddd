@@ -11,23 +11,10 @@ use uuid::Uuid;
 use crate::{
     adapters::db::team_repo_pg::TeamRepositoryPg,
     application::team_services::create_team,
-    domain::{
-        aggregates::team::{Team, TeamId},
-        repositories::team_repo::TeamRepository,
-    },
+    domain::{aggregates::team::TeamId, repositories::team_repo::TeamRepository},
 };
 
 use super::{shared::AppError, state::AppState};
-
-impl From<Team> for TeamDTO {
-    fn from(team: Team) -> Self {
-        Self {
-            id: team.id().0,
-            name: team.name().to_string(),
-            club: team.club().to_string(),
-        }
-    }
-}
 
 pub async fn create_team_handler(
     State(state): State<Arc<AppState>>,

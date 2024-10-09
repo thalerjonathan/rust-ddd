@@ -6,11 +6,7 @@ use crate::domain::{
     repositories::venue_repo::VenueRepository,
 };
 
-pub struct VenueRepositoryPg<'a> {
-    pool: &'a Pool<Postgres>,
-}
-
-pub struct VenueDb {
+struct VenueDb {
     id: Uuid,
     name: String,
     street: String,
@@ -20,9 +16,27 @@ pub struct VenueDb {
     email: Option<String>,
 }
 
+pub struct VenueRepositoryPg<'a> {
+    pool: &'a Pool<Postgres>,
+}
+
 impl<'a> VenueRepositoryPg<'a> {
     pub fn new(pool: &'a Pool<Postgres>) -> Self {
         Self { pool }
+    }
+}
+
+impl From<VenueDb> for Venue {
+    fn from(venue: VenueDb) -> Self {
+        Venue::from_id(
+            venue.id,
+            venue.name,
+            venue.street,
+            venue.zip,
+            venue.city,
+            venue.telephone,
+            venue.email,
+        )
     }
 }
 
@@ -71,19 +85,5 @@ impl<'a> VenueRepository for VenueRepositoryPg<'a> {
         .map_err(|e| e.to_string())?;
 
         Ok(())
-    }
-}
-
-impl From<VenueDb> for Venue {
-    fn from(venue: VenueDb) -> Self {
-        Venue::from_id(
-            venue.id,
-            venue.name,
-            venue.street,
-            venue.zip,
-            venue.city,
-            venue.telephone,
-            venue.email,
-        )
     }
 }

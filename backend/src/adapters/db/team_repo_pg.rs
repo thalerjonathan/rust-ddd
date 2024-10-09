@@ -6,25 +6,25 @@ use crate::domain::{
     repositories::team_repo::TeamRepository,
 };
 
-struct TeamDb {
-    id: Uuid,
-    name: String,
-    club: String,
-}
-
 pub struct TeamRepositoryPg<'a> {
     pool: &'a Pool<Postgres>,
+}
+
+struct TeamDb {
+    pub id: Uuid,
+    pub name: String,
+    pub club: String,
+}
+
+impl From<TeamDb> for Team {
+    fn from(team: TeamDb) -> Self {
+        Team::from_id(team.id, team.name, team.club)
+    }
 }
 
 impl<'a> TeamRepositoryPg<'a> {
     pub fn new(pool: &'a Pool<Postgres>) -> Self {
         Self { pool }
-    }
-}
-
-impl<'a> From<TeamDb> for Team {
-    fn from(team: TeamDb) -> Self {
-        Team::from_id(team.id, team.name, team.club)
     }
 }
 

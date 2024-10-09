@@ -11,27 +11,10 @@ use uuid::Uuid;
 use crate::{
     adapters::db::venue_repo_pg::VenueRepositoryPg,
     application,
-    domain::{
-        aggregates::venue::{Venue, VenueId},
-        repositories::venue_repo::VenueRepository,
-    },
+    domain::{aggregates::venue::VenueId, repositories::venue_repo::VenueRepository},
 };
 
 use super::{shared::AppError, state::AppState};
-
-impl From<Venue> for VenueDTO {
-    fn from(venue: Venue) -> Self {
-        VenueDTO {
-            id: venue.id().0,
-            name: venue.name().to_string(),
-            street: venue.street().to_string(),
-            zip: venue.zip().to_string(),
-            city: venue.city().to_string(),
-            telephone: venue.telephone(),
-            email: venue.email(),
-        }
-    }
-}
 
 pub async fn create_venue_handler(
     State(state): State<Arc<AppState>>,

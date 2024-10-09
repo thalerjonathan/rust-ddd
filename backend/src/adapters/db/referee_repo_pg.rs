@@ -11,9 +11,15 @@ pub struct RefereeRepositoryPg<'a> {
 }
 
 struct RefereeDb {
-    id: Uuid,
-    name: String,
-    club: String,
+    pub id: Uuid,
+    pub name: String,
+    pub club: String,
+}
+
+impl From<RefereeDb> for Referee {
+    fn from(referee: RefereeDb) -> Self {
+        Referee::from_id(referee.id, referee.name, referee.club)
+    }
 }
 
 impl<'a> RefereeRepositoryPg<'a> {

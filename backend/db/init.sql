@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS rustddd.fixtures (
     team_home_id UUID NOT NULL,
     team_away_id UUID NOT NULL,
     venue_id UUID NOT NULL,
-    date TIMESTAMP NOT NULL,
+    date TIMESTAMPTZ NOT NULL,
     CONSTRAINT fk_team_home FOREIGN KEY (team_home_id) REFERENCES rustddd.teams(team_id),
     CONSTRAINT fk_team_away FOREIGN KEY (team_away_id) REFERENCES rustddd.teams(team_id),
     CONSTRAINT fk_venue FOREIGN KEY (venue_id) REFERENCES rustddd.venues(venue_id)
