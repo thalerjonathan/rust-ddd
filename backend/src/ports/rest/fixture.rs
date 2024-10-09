@@ -70,13 +70,13 @@ pub async fn get_all_fixtures_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
+    debug!("Fixtures: {:?}", fixtures);
+
     Ok(Json(fixtures.into_iter().map(|f| f.into()).collect()))
 }
 
 #[cfg(test)]
 mod fixture_tests {
-    use std::panic;
-
     use chrono::Utc;
     use shared::{
         create_team, create_venue, fetch_fixture, fetch_fixtures, FixtureCreationDTO,
@@ -86,7 +86,7 @@ mod fixture_tests {
 
     #[tokio::test]
     async fn given_empty_db_when_fetch_fixture_then_empty_list_is_returned() {
-        clear_fixtures_venues_teams_table().await;
+        clear_tables().await;
 
         let fixtures = fetch_fixtures().await;
         assert!(fixtures.is_empty(), "Fixtures should be empty");
@@ -94,9 +94,8 @@ mod fixture_tests {
 
     #[tokio::test]
     async fn given_empty_db_when_creating_fixture_then_fixture_is_returned() {
-        clear_fixtures_venues_teams_table().await;
+        clear_tables().await;
 
-        // TODO: https://docs.rs/futures/0.3.5/futures/future/trait.FutureExt.html#method.catch_unwind
         let team_home = create_team(TeamCreationDTO {
             name: "Team A".to_string(),
             club: "Club A".to_string(),
@@ -138,7 +137,12 @@ mod fixture_tests {
         assert!(!fixtures.is_empty(), "Fixtures should not be empty");
         assert_eq!(fixtures.len(), 1, "Fixtures should have 1 fixture");
 
-        assert_eq!(fixtures[0].date, now, "Fixture date should be now");
+        // NOTE: we cannot use assert_eq! because loading the fixture from the db returns a DateTime without nanos
+        assert_eq!(
+            fixtures[0].date.timestamp_millis(),
+            now.timestamp_millis(),
+            "Fixture date should be now"
+        );
         assert_eq!(
             fixtures[0].venue.id, venue.id,
             "Fixture venue should be venue"
@@ -157,16 +161,19 @@ mod fixture_tests {
             fixture_dto.id, fixtures[0].id,
             "Fixture id should be the same"
         );
-        assert_eq!(fixture_dto.date, now, "Fixture date should be now");
+        // NOTE: we cannot use assert_eq! because loading the fixture from the db returns a DateTime without nanos
+        assert_eq!(
+            fixture_dto.date.timestamp_millis(),
+            now.timestamp_millis(),
+            "Fixture date should be now"
+        );
         assert_eq!(
             fixture_dto.venue.id, venue.id,
             "Fixture venue should be venue"
         );
-
-        clear_fixtures_venues_teams_table().await;
     }
 
-    async fn clear_fixtures_venues_teams_table() {
+    async fn clear_tables() {
         let db_url = std::env::var("DB_URL").expect("DB_URL not set");
         let pool = PgPool::connect(&db_url).await.unwrap();
         sqlx::query!("DELETE FROM rustddd.fixtures")

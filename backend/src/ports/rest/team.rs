@@ -66,7 +66,7 @@ mod team_tests {
 
     #[tokio::test]
     async fn given_empty_db_when_fetching_teams_then_empty_list_is_returned() {
-        clear_team_table().await;
+        clear_tables().await;
 
         let teams = fetch_teams().await;
         assert!(teams.is_empty(), "Teams should be empty");
@@ -74,7 +74,7 @@ mod team_tests {
 
     #[tokio::test]
     async fn given_empty_db_when_creating_team_then_team_is_returned() {
-        clear_team_table().await;
+        clear_tables().await;
 
         let team_creation = TeamCreationDTO {
             name: "Team A".to_string(),
@@ -101,12 +101,16 @@ mod team_tests {
         assert_eq!(fetched_team.club, "Club A", "Team club should be 'Club A'");
     }
 
-    async fn clear_team_table() {
+    async fn clear_tables() {
+        // NOTE: need to clear also fixtures, otherwise the foreign key constraint will prevent the deletion
         let db_url = std::env::var("DB_URL").expect("DB_URL not set");
-        let connection_pool = PgPool::connect(&db_url).await.unwrap();
-
+        let pool = PgPool::connect(&db_url).await.unwrap();
+        sqlx::query!("DELETE FROM rustddd.fixtures")
+            .execute(&pool)
+            .await
+            .unwrap();
         sqlx::query!("DELETE FROM rustddd.teams")
-            .execute(&connection_pool)
+            .execute(&pool)
             .await
             .unwrap();
     }

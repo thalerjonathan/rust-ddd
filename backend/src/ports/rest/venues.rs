@@ -90,7 +90,7 @@ mod venues_tests {
 
     #[tokio::test]
     async fn given_empty_db_when_fetching_venues_then_empty_list_is_returned() {
-        clear_venue_table().await;
+        clear_tables().await;
 
         let venues = fetch_venues().await;
         assert!(venues.is_empty(), "Venues should be empty");
@@ -98,7 +98,7 @@ mod venues_tests {
 
     #[tokio::test]
     async fn given_empty_db_when_creating_venue_then_venue_is_returned() {
-        clear_venue_table().await;
+        clear_tables().await;
 
         let venue_creation = VenueCreationDTO {
             name: "Venue A".to_string(),
@@ -176,12 +176,16 @@ mod venues_tests {
         );
     }
 
-    async fn clear_venue_table() {
+    async fn clear_tables() {
+        // NOTE: need to clear also fixtures, otherwise the foreign key constraint will prevent the deletion
         let db_url = std::env::var("DB_URL").expect("DB_URL not set");
-        let connection_pool = PgPool::connect(&db_url).await.unwrap();
-
-        sqlx::query("DELETE FROM rustddd.venues")
-            .execute(&connection_pool)
+        let pool = PgPool::connect(&db_url).await.unwrap();
+        sqlx::query!("DELETE FROM rustddd.fixtures")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query!("DELETE FROM rustddd.venues")
+            .execute(&pool)
             .await
             .unwrap();
     }
