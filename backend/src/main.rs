@@ -5,6 +5,9 @@ use axum::{
     Router,
 };
 
+use ports::rest::fixture::{
+    create_fixture_handler, get_all_fixtures_handler, get_fixture_by_id_handler,
+};
 use ports::rest::referee::*;
 use ports::rest::state::AppState;
 use ports::rest::team::{create_team_handler, get_all_teams_handler, get_team_by_id_handler};
@@ -43,6 +46,9 @@ async fn main() {
         .route("/team", post(create_team_handler))
         .route("/team/:id", get(get_team_by_id_handler))
         .route("/teams", get(get_all_teams_handler))
+        .route("/fixture", post(create_fixture_handler))
+        .route("/fixture/:id", get(get_fixture_by_id_handler))
+        .route("/fixtures", get(get_all_fixtures_handler))
         .layer(cors)
         .with_state(state_arc);
 

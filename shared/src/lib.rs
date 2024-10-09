@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -47,6 +48,23 @@ pub struct TeamDTO {
 pub struct TeamCreationDTO {
     pub name: String,
     pub club: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FixtureDTO {
+    pub id: Uuid,
+    pub team_home: TeamDTO,
+    pub team_away: TeamDTO,
+    pub venue: VenueDTO,
+    pub date: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FixtureCreationDTO {
+    pub team_home_id: Uuid,
+    pub team_away_id: Uuid,
+    pub venue_id: Uuid,
+    pub date: DateTime<Utc>,
 }
 
 pub async fn fetch_referees() -> Vec<RefereeDTO> {
@@ -126,3 +144,31 @@ pub async fn create_team(team_creation: TeamCreationDTO) -> Result<TeamDTO, reqw
         .await?;
     response.json().await
 }
+
+pub async fn fetch_fixtures() -> Vec<FixtureDTO> {
+    let url = Url::parse("http://localhost:3001/fixtures");
+    let response = reqwest::Client::new().get(url.unwrap()).send().await;
+    response.unwrap().json().await.unwrap()
+}
+
+pub async fn create_fixture(
+    fixture_creation: FixtureCreationDTO,
+) -> Result<FixtureDTO, reqwest::Error> {
+    let url = Url::parse("http://localhost:3001/fixture").unwrap();
+    let response = reqwest::Client::new()
+        .post(url)
+        .json(&fixture_creation)
+        .send()
+        .await?;
+    response.json().await
+}
+
+pub async fn fetch_fixture(id: &str) -> Result<FixtureDTO, reqwest::Error> {
+    let url = Url::parse(&format!("http://localhost:3001/fixture/{}", id));
+    let response = reqwest::Client::new().get(url.unwrap()).send().await?;
+    response.json().await
+}
+
+// TODO: change fixture date
+// TODO: change fixture venue
+// TODO: cancel fixture
