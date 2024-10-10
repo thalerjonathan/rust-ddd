@@ -24,6 +24,12 @@ impl From<Uuid> for FixtureId {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FixtureStatus {
+    Scheduled,
+    Cancelled,
+}
+
 #[derive(Debug, Clone)]
 pub struct Fixture {
     id: FixtureId,
@@ -31,6 +37,7 @@ pub struct Fixture {
     venue: Venue,
     team_home: Team,
     team_away: Team,
+    status: FixtureStatus,
 }
 
 impl Fixture {
@@ -41,12 +48,14 @@ impl Fixture {
             venue,
             team_home,
             team_away,
+            status: FixtureStatus::Scheduled,
         }
     }
 
     pub fn from_id(
         id: Uuid,
         date: DateTime<Utc>,
+        status: FixtureStatus,
         venue: Venue,
         team_home: Team,
         team_away: Team,
@@ -57,6 +66,7 @@ impl Fixture {
             venue,
             team_home,
             team_away,
+            status,
         }
     }
 
@@ -78,5 +88,33 @@ impl Fixture {
 
     pub fn team_away(&self) -> &Team {
         &self.team_away
+    }
+
+    pub fn status(&self) -> &FixtureStatus {
+        &self.status
+    }
+
+    pub fn is_scheduled(&self) -> bool {
+        self.status == FixtureStatus::Scheduled
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        self.status == FixtureStatus::Cancelled
+    }
+
+    pub fn cancel(&mut self) {
+        if self.status != FixtureStatus::Scheduled {
+            panic!("Fixture is not scheduled");
+        }
+
+        self.status = FixtureStatus::Cancelled;
+    }
+
+    pub fn change_venue(&mut self, venue: Venue) {
+        self.venue = venue;
+    }
+
+    pub fn change_date(&mut self, date: DateTime<Utc>) {
+        self.date = date;
     }
 }

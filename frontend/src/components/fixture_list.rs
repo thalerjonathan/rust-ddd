@@ -50,7 +50,7 @@ pub fn FixtureList() -> impl IntoView {
         let mut fixtures_previous = fixtures.get();
 
         spawn_local(async move {
-            let res = create_fixture(fixture).await;
+            let res = create_fixture(&fixture).await;
             match res {
                 Ok(f) => {
                     debug!("Fixture created: {} {}", f.id, f.date);

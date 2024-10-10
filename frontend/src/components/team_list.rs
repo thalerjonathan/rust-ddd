@@ -27,7 +27,7 @@ pub fn TeamList() -> impl IntoView {
 
         let mut teams_previous = teams.get();
         spawn_local(async move {
-            let res = create_team(team).await;
+            let res = create_team(&team).await;
             match res {
                 Ok(t) => {
                     teams_previous.push(t);

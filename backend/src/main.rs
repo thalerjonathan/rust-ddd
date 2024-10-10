@@ -6,7 +6,8 @@ use axum::{
 };
 
 use ports::rest::fixture::{
-    create_fixture_handler, get_all_fixtures_handler, get_fixture_by_id_handler,
+    cancel_fixture_handler, create_fixture_handler, get_all_fixtures_handler,
+    get_fixture_by_id_handler, update_fixture_date_handler, update_fixture_venue_handler,
 };
 use ports::rest::referee::*;
 use ports::rest::state::AppState;
@@ -49,6 +50,9 @@ async fn main() {
         .route("/fixture", post(create_fixture_handler))
         .route("/fixture/:id", get(get_fixture_by_id_handler))
         .route("/fixtures", get(get_all_fixtures_handler))
+        .route("/fixture/:id/date", post(update_fixture_date_handler))
+        .route("/fixture/:id/venue", post(update_fixture_venue_handler))
+        .route("/fixture/:id/cancel", post(cancel_fixture_handler))
         .layer(cors)
         .with_state(state_arc);
 

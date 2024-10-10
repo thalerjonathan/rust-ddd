@@ -5,9 +5,14 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use log::error;
-use shared::{FixtureDTO, RefereeDTO, TeamDTO, VenueDTO};
+use shared::{FixtureDTO, FixtureStatusDTO, RefereeDTO, TeamDTO, VenueDTO};
 
-use crate::domain::aggregates::{fixture::Fixture, referee::Referee, team::Team, venue::Venue};
+use crate::domain::aggregates::{
+    fixture::{Fixture, FixtureStatus},
+    referee::Referee,
+    team::Team,
+    venue::Venue,
+};
 /// Represents an application error, where the application failed to handle a response
 /// This is used to map such errors to 500 internal server error HTTP codes
 #[derive(Debug)]
@@ -41,6 +46,15 @@ impl AppError {
     }
 }
 
+impl From<FixtureStatus> for FixtureStatusDTO {
+    fn from(status: FixtureStatus) -> Self {
+        match status {
+            FixtureStatus::Scheduled => FixtureStatusDTO::Scheduled,
+            FixtureStatus::Cancelled => FixtureStatusDTO::Cancelled,
+        }
+    }
+}
+
 impl From<Fixture> for FixtureDTO {
     fn from(fixture: Fixture) -> Self {
         FixtureDTO {
@@ -49,6 +63,7 @@ impl From<Fixture> for FixtureDTO {
             venue: fixture.venue().clone().into(),
             team_home: fixture.team_home().clone().into(),
             team_away: fixture.team_away().clone().into(),
+            status: fixture.status().clone().into(),
         }
     }
 }

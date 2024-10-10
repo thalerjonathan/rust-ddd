@@ -50,7 +50,7 @@ pub fn VenueList() -> impl IntoView {
 
         let mut venues_previous = venues.get();
         spawn_local(async move {
-            let res = create_venue(venue_creation).await;
+            let res = create_venue(&venue_creation).await;
             match res {
                 Ok(v) => {
                     venues_previous.push(v);

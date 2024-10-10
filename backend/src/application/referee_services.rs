@@ -31,7 +31,6 @@ pub async fn update_referee_club(
     let mut referee = referee.ok_or("Referee not found")?;
     referee.change_club(club);
 
-    // TODO: the ultimate goal is to make this disappear by some kind of unit-of-work implementation
     repo.save(&referee).await.map_err(|e| e.to_string())?;
 
     debug!("Referee updated: {:?}", referee);

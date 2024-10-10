@@ -115,7 +115,7 @@ mod referee_tests {
             club: "Club A".to_string(),
         };
 
-        let referee_dto = shared::create_referee(referee_creation).await;
+        let referee_dto = shared::create_referee(&referee_creation).await;
         assert!(referee_dto.is_ok(), "Referee should be created");
 
         let referees = fetch_referees().await;
@@ -137,7 +137,7 @@ mod referee_tests {
             club: "Club A".to_string(),
         };
 
-        let referee_dto = shared::create_referee(referee_creation).await;
+        let referee_dto = shared::create_referee(&referee_creation).await;
         assert!(referee_dto.is_ok(), "Referee should be created");
 
         let referee_dto = referee_dto.unwrap();

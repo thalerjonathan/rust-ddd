@@ -109,7 +109,7 @@ mod venues_tests {
             email: Some("email@example.com".to_string()),
         };
 
-        let venue = create_venue(venue_creation).await;
+        let venue = create_venue(&venue_creation).await;
         assert!(venue.is_ok(), "Venue should be created");
 
         let venue = venue.unwrap();

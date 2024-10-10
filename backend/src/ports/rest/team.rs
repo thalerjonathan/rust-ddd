@@ -81,7 +81,7 @@ mod team_tests {
             club: "Club A".to_string(),
         };
 
-        let team = create_team(team_creation).await;
+        let team = create_team(&team_creation).await;
         assert!(team.is_ok(), "Team should be created");
 
         let team = team.unwrap();

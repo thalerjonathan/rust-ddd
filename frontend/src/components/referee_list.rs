@@ -25,7 +25,7 @@ pub fn RefereeList() -> impl IntoView {
         let ref_creation = RefereeCreationDTO { name, club };
         let mut referees_previous = referees.get();
         spawn_local(async move {
-            let res = create_referee(ref_creation).await;
+            let res = create_referee(&ref_creation).await;
             match res {
                 Ok(r) => {
                     // update the list of referees in the UI, which will result in re-rendering
