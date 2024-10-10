@@ -20,6 +20,7 @@ An important TODO that I want to address is also changing the *Repositories* fro
 ## Results
 
 The refactorings and the implementation of the *Fixture* features were done quite fast due to the help of Cursor. 
+However due to interruptions I did not manage to finish the UI part of the *Fixture* features, as well as refactoring away from the connection pool in the *Repositories* - this is the plan for tomorrow.
 
 ## Conclusions
 
