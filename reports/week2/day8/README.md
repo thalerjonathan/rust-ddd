@@ -11,7 +11,6 @@ Also a *Fixture* allows to change date, venue, be cancelled and when creating a 
 
 The challenge is to how to implement this via DDD.
 
-
 ## Results
 
 I followed my usual approach of first creating the integration tests, then the shared classes, then the REST implementation, then the aggregate and finally the repository and DB adapter.

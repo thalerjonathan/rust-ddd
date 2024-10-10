@@ -49,3 +49,7 @@ Implemented the *Team* part.
 ## [Day 8](reports/week2/day8/README.md)
 
 Started implementing the *Fixture* part.
+
+## [Day 9](reports/week3/day9/README.md)
+
+Finished implementing the *Fixture* part.
