@@ -22,8 +22,9 @@ pub async fn create_venue_handler(
 ) -> Result<Json<VenueDTO>, AppError> {
     debug!("Creating venue: {:?}", venue_creation);
 
-    let repo = VenueRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
 
+    let repo = VenueRepositoryPg::new();
     let venue = application::venue_services::create_venue(
         &venue_creation.name,
         &venue_creation.street,
@@ -32,9 +33,14 @@ pub async fn create_venue_handler(
         venue_creation.telephone,
         venue_creation.email,
         &repo,
+        &mut tx,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let venue = VenueDTO::from(venue);
 
@@ -49,11 +55,16 @@ pub async fn get_venue_by_id_handler(
 ) -> Result<Json<Option<VenueDTO>>, AppError> {
     debug!("Getting venue by id: {}", id);
 
-    let repo = VenueRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
 
+    let repo = VenueRepositoryPg::new();
     // NOTE: we are not using an application service here, because the logic is so simple
     let venue = repo
-        .find_by_id(&VenueId::from(id))
+        .find_by_id(&VenueId::from(id), &mut tx)
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
@@ -67,11 +78,17 @@ pub async fn get_all_venues_handler(
 ) -> Result<Json<Vec<VenueDTO>>, AppError> {
     debug!("Getting all venues");
 
-    let repo = VenueRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let repo = VenueRepositoryPg::new();
 
     // NOTE: we are not using an application service here, because the logic is so simple
     let venues = repo
-        .get_all()
+        .get_all(&mut tx)
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 

@@ -12,8 +12,9 @@ use crate::domain::{
     repositories::fixture_repo::FixtureRepository,
 };
 
+
 pub struct FixtureRepositoryPg<'a> {
-    pool: &'a Pool<Postgres>,
+    pool: &'a Pool<Postgres>
 }
 
 impl<'a> FixtureRepositoryPg<'a> {

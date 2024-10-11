@@ -22,22 +22,29 @@ pub async fn create_fixture_handler(
 ) -> Result<Json<FixtureDTO>, AppError> {
     debug!("Creating fixture: {:?}", fixture_creation);
 
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
     // TODO: we must pass the same connection to each of them, otherwise each query would have different transactional context
     let fixture_repo = FixtureRepositoryPg::new(&state.connection_pool);
-    let venue_repo = VenueRepositoryPg::new(&state.connection_pool);
-    let team_repo = TeamRepositoryPg::new(&state.connection_pool);
+    let mut venue_repo = VenueRepositoryPg::new();
+    let mut team_repo = TeamRepositoryPg::new(&state.connection_pool);
 
     let fixture = application::fixture_services::create_fixture(
         fixture_creation.date,
         fixture_creation.venue_id.into(),
         fixture_creation.team_home_id.into(),
         fixture_creation.team_away_id.into(),
+        &mut tx,
         &fixture_repo,
-        &venue_repo,
-        &team_repo,
+        &mut venue_repo,
+        &mut team_repo,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     debug!("Fixture created: {:?}", fixture);
 
@@ -104,17 +111,24 @@ pub async fn update_fixture_venue_handler(
 ) -> Result<Json<FixtureDTO>, AppError> {
     debug!("Updating fixture venue: {}", id);
 
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
     let fixture_repo = FixtureRepositoryPg::new(&state.connection_pool);
-    let venue_repo = VenueRepositoryPg::new(&state.connection_pool);
+    let venue_repo = VenueRepositoryPg::new();
 
     let fixture = application::fixture_services::update_fixture_venue(
         FixtureId::from(id),
         VenueId::from(venue_id),
+        &mut tx,
         &fixture_repo,
         &venue_repo,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(fixture.into()))
 }

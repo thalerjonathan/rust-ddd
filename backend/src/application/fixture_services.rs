@@ -11,19 +11,20 @@ use crate::domain::{
     },
 };
 
-pub async fn create_fixture(
+pub async fn create_fixture<Tx>(
     date: DateTime<Utc>,
     venue_id: VenueId,
     team_home_id: TeamId,
     team_away_id: TeamId,
+    tx: &mut Tx,
     fixture_repo: &impl FixtureRepository<Error = String>,
-    venue_repo: &impl VenueRepository<Error = String>,
-    team_repo: &impl TeamRepository<Error = String>,
+    venue_repo: &mut impl VenueRepository<Tx, Error = String>,
+    team_repo: &mut impl TeamRepository<Error = String>,
 ) -> Result<Fixture, String> {
     // TODO: write full test coverage because its a complex use case - use mocks with mockall
 
     let venue = venue_repo
-        .find_by_id(&venue_id)
+        .find_by_id(&venue_id, tx)
         .await?
         .expect("Venue not found");
     let team_home = team_repo
@@ -88,11 +89,12 @@ pub async fn update_fixture_date(
     Ok(fixture)
 }
 
-pub async fn update_fixture_venue(
+pub async fn update_fixture_venue<Tx>(
     fixture_id: FixtureId,
     venue_id: VenueId,
+    tx: &mut Tx,
     fixture_repo: &impl FixtureRepository<Error = String>,
-    venue_repo: &impl VenueRepository<Error = String>,
+    venue_repo: &impl VenueRepository<Tx, Error = String>,
 ) -> Result<Fixture, String> {
     let mut fixture = fixture_repo
         .find_by_id(&fixture_id)
@@ -100,7 +102,7 @@ pub async fn update_fixture_venue(
         .expect("Fixture not found");
 
     let venue = venue_repo
-        .find_by_id(&venue_id)
+        .find_by_id(&venue_id, tx)
         .await?
         .expect("Venue not found");
 

@@ -1,4 +1,4 @@
-use sqlx::{Pool, Postgres};
+use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::domain::{
@@ -16,13 +16,11 @@ struct VenueDb {
     email: Option<String>,
 }
 
-pub struct VenueRepositoryPg<'a> {
-    pool: &'a Pool<Postgres>,
-}
+pub struct VenueRepositoryPg {}
 
-impl<'a> VenueRepositoryPg<'a> {
-    pub fn new(pool: &'a Pool<Postgres>) -> Self {
-        Self { pool }
+impl VenueRepositoryPg {
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
@@ -40,35 +38,46 @@ impl From<VenueDb> for Venue {
     }
 }
 
-impl<'a> VenueRepository for VenueRepositoryPg<'a> {
+impl VenueRepository<Transaction<'static, Postgres>> for VenueRepositoryPg {
     type Error = String;
 
-    async fn find_by_id(&self, id: &VenueId) -> Result<Option<Venue>, Self::Error> {
+    async fn find_by_id(
+        &self,
+        id: &VenueId,
+        tx: &mut Transaction<'static, Postgres>,
+    ) -> Result<Option<Venue>, Self::Error> {
         let venue: Option<VenueDb> = sqlx::query_as!(
-            VenueDb,
+                VenueDb,
             "SELECT venue_id as id, name, street, zip, city, telephone, email FROM rustddd.venues WHERE venue_id = $1",
             id.0
         )
-        .fetch_optional(self.pool)
+        .fetch_optional(&mut **tx)
         .await
         .map_err(|e| e.to_string())?;
 
         Ok(venue.map(|v| v.into()))
     }
 
-    async fn get_all(&self) -> Result<Vec<Venue>, Self::Error> {
+    async fn get_all(
+        &self,
+        tx: &mut Transaction<'static, Postgres>,
+    ) -> Result<Vec<Venue>, Self::Error> {
         let venues: Vec<VenueDb> = sqlx::query_as!(
             VenueDb,
             "SELECT venue_id as id, name, street, zip, city, telephone, email FROM rustddd.venues"
         )
-        .fetch_all(self.pool)
+        .fetch_all(&mut **tx)
         .await
         .map_err(|e| e.to_string())?;
 
         Ok(venues.into_iter().map(|v| v.into()).collect())
     }
 
-    async fn save(&self, venue: &Venue) -> Result<(), Self::Error> {
+    async fn save(
+        &self,
+        venue: &Venue,
+        tx: &mut Transaction<'static, Postgres>,
+    ) -> Result<(), Self::Error> {
         // NOTE: no upsert, because Venue is not allowed to change after creation
         let _result = sqlx::query!(
             "INSERT INTO rustddd.venues (venue_id, name, street, zip, city, telephone, email) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
@@ -80,7 +89,7 @@ impl<'a> VenueRepository for VenueRepositoryPg<'a> {
             venue.telephone(),
             venue.email()
         )
-        .fetch_one(self.pool)
+        .fetch_one(&mut **tx)
         .await
         .map_err(|e| e.to_string())?;
 
