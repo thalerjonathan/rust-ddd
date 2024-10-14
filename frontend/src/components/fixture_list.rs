@@ -4,7 +4,7 @@ use log::{debug, error};
 
 use shared::{
     create_fixture, fetch_fixtures, fetch_teams, fetch_venues, FixtureCreationDTO, FixtureDTO,
-    TeamDTO, VenueDTO,
+    FixtureStatusDTO, TeamDTO, VenueDTO,
 };
 use uuid::Uuid;
 
@@ -123,11 +123,12 @@ pub fn FixtureList() -> impl IntoView {
                     <div>
                         <b>{f.date.to_string()}</b>
                         <p>{f.venue.name}</p>
+                        <p>{format!("{:?}", f.status)}</p>
                         <p>"Home: " {f.team_home.name}</p>
                         <p>"Away: " {f.team_away.name}</p>
-                        <button>"Change Venue"</button>
-                        <button>"Change Date"</button>
-                        <button>"Cancel Fixture"</button>
+                        <button disabled=f.status != FixtureStatusDTO::Scheduled>"Change Venue"</button>
+                        <button disabled=f.status != FixtureStatusDTO::Scheduled>"Change Date"</button>
+                        <button disabled=f.status != FixtureStatusDTO::Scheduled>"Cancel Fixture"</button>
                         <p/>
                         <hr/>
                     </div>
