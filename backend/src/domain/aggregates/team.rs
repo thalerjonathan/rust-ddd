@@ -5,7 +5,7 @@ use uuid::Uuid;
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub struct TeamId(pub Uuid);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Team {
     id: TeamId,
     name: String,
@@ -37,16 +37,12 @@ impl Team {
         }
     }
 
-    pub fn from_id(id: Uuid, name: String, club: String) -> Self {
-        Self {
-            id: TeamId(id),
-            name,
-            club,
-        }
+    pub fn from_id(id: TeamId, name: String, club: String) -> Self {
+        Self { id, name, club }
     }
 
-    pub fn id(&self) -> TeamId {
-        self.id
+    pub fn id(&self) -> &TeamId {
+        &self.id
     }
 
     pub fn name(&self) -> &str {

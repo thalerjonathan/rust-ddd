@@ -43,6 +43,7 @@ This is a very weird error, because the implementation is obviously more general
 
 The solution to the problem was to parameterise the trait not via a generic type but via a associated type - this way we don't run into the problem that the `impl` potentially holds a lifetime, which was the cause of the error. The downside is that we now are forced to ALWAYS use a Transaction, even if a simple read-only query is executed. It is possible to implement a separate "non-transactional" repository, but this is beyond the scope of this project. A benefit of this approach however is that read-only operations can be enforced on the REST handler level by never committing the transaction, which results in an automatic rollback, as soon as the handler returns (either via success or error path). However this means that the REST handler has now much more knowledge about the Domain, which DDD purists would probably not like - an interesting idea would be to somehow extract the transactional wrapper into a separate component that wraps around the application service layer/or becomes part of it in an "annotational" way via Rusts macros.
 
+To wrap up the day I wrote tests for the *Fixture* application service using the `mockall` crate for easy mocking of the repositories. Also, I made some UX changes to the UI such as disabling "change" buttons in case a Fixture is cancelled.
 
 ## Conclusion
 A big takeway for me is that language features heavily influence how to exactly implement a certain concept. 

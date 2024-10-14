@@ -1,5 +1,8 @@
+use mockall::automock;
+
 use crate::domain::aggregates::venue::{Venue, VenueId};
 
+#[automock(type Error = String; type TxCtx = ();)]
 pub trait VenueRepository {
     type Error;
     type TxCtx;

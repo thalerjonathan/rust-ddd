@@ -16,7 +16,7 @@ struct TeamDb {
 
 impl From<TeamDb> for Team {
     fn from(team: TeamDb) -> Self {
-        Team::from_id(team.id, team.name, team.club)
+        Team::from_id(TeamId::from(team.id), team.name, team.club)
     }
 }
 

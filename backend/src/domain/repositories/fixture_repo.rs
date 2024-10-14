@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use mockall::automock;
 
 use crate::domain::aggregates::{
     fixture::{Fixture, FixtureId},
@@ -6,9 +7,12 @@ use crate::domain::aggregates::{
     venue::VenueId,
 };
 
+#[automock(type Error = String; type TxCtx = ();)]
+// #[async_trait]
 pub trait FixtureRepository {
     type Error;
     type TxCtx;
+
     async fn find_by_id(
         &self,
         id: &FixtureId,

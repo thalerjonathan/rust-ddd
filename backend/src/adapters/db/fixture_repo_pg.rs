@@ -6,8 +6,8 @@ use uuid::Uuid;
 use crate::domain::{
     aggregates::{
         fixture::{Fixture, FixtureId, FixtureStatus},
-        team::Team,
-        venue::Venue,
+        team::{Team, TeamId},
+        venue::{Venue, VenueId},
     },
     repositories::fixture_repo::FixtureRepository,
 };
@@ -69,11 +69,11 @@ impl From<FixtureStatusDb> for FixtureStatus {
 impl From<FixtureDb> for Fixture {
     fn from(fixture: FixtureDb) -> Self {
         Fixture::from_id(
-            fixture.id,
+            FixtureId::from(fixture.id),
             fixture.date,
             fixture.status.into(),
             Venue::from_id(
-                fixture.venue_id,
+                VenueId::from(fixture.venue_id),
                 fixture.venue_name,
                 fixture.venue_street,
                 fixture.venue_zip,
@@ -82,12 +82,12 @@ impl From<FixtureDb> for Fixture {
                 fixture.venue_email,
             ),
             Team::from_id(
-                fixture.team_home_id,
+                TeamId::from(fixture.team_home_id),
                 fixture.team_home_name,
                 fixture.team_home_club,
             ),
             Team::from_id(
-                fixture.team_away_id,
+                TeamId::from(fixture.team_away_id),
                 fixture.team_away_name,
                 fixture.team_away_club,
             ),

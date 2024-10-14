@@ -27,7 +27,7 @@ impl VenueRepositoryPg {
 impl From<VenueDb> for Venue {
     fn from(venue: VenueDb) -> Self {
         Venue::from_id(
-            venue.id,
+            VenueId::from(venue.id),
             venue.name,
             venue.street,
             venue.zip,

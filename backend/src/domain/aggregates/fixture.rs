@@ -30,7 +30,7 @@ pub enum FixtureStatus {
     Cancelled,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Fixture {
     id: FixtureId,
     date: DateTime<Utc>,
@@ -53,7 +53,7 @@ impl Fixture {
     }
 
     pub fn from_id(
-        id: Uuid,
+        id: FixtureId,
         date: DateTime<Utc>,
         status: FixtureStatus,
         venue: Venue,
@@ -61,7 +61,7 @@ impl Fixture {
         team_away: Team,
     ) -> Self {
         Self {
-            id: FixtureId(id),
+            id,
             date,
             venue,
             team_home,
@@ -104,6 +104,7 @@ impl Fixture {
 
     pub fn cancel(&mut self) {
         if self.status != FixtureStatus::Scheduled {
+            // NOTE: this is not how we would like to handle this in a real application
             panic!("Fixture is not scheduled");
         }
 

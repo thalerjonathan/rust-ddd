@@ -5,7 +5,7 @@ use uuid::Uuid;
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub struct VenueId(pub Uuid);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Venue {
     id: VenueId,
     name: String,
@@ -53,7 +53,7 @@ impl Venue {
     }
 
     pub fn from_id(
-        id: Uuid,
+        id: VenueId,
         name: String,
         street: String,
         zip: String,
@@ -62,7 +62,7 @@ impl Venue {
         email: Option<String>,
     ) -> Self {
         Self {
-            id: VenueId(id),
+            id,
             name,
             street,
             zip,

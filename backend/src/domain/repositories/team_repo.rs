@@ -1,5 +1,8 @@
+use mockall::automock;
+
 use crate::domain::aggregates::team::{Team, TeamId};
 
+#[automock(type Error = String; type TxCtx = ();)]
 pub trait TeamRepository {
     type Error;
     type TxCtx;
