@@ -1,4 +1,4 @@
-# Day 10: Transactional Boundaries
+# Day 10 + 11: Transactional Boundaries
 
 The plan for todday was to refactor the Repositories to use a Transaction, instead of having a single connection pool (a fact that I already mentioned in [Day 9](../day9/README.md)), so that we can properly enforce transactional boundaries across multiple Repositories. This is a fundamental requirement for DDD, because we want to make sure that we never have a situation where only some of the Aggregates/Entities in a *Bounded Context* are updated, while others are not due to some exceptions/errors.
 
@@ -39,15 +39,16 @@ My final idea was to pass the Tx as argument to each of the repository methods, 
 implementation of `VenueRepository` is not general enough
 ```
 
-This is a very weird error, because the implementation is obviously more general than what the compiler expects. I will try to look into this in more detail when I have more time.
+This is a very weird error, because the implementation is obviously more general than what the compiler expects. Adding a phantom lifetime parameter to the trait didn't help - I then found that there are some [issues with the trait solver](https://github.com/rust-lang/rust/issues/101794) and its been written new. However when compiling with `RUSTFLAGS="-Znext-solver"` tokio didn't compile, so this was a dead end.
 
-One way would be to look into the SQLx code to see how they implement the connection pool, to see how clone/copy is implemented. Then again I have to say that I am not that deep into Rust internals yet, so I might be missing something obvious how to implement this.
+The solution to the problem was to parameterise the trait not via a generic type but via a associated type - this way we don't run into the problem that the `impl` potentially holds a lifetime, which was the cause of the error. 
 
 ## Conclusion
 A big takeway for me is that language features heavily influence how to exactly implement a certain concept. 
 
 Before I embarked on the task of refactoring towards transactional boundaries, I had the feeling that it won't be trivial due to Rusts way of dealing with references. However, I didn't expect it to be as hard as it actually was. I am happy with my current design, because it allows me to keep the application services agnostic to the DB implementation details, while still being able to enforce transactional boundaries, while retaining the benefits of having the Tx being rolled back automatically in case of an error. With global mutable state this would become horribly complicated and error prone (and we haven't even started to talk about concurrency issues).
 
-A rather funny experience was when Cursor suggested some Chinese/Japanese text when typing this README - see the photo below
+Regards the `not general enough` error I ran into, Cursor / LLMs were of no help there: this comes as no surprise because the problem is very complex and Cursor/LLMs don't really *understand* code, so working out those problems requires a deep understanding of the language and can only be resolved by going deep, thinking hard and experimenting (with some inspiration from the internet).
 
+A rather funny experience was when Cursor suggested some Chinese/Japanese text when typing this README - see the photo below
 ![Cursor speaking Chinese](cursor_chinese.jpg "Cursor speaking Chinese")

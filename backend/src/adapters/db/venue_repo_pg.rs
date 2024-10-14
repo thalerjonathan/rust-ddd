@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
@@ -16,11 +18,15 @@ struct VenueDb {
     email: Option<String>,
 }
 
-pub struct VenueRepositoryPg {}
+pub struct VenueRepositoryPg {
+    _lifetime: PhantomData<&'static Transaction<'static, Postgres>>,
+}
 
 impl VenueRepositoryPg {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            _lifetime: PhantomData,
+        }
     }
 }
 
@@ -38,13 +44,14 @@ impl From<VenueDb> for Venue {
     }
 }
 
-impl VenueRepository<Transaction<'static, Postgres>> for VenueRepositoryPg {
+impl VenueRepository for VenueRepositoryPg {
     type Error = String;
+    type Tx = Transaction<'static, Postgres>;
 
     async fn find_by_id(
         &self,
         id: &VenueId,
-        tx: &mut Transaction<'static, Postgres>,
+        tx: &mut Self::Tx,
     ) -> Result<Option<Venue>, Self::Error> {
         let venue: Option<VenueDb> = sqlx::query_as!(
                 VenueDb,
@@ -58,10 +65,7 @@ impl VenueRepository<Transaction<'static, Postgres>> for VenueRepositoryPg {
         Ok(venue.map(|v| v.into()))
     }
 
-    async fn get_all(
-        &self,
-        tx: &mut Transaction<'static, Postgres>,
-    ) -> Result<Vec<Venue>, Self::Error> {
+    async fn get_all(&self, tx: &mut Self::Tx) -> Result<Vec<Venue>, Self::Error> {
         let venues: Vec<VenueDb> = sqlx::query_as!(
             VenueDb,
             "SELECT venue_id as id, name, street, zip, city, telephone, email FROM rustddd.venues"
@@ -73,11 +77,7 @@ impl VenueRepository<Transaction<'static, Postgres>> for VenueRepositoryPg {
         Ok(venues.into_iter().map(|v| v.into()).collect())
     }
 
-    async fn save(
-        &self,
-        venue: &Venue,
-        tx: &mut Transaction<'static, Postgres>,
-    ) -> Result<(), Self::Error> {
+    async fn save(&self, venue: &Venue, tx: &mut Self::Tx) -> Result<(), Self::Error> {
         // NOTE: no upsert, because Venue is not allowed to change after creation
         let _result = sqlx::query!(
             "INSERT INTO rustddd.venues (venue_id, name, street, zip, city, telephone, email) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",

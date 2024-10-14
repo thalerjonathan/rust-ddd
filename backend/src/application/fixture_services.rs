@@ -11,14 +11,14 @@ use crate::domain::{
     },
 };
 
-pub async fn create_fixture<Tx>(
+pub async fn create_fixture<DbTx>(
     date: DateTime<Utc>,
     venue_id: VenueId,
     team_home_id: TeamId,
     team_away_id: TeamId,
-    tx: &mut Tx,
+    tx: &mut DbTx,
     fixture_repo: &impl FixtureRepository<Error = String>,
-    venue_repo: &mut impl VenueRepository<Tx, Error = String>,
+    venue_repo: &mut impl VenueRepository<Tx = DbTx, Error = String>,
     team_repo: &mut impl TeamRepository<Error = String>,
 ) -> Result<Fixture, String> {
     // TODO: write full test coverage because its a complex use case - use mocks with mockall
@@ -94,7 +94,7 @@ pub async fn update_fixture_venue<Tx>(
     venue_id: VenueId,
     tx: &mut Tx,
     fixture_repo: &impl FixtureRepository<Error = String>,
-    venue_repo: &impl VenueRepository<Tx, Error = String>,
+    venue_repo: &mut impl VenueRepository<Tx = Tx, Error = String>,
 ) -> Result<Fixture, String> {
     let mut fixture = fixture_repo
         .find_by_id(&fixture_id)

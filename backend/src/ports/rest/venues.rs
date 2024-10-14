@@ -22,9 +22,10 @@ pub async fn create_venue_handler(
 ) -> Result<Json<VenueDTO>, AppError> {
     debug!("Creating venue: {:?}", venue_creation);
 
-    let mut tx = state.connection_pool.begin().await.unwrap();
+    let mut tx: sqlx::Transaction<'static, sqlx::Postgres> =
+        state.connection_pool.begin().await.unwrap();
 
-    let repo = VenueRepositoryPg::new();
+    let mut repo: VenueRepositoryPg = VenueRepositoryPg::new();
     let venue = application::venue_services::create_venue(
         &venue_creation.name,
         &venue_creation.street,
@@ -32,7 +33,7 @@ pub async fn create_venue_handler(
         &venue_creation.city,
         venue_creation.telephone,
         venue_creation.email,
-        &repo,
+        &mut repo,
         &mut tx,
     )
     .await

@@ -2,15 +2,15 @@ use log::debug;
 
 use crate::domain::{aggregates::venue::Venue, repositories::venue_repo::VenueRepository};
 
-pub async fn create_venue<Tx>(
+pub async fn create_venue<DbTx>(
     name: &str,
     street: &str,
     zip: &str,
     city: &str,
     telephone: Option<String>,
     email: Option<String>,
-    repo: &impl VenueRepository<Tx, Error = String>,
-    tx: &mut Tx,
+    repo: &mut impl VenueRepository<Tx = DbTx, Error = String>,
+    tx: &mut DbTx,
 ) -> Result<Venue, String> {
     let venue = Venue::new(&name, &street, &zip, &city, telephone, email);
 

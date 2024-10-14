@@ -114,14 +114,14 @@ pub async fn update_fixture_venue_handler(
     let mut tx = state.connection_pool.begin().await.unwrap();
 
     let fixture_repo = FixtureRepositoryPg::new(&state.connection_pool);
-    let venue_repo = VenueRepositoryPg::new();
+    let mut venue_repo = VenueRepositoryPg::new();
 
     let fixture = application::fixture_services::update_fixture_venue(
         FixtureId::from(id),
         VenueId::from(venue_id),
         &mut tx,
         &fixture_repo,
-        &venue_repo,
+        &mut venue_repo,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
