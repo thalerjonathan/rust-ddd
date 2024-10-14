@@ -1,6 +1,6 @@
 use chrono::{DateTime, Datelike, TimeZone, Utc};
 use log::debug;
-use sqlx::{Pool, Postgres};
+use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::domain::{
@@ -13,13 +13,11 @@ use crate::domain::{
 };
 
 
-pub struct FixtureRepositoryPg<'a> {
-    pool: &'a Pool<Postgres>
-}
+pub struct FixtureRepositoryPg ();
 
-impl<'a> FixtureRepositoryPg<'a> {
-    pub fn new(pool: &'a Pool<Postgres>) -> Self {
-        Self { pool }
+impl FixtureRepositoryPg {
+    pub fn new() -> Self {
+        Self { }
     }
 }
 
@@ -97,10 +95,11 @@ impl From<FixtureDb> for Fixture {
     }
 }
 
-impl<'a> FixtureRepository for FixtureRepositoryPg<'a> {
+impl FixtureRepository for FixtureRepositoryPg {
     type Error = String;
-
-    async fn find_by_id(&self, id: &FixtureId) -> Result<Option<Fixture>, Self::Error> {
+    type TxCtx = Transaction<'static, Postgres>;
+    
+    async fn find_by_id(&self, id: &FixtureId, tx_ctx: &mut Self::TxCtx) -> Result<Option<Fixture>, Self::Error> {
         let fixture: Option<FixtureDb> = sqlx::query_as!(
             FixtureDb,
             "SELECT f.fixture_id as id, f.date, f.status,
@@ -114,14 +113,14 @@ impl<'a> FixtureRepository for FixtureRepositoryPg<'a> {
             WHERE f.fixture_id = $1",
             id.0,
         )
-        .fetch_optional(self.pool)
+        .fetch_optional(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
 
         Ok(fixture.map(|f| f.into()))
     }
 
-    async fn get_all(&self) -> Result<Vec<Fixture>, Self::Error> {
+    async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Fixture>, Self::Error> {
         let fixtures: Vec<FixtureDb> = sqlx::query_as!(
             FixtureDb,
             "SELECT f.fixture_id as id, f.date, f.status,
@@ -133,14 +132,14 @@ impl<'a> FixtureRepository for FixtureRepositoryPg<'a> {
             JOIN rustddd.teams th ON th.team_id = f.team_home_id
             JOIN rustddd.teams ta ON ta.team_id = f.team_away_id",
         )
-        .fetch_all(self.pool)
+        .fetch_all(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
 
         Ok(fixtures.into_iter().map(Fixture::from).collect())
     }
 
-    async fn save(&self, fixture: &Fixture) -> Result<(), Self::Error> {
+    async fn save(&self, fixture: &Fixture, tx_ctx: &mut Self::TxCtx) -> Result<(), Self::Error> {
         let status = format!("{:?}", fixture.status());
         // NOTE: we do an upsert that only updates the stuff that is allowed to change: cancelled, date, venue_id
         sqlx::query!(
@@ -155,7 +154,7 @@ impl<'a> FixtureRepository for FixtureRepositoryPg<'a> {
             fixture.team_away().id().0,
             status
         )
-        .execute(self.pool)
+        .execute(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -166,6 +165,7 @@ impl<'a> FixtureRepository for FixtureRepositoryPg<'a> {
         &self,
         date: &DateTime<Utc>,
         venue_id: &crate::domain::aggregates::venue::VenueId,
+        tx_ctx: &mut Self::TxCtx,
     ) -> Result<Vec<Fixture>, Self::Error> {
         let day_start = Utc
             .with_ymd_and_hms(date.year(), date.month(), date.day(), 0, 0, 0)
@@ -192,7 +192,7 @@ impl<'a> FixtureRepository for FixtureRepositoryPg<'a> {
             day_end,
             venue_id.0,
         )
-        .fetch_all(self.pool)
+        .fetch_all(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -203,6 +203,7 @@ impl<'a> FixtureRepository for FixtureRepositoryPg<'a> {
         &self,
         date: &DateTime<Utc>,
         team_id: &crate::domain::aggregates::team::TeamId,
+        tx_ctx: &mut Self::TxCtx,
     ) -> Result<Vec<Fixture>, Self::Error> {
         let day_start = Utc
             .with_ymd_and_hms(date.year(), date.month(), date.day(), 0, 0, 0)
@@ -229,7 +230,7 @@ impl<'a> FixtureRepository for FixtureRepositoryPg<'a> {
             day_end,
             team_id.0,
         )
-        .fetch_all(self.pool)
+        .fetch_all(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
 

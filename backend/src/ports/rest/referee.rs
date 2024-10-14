@@ -23,15 +23,22 @@ pub async fn create_referee_handler(
 ) -> Result<Json<RefereeDTO>, AppError> {
     debug!("Creating referee: {:?}", ref_creation);
 
-    let repo = RefereeRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let repo = RefereeRepositoryPg::new();
 
     let referee = application::referee_services::create_referee(
         &ref_creation.name,
         &ref_creation.club,
         &repo,
+        &mut tx,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let referee = RefereeDTO::from(referee);
 
@@ -46,11 +53,13 @@ pub async fn get_referee_by_id_handler(
 ) -> Result<Json<Option<RefereeDTO>>, AppError> {
     debug!("Getting referee by id: {}", id);
 
-    let repo = RefereeRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let repo = RefereeRepositoryPg::new();
 
     // NOTE: we are not using an application service here, because the logic is so simple
     let referee = repo
-        .find_by_id(&RefereeId::from(id))
+        .find_by_id(&RefereeId::from(id), &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
@@ -64,11 +73,13 @@ pub async fn get_all_referees_handler(
 ) -> Result<Json<Vec<RefereeDTO>>, AppError> {
     debug!("Getting all referees");
 
-    let repo = RefereeRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let repo = RefereeRepositoryPg::new();
 
     // NOTE: we are not using an application service here, because the logic is so simple
     let referees = repo
-        .get_all()
+        .get_all(&mut tx)
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
@@ -82,9 +93,15 @@ pub async fn update_referee_club_handler(
 ) -> Result<Json<String>, AppError> {
     debug!("Updating referee club: {}", id);
 
-    let repo = RefereeRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
 
-    let result = application::referee_services::update_referee_club(&id, &club, &repo)
+    let repo = RefereeRepositoryPg::new();
+
+    let result = application::referee_services::update_referee_club(&id, &club, &repo, &mut tx)
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 

@@ -41,7 +41,8 @@ implementation of `VenueRepository` is not general enough
 
 This is a very weird error, because the implementation is obviously more general than what the compiler expects. Adding a phantom lifetime parameter to the trait didn't help - I then found that there are some [issues with the trait solver](https://github.com/rust-lang/rust/issues/101794) and its been written new. However when compiling with `RUSTFLAGS="-Znext-solver"` tokio didn't compile, so this was a dead end.
 
-The solution to the problem was to parameterise the trait not via a generic type but via a associated type - this way we don't run into the problem that the `impl` potentially holds a lifetime, which was the cause of the error. 
+The solution to the problem was to parameterise the trait not via a generic type but via a associated type - this way we don't run into the problem that the `impl` potentially holds a lifetime, which was the cause of the error. The downside is that we now are forced to ALWAYS use a Transaction, even if a simple read-only query is executed. It is possible to implement a separate "non-transactional" repository, but this is beyond the scope of this project. A benefit of this approach however is that read-only operations can be enforced on the REST handler level by never committing the transaction, which results in an automatic rollback, as soon as the handler returns (either via success or error path). However this means that the REST handler has now much more knowledge about the Domain, which DDD purists would probably not like - an interesting idea would be to somehow extract the transactional wrapper into a separate component that wraps around the application service layer/or becomes part of it in an "annotational" way via Rusts macros.
+
 
 ## Conclusion
 A big takeway for me is that language features heavily influence how to exactly implement a certain concept. 

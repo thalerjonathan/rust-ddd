@@ -22,11 +22,17 @@ pub async fn create_team_handler(
 ) -> Result<Json<TeamDTO>, AppError> {
     debug!("Creating team: {:?}", team_creation);
 
-    let repo = TeamRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
 
-    let team = create_team(&team_creation.name, &team_creation.club, &repo)
+    let repo = TeamRepositoryPg::new();
+
+    let team = create_team(&team_creation.name, &team_creation.club, &repo, &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(team.into()))
 }
@@ -37,11 +43,13 @@ pub async fn get_team_by_id_handler(
 ) -> Result<Json<Option<TeamDTO>>, AppError> {
     debug!("Fetching team by id: {:?}", id);
 
-    let repo = TeamRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let repo = TeamRepositoryPg::new();
 
     let team_id = TeamId::from(id);
     let team = repo
-        .find_by_id(&team_id)
+        .find_by_id(&team_id, &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e))?;
 
@@ -53,8 +61,14 @@ pub async fn get_all_teams_handler(
 ) -> Result<Json<Vec<TeamDTO>>, AppError> {
     debug!("Fetching all teams");
 
-    let repo = TeamRepositoryPg::new(&state.connection_pool);
-    let teams = repo.get_all().await.map_err(|e| AppError::from_error(&e))?;
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let repo = TeamRepositoryPg::new();
+
+    let teams = repo
+        .get_all(&mut tx)
+        .await
+        .map_err(|e| AppError::from_error(&e))?;
 
     Ok(Json(teams.into_iter().map(|t| t.into()).collect()))
 }

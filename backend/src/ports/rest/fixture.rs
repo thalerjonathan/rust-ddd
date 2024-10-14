@@ -24,20 +24,19 @@ pub async fn create_fixture_handler(
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
-    // TODO: we must pass the same connection to each of them, otherwise each query would have different transactional context
-    let fixture_repo = FixtureRepositoryPg::new(&state.connection_pool);
+    let fixture_repo = FixtureRepositoryPg::new();
     let mut venue_repo = VenueRepositoryPg::new();
-    let mut team_repo = TeamRepositoryPg::new(&state.connection_pool);
+    let mut team_repo = TeamRepositoryPg::new();
 
     let fixture = application::fixture_services::create_fixture(
         fixture_creation.date,
         fixture_creation.venue_id.into(),
         fixture_creation.team_home_id.into(),
         fixture_creation.team_away_id.into(),
-        &mut tx,
         &fixture_repo,
         &mut venue_repo,
         &mut team_repo,
+        &mut tx,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
@@ -57,10 +56,11 @@ pub async fn get_fixture_by_id_handler(
 ) -> Result<Json<Option<FixtureDTO>>, AppError> {
     debug!("Getting fixture by id: {}", id);
 
-    let repo = FixtureRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
 
+    let repo = FixtureRepositoryPg::new();
     let fixture = repo
-        .find_by_id(&FixtureId::from(id))
+        .find_by_id(&FixtureId::from(id), &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
@@ -72,10 +72,12 @@ pub async fn get_all_fixtures_handler(
 ) -> Result<Json<Vec<FixtureDTO>>, AppError> {
     debug!("Getting all fixtures");
 
-    let repo = FixtureRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let repo = FixtureRepositoryPg::new();
 
     let fixtures = repo
-        .get_all()
+        .get_all(&mut tx)
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
@@ -91,16 +93,22 @@ pub async fn update_fixture_date_handler(
 ) -> Result<Json<FixtureDTO>, AppError> {
     debug!("Updating fixture date: {}", id);
 
-    let fixture_repo = FixtureRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let fixture_repo = FixtureRepositoryPg::new();
 
     let fixture = application::fixture_services::update_fixture_date(
         FixtureId::from(id),
         date,
         &fixture_repo,
+        &mut tx,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
 
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
     Ok(Json(fixture.into()))
 }
 
@@ -113,15 +121,15 @@ pub async fn update_fixture_venue_handler(
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
-    let fixture_repo = FixtureRepositoryPg::new(&state.connection_pool);
-    let mut venue_repo = VenueRepositoryPg::new();
+    let fixture_repo = FixtureRepositoryPg::new();
+    let venue_repo = VenueRepositoryPg::new();
 
     let fixture = application::fixture_services::update_fixture_venue(
         FixtureId::from(id),
         VenueId::from(venue_id),
-        &mut tx,
         &fixture_repo,
-        &mut venue_repo,
+        &venue_repo,
+        &mut tx,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
@@ -139,9 +147,16 @@ pub async fn cancel_fixture_handler(
 ) -> Result<Json<FixtureDTO>, AppError> {
     debug!("Cancelling fixture: {}", id);
 
-    let fixture_repo = FixtureRepositoryPg::new(&state.connection_pool);
+    let mut tx = state.connection_pool.begin().await.unwrap();
 
-    let fixture = application::fixture_services::cancel_fixture(FixtureId::from(id), &fixture_repo)
+    let fixture_repo = FixtureRepositoryPg::new();
+
+    let fixture =
+        application::fixture_services::cancel_fixture(FixtureId::from(id), &fixture_repo, &mut tx)
+            .await
+            .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
