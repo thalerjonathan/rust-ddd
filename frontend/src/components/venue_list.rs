@@ -116,7 +116,7 @@ pub fn VenueList() -> impl IntoView {
             <ul>
                 {move || venues.get().into_iter().map(|v| view! {
                     <li>
-                        <a href=format!("/venue/{}", v.id)>{v.name}</a>
+                        <a href=format!("/venue/{}", v.id.0)>{v.name}</a>
                     </li>
                 }).collect::<Vec<_>>()}
             </ul>

@@ -45,8 +45,8 @@ impl Referee {
         }
     }
 
-    pub fn id(&self) -> &RefereeId {
-        &self.id
+    pub fn id(&self) -> RefereeId {
+        self.id
     }
 
     pub fn name(&self) -> &str {

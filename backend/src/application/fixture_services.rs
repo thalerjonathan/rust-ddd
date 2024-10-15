@@ -213,9 +213,9 @@ mod tests {
 
         let fixture_created = create_fixture(
             now,
-            *venue.id(),
-            *team_home.id(),
-            *team_away.id(),
+            venue.id(),
+            team_home.id(),
+            team_away.id(),
             &fixture_repo,
             &venue_repo,
             &team_repo,
@@ -225,7 +225,7 @@ mod tests {
         .unwrap();
 
         let fixture_expected = Fixture::from_id(
-            *fixture_created.id(),
+            fixture_created.id(),
             now,
             FixtureStatus::Scheduled,
             venue,

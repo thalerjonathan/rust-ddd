@@ -34,6 +34,14 @@ CREATE TABLE IF NOT EXISTS rustddd.fixtures (
     CONSTRAINT fk_venue FOREIGN KEY (venue_id) REFERENCES rustddd.venues(venue_id)
 );
 
+CREATE TABLE IF NOT EXISTS rustddd.availabilities (
+    fixture_id UUID NOT NULL,
+    referee_id UUID NOT NULL,
+    CONSTRAINT fk_fixture FOREIGN KEY (fixture_id) REFERENCES rustddd.fixtures(fixture_id),
+    CONSTRAINT fk_referee FOREIGN KEY (referee_id) REFERENCES rustddd.referees(referee_id),
+    UNIQUE (fixture_id, referee_id)
+);
+
 INSERT INTO rustddd.referees (referee_id, name, club) VALUES
 ('2ef28cf5-6471-4051-ae11-0f419aef3234'::UUID, 'John Doe', 'Club A'),
 ('e1214a09-42e1-4194-9acc-d310172d001a'::UUID, 'Jane Doe', 'Club B'),

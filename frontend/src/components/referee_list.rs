@@ -29,7 +29,7 @@ pub fn RefereeList() -> impl IntoView {
             match res {
                 Ok(r) => {
                     // update the list of referees in the UI, which will result in re-rendering
-                    debug!("Referee created: {} {}", r.name, r.id);
+                    debug!("Referee created: {} {}", r.name, r.id.0);
                     referees_previous.push(r);
                     set_referees(referees_previous);
                 }
@@ -68,7 +68,7 @@ pub fn RefereeList() -> impl IntoView {
             <ul>
                 {move || referees.get().into_iter().map(|r| view! {
                     <li>
-                        <a href=format!("/referee/{}", r.id)>{r.name}</a>
+                        <a href=format!("/referee/{}", r.id.0)>{r.name}</a>
                     </li>
                 }).collect::<Vec<_>>()}
             </ul>

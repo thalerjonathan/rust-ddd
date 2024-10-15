@@ -67,7 +67,7 @@ pub fn TeamList() -> impl IntoView {
             <ul>
                 {move || teams.get().into_iter().map(|t| view! {
                     <li>
-                        <a href=format!("/team/{}", t.id)>{t.name}</a>
+                        <a href=format!("/team/{}", t.id.0)>{t.name}</a>
                     </li>
                 }).collect::<Vec<_>>()}
             </ul>

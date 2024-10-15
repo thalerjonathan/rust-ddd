@@ -70,8 +70,8 @@ impl Fixture {
         }
     }
 
-    pub fn id(&self) -> &FixtureId {
-        &self.id
+    pub fn id(&self) -> FixtureId {
+        self.id
     }
 
     pub fn date(&self) -> &DateTime<Utc> {

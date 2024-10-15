@@ -72,8 +72,8 @@ impl Venue {
         }
     }
 
-    pub fn id(&self) -> &VenueId {
-        &self.id
+    pub fn id(&self) -> VenueId {
+        self.id
     }
 
     pub fn name(&self) -> &str {

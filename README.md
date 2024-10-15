@@ -57,3 +57,7 @@ Continued implementing the *Fixture* part.
 ## [Day 10 + 11](reports/week2/day10/README.md)
 
 Implementing transactional boundaries.
+
+## [Day 12](reports/week3/day12/README.md)
+
+Implementing Availabilities.

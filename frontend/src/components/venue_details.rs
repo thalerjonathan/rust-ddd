@@ -12,7 +12,7 @@ pub fn VenueDetails() -> impl IntoView {
     create_effect(move |_| {
         let id = id().unwrap_or_default();
         spawn_local(async move {
-            let venue_details: shared::VenueDTO = fetch_venue(&id).await.unwrap();
+            let venue_details: shared::VenueDTO = fetch_venue(id.into()).await.unwrap();
             set_venue(Some(venue_details));
         });
     });

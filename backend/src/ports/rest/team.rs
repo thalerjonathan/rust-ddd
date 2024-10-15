@@ -107,7 +107,7 @@ mod team_tests {
         assert_eq!(teams[0].name, "Team A", "Team name should be 'Team A'");
         assert_eq!(teams[0].club, "Club A", "Team club should be 'Club A'");
 
-        let fetched_team = fetch_team(&team.id.to_string()).await;
+        let fetched_team = fetch_team(team.id.into()).await;
         assert!(fetched_team.is_ok(), "Team should be fetched");
 
         let fetched_team = fetched_team.unwrap();

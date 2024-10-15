@@ -12,7 +12,7 @@ pub fn TeamDetails() -> impl IntoView {
     create_effect(move |_| {
         let id = id().unwrap_or_default();
         spawn_local(async move {
-            let team_details: shared::TeamDTO = fetch_team(&id).await.unwrap();
+            let team_details: shared::TeamDTO = fetch_team(id.into()).await.unwrap();
             set_team(Some(team_details));
         });
     });

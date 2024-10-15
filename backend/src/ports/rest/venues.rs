@@ -149,7 +149,7 @@ mod venues_tests {
             "Venue email should be 'email@example.com'"
         );
 
-        let fetched_venue = fetch_venue(&venue.id.to_string()).await;
+        let fetched_venue = fetch_venue(venue.id.into()).await;
         assert!(fetched_venue.is_ok(), "Venue should be fetched");
 
         let fetched_venue = fetched_venue.unwrap();

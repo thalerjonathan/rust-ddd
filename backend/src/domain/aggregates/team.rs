@@ -41,8 +41,8 @@ impl Team {
         Self { id, name, club }
     }
 
-    pub fn id(&self) -> &TeamId {
-        &self.id
+    pub fn id(&self) -> TeamId {
+        self.id
     }
 
     pub fn name(&self) -> &str {

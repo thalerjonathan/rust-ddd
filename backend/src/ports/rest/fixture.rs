@@ -215,7 +215,7 @@ mod fixture_tests {
             "Fixture status should be scheduled"
         );
 
-        let fixture_dto = fetch_fixture(&fixtures[0].id.to_string()).await.unwrap();
+        let fixture_dto = fetch_fixture(fixtures[0].id.into()).await.unwrap();
         assert_eq!(
             fixture_dto.id, fixtures[0].id,
             "Fixture id should be the same"
@@ -239,9 +239,9 @@ mod fixture_tests {
         let (_fixture_creation, fixture_dto) = create_fixture().await;
 
         let new_date = Utc::now();
-        let fixture_dto = change_fixture_date(&fixture_dto.id.to_string(), new_date).await;
+        let fixture_dto = change_fixture_date(fixture_dto.id.into(), new_date).await;
         assert!(fixture_dto.is_ok(), "Fixture should be changed");
-        let fixture_dto = fetch_fixture(&fixture_dto.unwrap().id.to_string())
+        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into())
             .await
             .unwrap();
         assert_eq!(
@@ -269,9 +269,9 @@ mod fixture_tests {
         .unwrap();
 
         let fixture_dto =
-            change_fixture_venue(&fixture_dto.id.to_string(), &new_venue.id.to_string()).await;
+            change_fixture_venue(fixture_dto.id.into(), new_venue.id.into()).await;
         assert!(fixture_dto.is_ok(), "Fixture venue change should be ok");
-        let fixture_dto = fetch_fixture(&fixture_dto.unwrap().id.to_string())
+        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into())
             .await
             .unwrap();
         assert_eq!(
@@ -286,9 +286,9 @@ mod fixture_tests {
 
         let (_fixture_creation, fixture_dto) = create_fixture().await;
 
-        let fixture_dto = cancel_fixture(&fixture_dto.id.to_string()).await;
+        let fixture_dto = cancel_fixture(fixture_dto.id.into()).await;
         assert!(fixture_dto.is_ok(), "Fixture cancellation should be ok");
-        let fixture_dto = fetch_fixture(&fixture_dto.unwrap().id.to_string())
+        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into())
             .await
             .unwrap();
         assert_eq!(

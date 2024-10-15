@@ -3,9 +3,21 @@ use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RefereeIdDTO(pub Uuid);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FixtureIdDTO(pub Uuid);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VenueIdDTO(pub Uuid);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TeamIdDTO(pub Uuid);
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RefereeDTO {
-    pub id: Uuid,
+    pub id: RefereeIdDTO,
     pub name: String,
     pub club: String,
 }
@@ -18,7 +30,7 @@ pub struct RefereeCreationDTO {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct VenueDTO {
-    pub id: Uuid,
+    pub id: VenueIdDTO,
     pub name: String,
     pub street: String,
     pub zip: String,
@@ -39,7 +51,7 @@ pub struct VenueCreationDTO {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TeamDTO {
-    pub id: Uuid,
+    pub id: TeamIdDTO,
     pub name: String,
     pub club: String,
 }
@@ -58,7 +70,7 @@ pub enum FixtureStatusDTO {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FixtureDTO {
-    pub id: Uuid,
+    pub id: FixtureIdDTO,
     pub team_home: TeamDTO,
     pub team_away: TeamDTO,
     pub venue: VenueDTO,
@@ -68,10 +80,58 @@ pub struct FixtureDTO {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FixtureCreationDTO {
-    pub team_home_id: Uuid,
-    pub team_away_id: Uuid,
-    pub venue_id: Uuid,
+    pub team_home_id: TeamIdDTO,
+    pub team_away_id: TeamIdDTO,
+    pub venue_id: VenueIdDTO,
     pub date: DateTime<Utc>,
+}
+
+impl From<String> for RefereeIdDTO {
+    fn from(value: String) -> Self {
+        RefereeIdDTO(Uuid::parse_str(&value).unwrap())
+    }
+} 
+
+impl From<String> for FixtureIdDTO {
+    fn from(value: String) -> Self {
+        FixtureIdDTO(Uuid::parse_str(&value).unwrap())
+    }
+}
+
+impl From<String> for VenueIdDTO {
+    fn from(value: String) -> Self {
+        VenueIdDTO(Uuid::parse_str(&value).unwrap())
+    }
+}
+
+impl From<String> for TeamIdDTO {
+    fn from(value: String) -> Self {
+        TeamIdDTO(Uuid::parse_str(&value).unwrap())
+    }
+}
+
+impl From<Uuid> for RefereeIdDTO {
+    fn from(value: Uuid) -> Self {
+        RefereeIdDTO(value)
+    }
+}
+
+impl From<Uuid> for FixtureIdDTO {
+    fn from(value: Uuid) -> Self {
+        FixtureIdDTO(value)
+    }   
+}
+
+impl From<Uuid> for VenueIdDTO {
+    fn from(value: Uuid) -> Self {
+        VenueIdDTO(value)
+    }
+}
+
+impl From<Uuid> for TeamIdDTO {
+    fn from(value: Uuid) -> Self {
+        TeamIdDTO(value)
+    }
 }
 
 pub async fn fetch_referees() -> Vec<RefereeDTO> {
@@ -92,16 +152,16 @@ pub async fn create_referee(
     response.json().await
 }
 
-pub async fn fetch_referee(id: &str) -> RefereeDTO {
-    let url = Url::parse(&format!("http://localhost:3001/referee/{}", id));
+pub async fn fetch_referee(referee_id: RefereeIdDTO) -> RefereeDTO {
+    let url = Url::parse(&format!("http://localhost:3001/referee/{}", referee_id.0));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
 
-pub async fn change_referee_club(referee_id: &str, club: &str) -> Result<String, reqwest::Error> {
+pub async fn change_referee_club(referee_id: RefereeIdDTO, club: &str) -> Result<String, reqwest::Error> {
     let url = Url::parse(&format!(
         "http://localhost:3001/referee/{}/club",
-        referee_id
+        referee_id.0
     ))
     .unwrap();
     let response = reqwest::Client::new().post(url).json(&club).send().await?;
@@ -124,8 +184,8 @@ pub async fn create_venue(venue_creation: &VenueCreationDTO) -> Result<VenueDTO,
     response.json().await
 }
 
-pub async fn fetch_venue(id: &str) -> Result<VenueDTO, reqwest::Error> {
-    let url = Url::parse(&format!("http://localhost:3001/venue/{}", id));
+pub async fn fetch_venue(venue_id: VenueIdDTO) -> Result<VenueDTO, reqwest::Error> {
+    let url = Url::parse(&format!("http://localhost:3001/venue/{}", venue_id.0));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
     response.json().await
 }
@@ -136,8 +196,8 @@ pub async fn fetch_teams() -> Vec<TeamDTO> {
     response.unwrap().json().await.unwrap()
 }
 
-pub async fn fetch_team(id: &str) -> Result<TeamDTO, reqwest::Error> {
-    let url = Url::parse(&format!("http://localhost:3001/team/{}", id));
+pub async fn fetch_team(team_id: TeamIdDTO) -> Result<TeamDTO, reqwest::Error> {
+    let url = Url::parse(&format!("http://localhost:3001/team/{}", team_id.0));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
     response.json().await
 }
@@ -170,19 +230,19 @@ pub async fn create_fixture(
     response.json().await
 }
 
-pub async fn fetch_fixture(id: &str) -> Result<FixtureDTO, reqwest::Error> {
-    let url = Url::parse(&format!("http://localhost:3001/fixture/{}", id));
+pub async fn fetch_fixture(fixture_id: FixtureIdDTO) -> Result<FixtureDTO, reqwest::Error> {
+    let url = Url::parse(&format!("http://localhost:3001/fixture/{}", fixture_id.0));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
     response.json().await
 }
 
 pub async fn change_fixture_date(
-    fixture_id: &str,
+    fixture_id: FixtureIdDTO,
     date: DateTime<Utc>,
 ) -> Result<FixtureDTO, reqwest::Error> {
     let url = Url::parse(&format!(
         "http://localhost:3001/fixture/{}/date",
-        fixture_id
+        fixture_id.0
     ));
     let response = reqwest::Client::new()
         .post(url.unwrap())
@@ -193,12 +253,12 @@ pub async fn change_fixture_date(
 }
 
 pub async fn change_fixture_venue(
-    fixture_id: &str,
-    venue_id: &str,
+    fixture_id: FixtureIdDTO,
+    venue_id: VenueIdDTO,
 ) -> Result<FixtureDTO, reqwest::Error> {
     let url = Url::parse(&format!(
         "http://localhost:3001/fixture/{}/venue",
-        fixture_id
+        fixture_id.0
     ));
     let response = reqwest::Client::new()
         .post(url.unwrap())
@@ -208,11 +268,38 @@ pub async fn change_fixture_venue(
     response.json().await
 }
 
-pub async fn cancel_fixture(fixture_id: &str) -> Result<FixtureDTO, reqwest::Error> {
+pub async fn cancel_fixture(fixture_id: FixtureIdDTO) -> Result<FixtureDTO, reqwest::Error> {
     let url = Url::parse(&format!(
         "http://localhost:3001/fixture/{}/cancel",
-        fixture_id
+        fixture_id.0
     ));
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
+    response.json().await
+}
+
+pub async fn fetch_availabilities_for_referee(referee_id: RefereeIdDTO) -> Result<Vec<FixtureIdDTO>, reqwest::Error> {
+    let url = Url::parse(&format!(
+        "http://localhost:3001/availabilities/referee/{}",
+        referee_id.0
+    ));
+    let response = reqwest::Client::new().get(url.unwrap()).send().await?;
+    response.json().await
+}
+
+pub async fn declare_availability(fixture_id: FixtureIdDTO, referee_id: RefereeIdDTO) -> Result<(), reqwest::Error> {
+    let url = Url::parse(&format!(
+        "http://localhost:3001/availabilities/fixture/{}/referee/{}",
+        fixture_id.0, referee_id.0
+    ));
+    let response = reqwest::Client::new().post(url.unwrap()).send().await?;
+    response.json().await
+}
+
+pub async fn withdraw_availability(fixture_id: FixtureIdDTO, referee_id: RefereeIdDTO) -> Result<(), reqwest::Error> {
+    let url = Url::parse(&format!(
+        "http://localhost:3001/availabilities/fixture/{}/referee/{}",
+        fixture_id.0, referee_id.0
+    ));
+    let response = reqwest::Client::new().delete(url.unwrap()).send().await?;
     response.json().await
 }

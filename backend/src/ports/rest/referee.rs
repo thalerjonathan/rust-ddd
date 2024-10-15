@@ -160,13 +160,13 @@ mod referee_tests {
         let referee_dto = referee_dto.unwrap();
         let updated_club = "Club B".to_string();
         let updated_referee_dto =
-            change_referee_club(&referee_dto.id.to_string(), &updated_club).await;
+            change_referee_club(referee_dto.id.into(), &updated_club).await;
         assert!(
             updated_referee_dto.is_ok(),
             "Referee club should be updated"
         );
 
-        let referee_dto = shared::fetch_referee(&referee_dto.id.to_string()).await;
+        let referee_dto = shared::fetch_referee(referee_dto.id.into()).await;
         assert_eq!(
             referee_dto.club, updated_club,
             "Referee club should be updated"

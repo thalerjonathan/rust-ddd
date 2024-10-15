@@ -19,7 +19,7 @@ pub fn RefereeDetails() -> impl IntoView {
                 let referee_id = id().unwrap_or_default();
                 let referee_old_club = referee.get().unwrap();
                 spawn_local(async move {
-                    let res = change_referee_club(&referee_id, &club).await;
+                    let res = change_referee_club(referee_id.into(), &club).await;
                     match res {
                         Ok(club) => {
                             // update referee which will result in re-rendering
@@ -49,7 +49,7 @@ pub fn RefereeDetails() -> impl IntoView {
     create_effect(move |_| {
         let id = id().unwrap_or_default();
         spawn_local(async move {
-            let referee_details = fetch_referee(&id).await;
+            let referee_details = fetch_referee(id.into()).await;
             set_referee_club(Some(String::new()));
             set_referee(Some(referee_details));
         });
