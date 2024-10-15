@@ -1,32 +1,75 @@
 use std::sync::Arc;
 
 use axum::extract::{Path, State};
-use shared::{FixtureIdDTO, RefereeIdDTO};
+use axum::Json;
+use log::debug;
+use shared::FixtureIdDTO;
+use uuid::Uuid;
+
+use crate::adapters::db::availability_repo_pg::AvailabilityRepositoryPg;
+use crate::adapters::db::fixture_repo_pg::FixtureRepositoryPg;
+use crate::adapters::db::referee_repo_pg::RefereeRepositoryPg;
+use crate::application::availability_services::{declare_availability, get_availabilities_for_referee, withdraw_availability};
 
 use super::shared::AppError;
 use super::state::AppState;
 
 pub async fn declare_availability_handler(
     State(state): State<Arc<AppState>>,
-    Path(fixture_id): Path<FixtureIdDTO>,
-    Path(referee_id): Path<RefereeIdDTO>,
-) -> Result<(), AppError> {
-    Err(AppError::from_error("declare_availability_handler not implemented"))
+    Path(fixture_id): Path<Uuid>,
+    Path(referee_id): Path<Uuid>,
+) -> Result<Json<()>, AppError> {
+    debug!("Declaring availability for fixture: {:?} and referee: {:?}", fixture_id, referee_id);
+
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let fixture_repo = FixtureRepositoryPg::new();
+    let referee_repo = RefereeRepositoryPg::new();
+    let availability_repo = AvailabilityRepositoryPg::new();
+
+    declare_availability(fixture_id.into(), referee_id.into(), &fixture_repo, &referee_repo, &availability_repo, &mut tx).await.map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit().await.map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    Ok(Json(()))
 }
 
 pub async fn withdraw_availability_handler(
     State(state): State<Arc<AppState>>,
-    Path(fixture_id): Path<FixtureIdDTO>,
-    Path(referee_id): Path<RefereeIdDTO>,
-) -> Result<(), AppError> {
-    Err(AppError::from_error("withdraw_availability_handler not implemented"))
+    Path(fixture_id): Path<Uuid>,
+    Path(referee_id): Path<Uuid>,
+) -> Result<Json<()>, AppError> {
+    debug!("Withdrawing availability for fixture: {:?} and referee: {:?}", fixture_id, referee_id);
+
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let fixture_repo = FixtureRepositoryPg::new();
+    let referee_repo = RefereeRepositoryPg::new();
+    let availability_repo = AvailabilityRepositoryPg::new();
+    
+    withdraw_availability(fixture_id.into(), referee_id.into(), &fixture_repo, &referee_repo, &availability_repo, &mut tx).await.map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit().await.map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    Ok(Json(()))
 }
 
 pub async fn fetch_availabilities_for_referee_handler(
     State(state): State<Arc<AppState>>,
-    Path(referee_id): Path<RefereeIdDTO>,
-) -> Result<(), AppError> {
-    Err(AppError::from_error("fetch_availabilities_for_referee_handler not implemented"))
+    Path(referee_id): Path<Uuid>,
+) -> Result<Json<Vec<FixtureIdDTO>>, AppError> {
+    debug!("Fetching availabilities for referee: {:?}", referee_id);
+
+    let mut tx = state.connection_pool.begin().await.unwrap();
+
+    let referee_repo = RefereeRepositoryPg::new();
+    let availability_repo = AvailabilityRepositoryPg::new();
+
+    let availabilities = get_availabilities_for_referee(referee_id.into(), &referee_repo,  &availability_repo, &mut tx).await.map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit().await.map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    Ok(Json(availabilities.into_iter().map(|fixture_id| fixture_id.into()).collect()))
 }
 
 #[cfg(test)]

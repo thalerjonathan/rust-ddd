@@ -75,10 +75,10 @@ mod tests {
 
         async fn find_by_id(
             &self,
-            id: &RefereeId,
+            id: RefereeId,
             _tx_ctx: &mut Self::TxCtx,
         ) -> Result<Option<Referee>, Self::Error> {
-            Ok(self.data.borrow().get(id).cloned())
+            Ok(self.data.borrow().get(&id).cloned())
         }
 
         async fn save(

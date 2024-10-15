@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     adapters::db::venue_repo_pg::VenueRepositoryPg,
     application,
-    domain::{repositories::venue_repo::VenueRepository},
+    domain::repositories::venue_repo::VenueRepository,
 };
 
 use super::{shared::AppError, state::AppState};

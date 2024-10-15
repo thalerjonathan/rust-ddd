@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     adapters::db::referee_repo_pg::RefereeRepositoryPg,
     application,
-    domain::{repositories::referee_repo::RefereeRepository},
+    domain::repositories::referee_repo::RefereeRepository,
 };
 
 use super::shared::AppError;

@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     adapters::db::team_repo_pg::TeamRepositoryPg,
     application::team_services::create_team,
-    domain::{repositories::team_repo::TeamRepository},
+    domain::repositories::team_repo::TeamRepository,
 };
 
 use super::{shared::AppError, state::AppState};
