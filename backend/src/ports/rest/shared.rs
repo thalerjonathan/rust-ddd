@@ -4,8 +4,9 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use chrono::Utc;
 use log::error;
-use shared::{FixtureDTO, FixtureIdDTO, FixtureStatusDTO, RefereeDTO, RefereeIdDTO, TeamDTO, TeamIdDTO, VenueDTO, VenueIdDTO};
+use shared::{FixtureCreationDTO, FixtureDTO, FixtureIdDTO, FixtureStatusDTO, RefereeDTO, RefereeIdDTO, TeamCreationDTO, TeamDTO, TeamIdDTO, VenueCreationDTO, VenueDTO, VenueIdDTO};
 
 use crate::domain::aggregates::{
     fixture::{Fixture, FixtureId, FixtureStatus},
@@ -147,4 +148,44 @@ impl From<FixtureId> for FixtureIdDTO {
     fn from(id: FixtureId) -> Self {
         FixtureIdDTO(id.0)
     }
+}
+
+#[allow(dead_code)]
+pub async fn create_test_fixture() -> (FixtureCreationDTO, FixtureDTO) {
+    let team_home = shared::create_team(&TeamCreationDTO {
+        name: "Team A".to_string(),
+        club: "Club A".to_string(),
+    })
+    .await
+    .unwrap();
+
+    let team_away = shared::create_team(&TeamCreationDTO {
+        name: "Team B".to_string(),
+        club: "Club B".to_string(),
+    })
+    .await
+    .unwrap();
+
+    let venue = shared::create_venue(&VenueCreationDTO {
+        name: "Venue A".to_string(),
+        street: "Street A".to_string(),
+        zip: "12345".to_string(),
+        city: "City A".to_string(),
+        telephone: Some("1234567890".to_string()),
+        email: Some("email@example.com".to_string()),
+    })
+    .await
+    .unwrap();
+
+    let fixture_creation = FixtureCreationDTO {
+        date: Utc::now(),
+        venue_id: venue.id,
+        team_home_id: team_home.id,
+        team_away_id: team_away.id,
+    };
+
+    let fixture_dto = shared::create_fixture(&fixture_creation).await;
+    assert!(fixture_dto.is_ok(), "Fixture should be created");
+
+    (fixture_creation, fixture_dto.unwrap())
 }

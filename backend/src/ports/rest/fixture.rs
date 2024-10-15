@@ -167,11 +167,13 @@ pub async fn cancel_fixture_handler(
 mod fixture_tests {
     use chrono::Utc;
     use shared::{
-        cancel_fixture, change_fixture_date, change_fixture_venue, create_team, create_venue,
-        fetch_fixture, fetch_fixtures, FixtureCreationDTO, FixtureDTO, FixtureStatusDTO,
-        TeamCreationDTO, VenueCreationDTO,
+        cancel_fixture, change_fixture_date, change_fixture_venue, create_venue,
+        fetch_fixture, fetch_fixtures, FixtureStatusDTO,
+        VenueCreationDTO,
     };
     use sqlx::PgPool;
+
+    use crate::ports::rest::shared::create_test_fixture;
 
     #[tokio::test]
     async fn given_empty_db_when_fetch_fixture_then_empty_list_is_returned() {
@@ -185,7 +187,7 @@ mod fixture_tests {
     async fn given_empty_db_when_creating_fixture_then_fixture_is_returned() {
         clear_tables().await;
 
-        let (fixture_creation, _fixture_dto) = create_fixture().await;
+        let (fixture_creation, _fixture_dto) = create_test_fixture().await;
 
         let fixtures = fetch_fixtures().await;
         assert!(!fixtures.is_empty(), "Fixtures should not be empty");
@@ -236,7 +238,7 @@ mod fixture_tests {
     async fn given_fixture_when_changing_date_then_fixture_with_new_date_is_returned() {
         clear_tables().await;
 
-        let (_fixture_creation, fixture_dto) = create_fixture().await;
+        let (_fixture_creation, fixture_dto) = create_test_fixture().await;
 
         let new_date = Utc::now();
         let fixture_dto = change_fixture_date(fixture_dto.id.into(), new_date).await;
@@ -255,7 +257,7 @@ mod fixture_tests {
     async fn given_fixture_when_changing_venue_then_fixture_with_new_venue_is_returned() {
         clear_tables().await;
 
-        let (_fixture_creation, fixture_dto) = create_fixture().await;
+        let (_fixture_creation, fixture_dto) = create_test_fixture().await;
 
         let new_venue = create_venue(&VenueCreationDTO {
             name: "Venue B".to_string(),
@@ -284,7 +286,7 @@ mod fixture_tests {
     async fn given_fixture_when_cancel_then_fixture_with_cancelled_is_returned() {
         clear_tables().await;
 
-        let (_fixture_creation, fixture_dto) = create_fixture().await;
+        let (_fixture_creation, fixture_dto) = create_test_fixture().await;
 
         let fixture_dto = cancel_fixture(fixture_dto.id.into()).await;
         assert!(fixture_dto.is_ok(), "Fixture cancellation should be ok");
@@ -296,45 +298,6 @@ mod fixture_tests {
             FixtureStatusDTO::Cancelled,
             "Fixture status should have cancelled"
         );
-    }
-
-    async fn create_fixture() -> (FixtureCreationDTO, FixtureDTO) {
-        let team_home = create_team(&TeamCreationDTO {
-            name: "Team A".to_string(),
-            club: "Club A".to_string(),
-        })
-        .await
-        .unwrap();
-
-        let team_away = create_team(&TeamCreationDTO {
-            name: "Team B".to_string(),
-            club: "Club B".to_string(),
-        })
-        .await
-        .unwrap();
-
-        let venue = create_venue(&VenueCreationDTO {
-            name: "Venue A".to_string(),
-            street: "Street A".to_string(),
-            zip: "12345".to_string(),
-            city: "City A".to_string(),
-            telephone: Some("1234567890".to_string()),
-            email: Some("email@example.com".to_string()),
-        })
-        .await
-        .unwrap();
-
-        let fixture_creation = FixtureCreationDTO {
-            date: Utc::now(),
-            venue_id: venue.id,
-            team_home_id: team_home.id,
-            team_away_id: team_away.id,
-        };
-
-        let fixture_dto = shared::create_fixture(&fixture_creation).await;
-        assert!(fixture_dto.is_ok(), "Fixture should be created");
-
-        (fixture_creation, fixture_dto.unwrap())
     }
 
     async fn clear_tables() {
