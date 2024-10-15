@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::extract::{Path, State};
 use axum::Json;
 use log::debug;
-use shared::FixtureIdDTO;
+use shared::{FixtureIdDTO, RefereeIdDTO};
 use uuid::Uuid;
 
 use crate::adapters::db::availability_repo_pg::AvailabilityRepositoryPg;
@@ -56,7 +56,7 @@ pub async fn withdraw_availability_handler(
 
 pub async fn fetch_availabilities_for_referee_handler(
     State(state): State<Arc<AppState>>,
-    Path(referee_id): Path<Uuid>,
+    Path(referee_id): Path<RefereeIdDTO>,
 ) -> Result<Json<Vec<FixtureIdDTO>>, AppError> {
     debug!("Fetching availabilities for referee: {:?}", referee_id);
 
@@ -94,22 +94,20 @@ mod availabilities_tests {
 
         let (_fixture_creation, fixture_dto) = create_test_fixture().await;
 
-        let availability_declaration_result = declare_availability(fixture_dto.id.into(), referee_dto.id.into()).await;
-        assert!(availability_declaration_result.is_ok(), "Availability should be created");
+        let _availability_declaration_result = declare_availability(fixture_dto.id, referee_dto.id).await.unwrap();
 
         let availabilities = fetch_availabilities_for_referee(referee_dto.id).await.unwrap();
         assert_eq!(availabilities.len(), 1, "Availabilities should have 1 element");
         assert_eq!(availabilities[0], fixture_dto.id.into(), "Fixture ID should match");
 
-        let availability_withdrawal_result = withdraw_availability(fixture_dto.id.into(), referee_dto.id.into()).await;
-        assert!(availability_withdrawal_result.is_ok(), "Availability should be withdrawn");
+        let _availability_withdrawal_result = withdraw_availability(fixture_dto.id, referee_dto.id).await.unwrap();
 
         let availabilities = fetch_availabilities_for_referee(referee_dto.id).await.unwrap();
         assert!(availabilities.is_empty(), "Availabilities should be empty");
     }
 
     async fn clear_tables() {
-        let db_url = std::env::var("DB_URL").expect("DB_URL not set");
+        let db_url = "postgres://postgres:postgres@localhost:5432/rustddd?application_name=rustddd&options=-c search_path%3Drustddd"; //std::env::var("DB_URL").expect("DB_URL not set");
         let connection_pool = PgPool::connect(&db_url).await.unwrap();
 
         sqlx::query("DELETE FROM rustddd.referees")

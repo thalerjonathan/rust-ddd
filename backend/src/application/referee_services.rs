@@ -1,5 +1,4 @@
 use log::debug;
-use uuid::Uuid;
 
 use crate::domain::{
     aggregates::referee::{Referee, RefereeId},
@@ -24,12 +23,11 @@ pub async fn create_referee<TxCtx>(
 }
 
 pub async fn update_referee_club<TxCtx>(
-    referee_id: &Uuid,
+    referee_id: RefereeId,
     club: &str,
     repo: &impl RefereeRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<(), String> {
-    let referee_id = RefereeId::from(*referee_id);
     let referee = repo.find_by_id(referee_id, tx_ctx).await?;
     let mut referee = referee.ok_or("Referee not found")?;
     referee.change_club(club);
@@ -122,7 +120,7 @@ mod tests {
         assert_eq!(referee.club(), "Club A");
         assert_eq!(referee.name(), "John Doe");
 
-        update_referee_club(&referee.id().0, "Club B", &repo, &mut ())
+        update_referee_club(referee.id().into(), "Club B", &repo, &mut ())
             .await
             .unwrap();
 

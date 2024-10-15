@@ -2,7 +2,6 @@ use crate::adapters::db::fixture_repo_pg::FixtureRepositoryPg;
 use crate::adapters::db::team_repo_pg::TeamRepositoryPg;
 use crate::adapters::db::venue_repo_pg::VenueRepositoryPg;
 use crate::application;
-use crate::domain::aggregates::fixture::FixtureId;
 use crate::domain::aggregates::venue::VenueId;
 use crate::domain::repositories::fixture_repo::FixtureRepository;
 use crate::ports::rest::state::AppState;
@@ -10,7 +9,7 @@ use axum::extract::{Path, State};
 use axum::Json;
 use chrono::{DateTime, Utc};
 use log::debug;
-use shared::{FixtureCreationDTO, FixtureDTO};
+use shared::{FixtureCreationDTO, FixtureDTO, FixtureIdDTO};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -52,15 +51,15 @@ pub async fn create_fixture_handler(
 
 pub async fn get_fixture_by_id_handler(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(fixture_id): Path<FixtureIdDTO>,
 ) -> Result<Json<Option<FixtureDTO>>, AppError> {
-    debug!("Getting fixture by id: {}", id);
+    debug!("Getting fixture by id: {}", fixture_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
     let repo = FixtureRepositoryPg::new();
     let fixture = repo
-        .find_by_id(id.into(), &mut tx)
+        .find_by_id(fixture_id.into(), &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
@@ -88,17 +87,17 @@ pub async fn get_all_fixtures_handler(
 
 pub async fn update_fixture_date_handler(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(fixture_id): Path<FixtureIdDTO>,
     Json(date): Json<DateTime<Utc>>,
 ) -> Result<Json<FixtureDTO>, AppError> {
-    debug!("Updating fixture date: {}", id);
+    debug!("Updating fixture date: {}", fixture_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
     let fixture_repo = FixtureRepositoryPg::new();
 
     let fixture = application::fixture_services::update_fixture_date(
-        FixtureId::from(id),
+        fixture_id.into(),
         date,
         &fixture_repo,
         &mut tx,
@@ -114,10 +113,10 @@ pub async fn update_fixture_date_handler(
 
 pub async fn update_fixture_venue_handler(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(fixture_id): Path<FixtureIdDTO>,
     Json(venue_id): Json<Uuid>,
 ) -> Result<Json<FixtureDTO>, AppError> {
-    debug!("Updating fixture venue: {}", id);
+    debug!("Updating fixture venue: {}", fixture_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
@@ -125,7 +124,7 @@ pub async fn update_fixture_venue_handler(
     let venue_repo = VenueRepositoryPg::new();
 
     let fixture = application::fixture_services::update_fixture_venue(
-        FixtureId::from(id),
+        fixture_id.into(),
         VenueId::from(venue_id),
         &fixture_repo,
         &venue_repo,
@@ -143,16 +142,16 @@ pub async fn update_fixture_venue_handler(
 
 pub async fn cancel_fixture_handler(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(fixture_id): Path<FixtureIdDTO>,
 ) -> Result<Json<FixtureDTO>, AppError> {
-    debug!("Cancelling fixture: {}", id);
+    debug!("Cancelling fixture: {}", fixture_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
     let fixture_repo = FixtureRepositoryPg::new();
 
     let fixture =
-        application::fixture_services::cancel_fixture(FixtureId::from(id), &fixture_repo, &mut tx)
+        application::fixture_services::cancel_fixture(fixture_id.into(), &fixture_repo, &mut tx)
             .await
             .map_err(|e| AppError::from_error(&e.to_string()))?;
 

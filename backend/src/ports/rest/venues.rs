@@ -5,8 +5,7 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{VenueCreationDTO, VenueDTO};
-use uuid::Uuid;
+use shared::{VenueCreationDTO, VenueDTO, VenueIdDTO};
 
 use crate::{
     adapters::db::venue_repo_pg::VenueRepositoryPg,
@@ -52,16 +51,16 @@ pub async fn create_venue_handler(
 
 pub async fn get_venue_by_id_handler(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(venue_id): Path<VenueIdDTO>,
 ) -> Result<Json<Option<VenueDTO>>, AppError> {
-    debug!("Getting venue by id: {}", id);
+    debug!("Getting venue by id: {}", venue_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
     let repo = VenueRepositoryPg::new();
     // NOTE: we are not using an application service here, because the logic is so simple
     let venue = repo
-        .find_by_id(id.into(), &mut tx)
+        .find_by_id(venue_id.into(), &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 

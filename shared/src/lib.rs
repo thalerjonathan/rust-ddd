@@ -288,7 +288,7 @@ pub async fn fetch_availabilities_for_referee(referee_id: RefereeIdDTO) -> Resul
 
 pub async fn declare_availability(fixture_id: FixtureIdDTO, referee_id: RefereeIdDTO) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/availabilities/fixture/{}/referee/{}",
+        "http://localhost:3001/availabilities/declare/fixture/{}/referee/{}",
         fixture_id.0, referee_id.0
     ));
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
@@ -297,9 +297,9 @@ pub async fn declare_availability(fixture_id: FixtureIdDTO, referee_id: RefereeI
 
 pub async fn withdraw_availability(fixture_id: FixtureIdDTO, referee_id: RefereeIdDTO) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/availabilities/fixture/{}/referee/{}",
+        "http://localhost:3001/availabilities/withdraw/fixture/{}/referee/{}",
         fixture_id.0, referee_id.0
     ));
-    let response = reqwest::Client::new().delete(url.unwrap()).send().await?;
+    let response = reqwest::Client::new().post(url.unwrap()).send().await?;
     response.json().await
 }

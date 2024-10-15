@@ -5,8 +5,7 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{TeamCreationDTO, TeamDTO};
-use uuid::Uuid;
+use shared::{TeamCreationDTO, TeamDTO, TeamIdDTO};
 
 use crate::{
     adapters::db::team_repo_pg::TeamRepositoryPg,
@@ -39,16 +38,16 @@ pub async fn create_team_handler(
 
 pub async fn get_team_by_id_handler(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(team_id): Path<TeamIdDTO>,
 ) -> Result<Json<Option<TeamDTO>>, AppError> {
-    debug!("Fetching team by id: {:?}", id);
+    debug!("Fetching team by id: {:?}", team_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
     let repo = TeamRepositoryPg::new();
 
     let team = repo
-        .find_by_id(id.into(), &mut tx)
+        .find_by_id(team_id.into(), &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e))?;
 

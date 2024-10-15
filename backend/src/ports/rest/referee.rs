@@ -5,8 +5,7 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{RefereeCreationDTO, RefereeDTO};
-use uuid::Uuid;
+use shared::{RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
 
 use crate::{
     adapters::db::referee_repo_pg::RefereeRepositoryPg,
@@ -49,9 +48,9 @@ pub async fn create_referee_handler(
 
 pub async fn get_referee_by_id_handler(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(referee_id): Path<RefereeIdDTO>,
 ) -> Result<Json<Option<RefereeDTO>>, AppError> {
-    debug!("Getting referee by id: {}", id);
+    debug!("Getting referee by id: {}", referee_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
@@ -59,7 +58,7 @@ pub async fn get_referee_by_id_handler(
 
     // NOTE: we are not using an application service here, because the logic is so simple
     let referee = repo
-        .find_by_id(id.into(), &mut tx)
+        .find_by_id(referee_id.into(), &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
@@ -88,18 +87,23 @@ pub async fn get_all_referees_handler(
 
 pub async fn update_referee_club_handler(
     State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
+    Path(referee_id): Path<RefereeIdDTO>,
     Json(club): Json<String>,
 ) -> Result<Json<String>, AppError> {
-    debug!("Updating referee club: {}", id);
+    debug!("Updating referee club: {}", referee_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
     let repo = RefereeRepositoryPg::new();
 
-    let result = application::referee_services::update_referee_club(&id, &club, &repo, &mut tx)
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
+    let result = application::referee_services::update_referee_club(
+        referee_id.into(),
+        &club,
+        &repo,
+        &mut tx,
+    )
+    .await
+    .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     tx.commit()
         .await

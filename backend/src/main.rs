@@ -1,6 +1,5 @@
 use crate::config::AppConfig;
 use axum::http::Method;
-use axum::routing::delete;
 use axum::{
     routing::{get, post},
     Router,
@@ -55,8 +54,8 @@ async fn main() {
         .route("/fixture/:id/date", post(update_fixture_date_handler))
         .route("/fixture/:id/venue", post(update_fixture_venue_handler))
         .route("/fixture/:id/cancel", post(cancel_fixture_handler))
-        .route("/availabilities/fixture/:fixture_id/referee/:referee_id", post(declare_availability_handler))
-        .route("/availabilities/fixture/:fixture_id/referee/:referee_id", delete(withdraw_availability_handler))
+        .route("/availabilities/declare/fixture/:fixture_id/referee/:referee_id", post(declare_availability_handler))
+        .route("/availabilities/withdraw/fixture/:fixture_id/referee/:referee_id", post(withdraw_availability_handler))
         .route("/availabilities/referee/:referee_id", get(fetch_availabilities_for_referee_handler))
         .layer(cors)
         .with_state(state_arc);
