@@ -21,4 +21,12 @@ I started by extending the DB schema - Cursor immediately suggested the correct 
 
 Adding shared types and request/response functions was straightforward, with Cursor providing perfect support.
 
+When implementing the E2E tests, Cursor generated invalid code, by generating 2 `Path` parameters instead of one tuple of 2 `Path` parameters. I didn't realise this in the beginning, and didn't know axum well enough to realise it straight away. Only after I used ThunderClient to debug the problem, I realised the mistake, because I received a proper error message. 
+
 ## Conclusion
+
+Overall today was pretty straightforward, and I was able to fully implement the backend part. 
+
+The case with 2 `Path` parameters cost me around 1 hour to figure out, because I was debugging into different directions. This is a case where Cursor actually made the coding experience worse, because it led me to believe that the code it generated was correct. It clearly showed again that you need to have a (very) good understanding of the framework and the concepts at play, otherwise you end up spending a lot of time figuring out why the generated code is not working.
+
+Due to the time spent on finding the bug, I didn't manage to implement the full UI part today, and am going to leave that for tomorrow / the next days.

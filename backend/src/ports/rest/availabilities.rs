@@ -4,7 +4,6 @@ use axum::extract::{Path, State};
 use axum::Json;
 use log::debug;
 use shared::{FixtureIdDTO, RefereeIdDTO};
-use uuid::Uuid;
 
 use crate::adapters::db::availability_repo_pg::AvailabilityRepositoryPg;
 use crate::adapters::db::fixture_repo_pg::FixtureRepositoryPg;
