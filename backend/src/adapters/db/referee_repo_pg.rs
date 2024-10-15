@@ -32,13 +32,13 @@ impl RefereeRepository for RefereeRepositoryPg {
 
     async fn find_by_id(
         &self,
-        id: &RefereeId,
+        referee_id: RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Referee>, Self::Error> {
         let referee: Option<RefereeDb> = sqlx::query_as!(
             RefereeDb,
             "SELECT referee_id as id, name, club FROM rustddd.referees WHERE referee_id = $1",
-            id.0
+            referee_id.0
         )
         .fetch_optional(&mut **tx_ctx)
         .await

@@ -15,20 +15,20 @@ pub trait FixtureRepository {
 
     async fn find_by_id(
         &self,
-        id: &FixtureId,
+        fixture_id: FixtureId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Fixture>, Self::Error>;
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Fixture>, Self::Error>;
     async fn find_by_day_and_venue(
         &self,
         date: &DateTime<Utc>,
-        venue_id: &VenueId,
+        venue_id: VenueId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Vec<Fixture>, Self::Error>;
     async fn find_by_day_and_team(
         &self,
         date: &DateTime<Utc>,
-        team_id: &TeamId,
+        team_id: TeamId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Vec<Fixture>, Self::Error>;
     async fn save(&self, fixture: &Fixture, tx_ctx: &mut Self::TxCtx) -> Result<(), Self::Error>;

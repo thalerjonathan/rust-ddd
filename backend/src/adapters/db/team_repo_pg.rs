@@ -32,13 +32,13 @@ impl TeamRepository for TeamRepositoryPg {
 
     async fn find_by_id(
         &self,
-        id: &TeamId,
+        team_id: TeamId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Team>, Self::Error> {
         let team: Option<TeamDb> = sqlx::query_as!(
             TeamDb,
             "SELECT team_id as id, name, club FROM rustddd.teams WHERE team_id = $1",
-            id.0
+            team_id.0
         )
         .fetch_optional(&mut **tx_ctx)
         .await

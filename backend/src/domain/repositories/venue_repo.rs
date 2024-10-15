@@ -9,7 +9,7 @@ pub trait VenueRepository {
 
     async fn find_by_id(
         &self,
-        id: &VenueId,
+        venue_id: VenueId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Venue>, Self::Error>;
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Venue>, Self::Error>;

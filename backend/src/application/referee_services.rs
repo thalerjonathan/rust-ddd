@@ -30,8 +30,7 @@ pub async fn update_referee_club<TxCtx>(
     tx_ctx: &mut TxCtx,
 ) -> Result<(), String> {
     let referee_id = RefereeId::from(*referee_id);
-
-    let referee = repo.find_by_id(&referee_id, tx_ctx).await?;
+    let referee = repo.find_by_id(referee_id, tx_ctx).await?;
     let mut referee = referee.ok_or("Referee not found")?;
     referee.change_club(club);
 

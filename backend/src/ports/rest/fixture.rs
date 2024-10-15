@@ -60,7 +60,7 @@ pub async fn get_fixture_by_id_handler(
 
     let repo = FixtureRepositoryPg::new();
     let fixture = repo
-        .find_by_id(&FixtureId::from(id), &mut tx)
+        .find_by_id(id.into(), &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 

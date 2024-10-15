@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     adapters::db::referee_repo_pg::RefereeRepositoryPg,
     application,
-    domain::{aggregates::referee::RefereeId, repositories::referee_repo::RefereeRepository},
+    domain::{repositories::referee_repo::RefereeRepository},
 };
 
 use super::shared::AppError;
@@ -59,7 +59,7 @@ pub async fn get_referee_by_id_handler(
 
     // NOTE: we are not using an application service here, because the logic is so simple
     let referee = repo
-        .find_by_id(&RefereeId::from(id), &mut tx)
+        .find_by_id(id.into(), &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 

@@ -44,13 +44,13 @@ impl VenueRepository for VenueRepositoryPg {
 
     async fn find_by_id(
         &self,
-        id: &VenueId,
+        venue_id: VenueId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Venue>, Self::Error> {
         let venue: Option<VenueDb> = sqlx::query_as!(
                 VenueDb,
             "SELECT venue_id as id, name, street, zip, city, telephone, email FROM rustddd.venues WHERE venue_id = $1",
-            id.0
+            venue_id.0
         )
         .fetch_optional(&mut **tx_ctx)
         .await

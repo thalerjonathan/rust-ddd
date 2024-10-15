@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     adapters::db::venue_repo_pg::VenueRepositoryPg,
     application,
-    domain::{aggregates::venue::VenueId, repositories::venue_repo::VenueRepository},
+    domain::{repositories::venue_repo::VenueRepository},
 };
 
 use super::{shared::AppError, state::AppState};
@@ -61,7 +61,7 @@ pub async fn get_venue_by_id_handler(
     let repo = VenueRepositoryPg::new();
     // NOTE: we are not using an application service here, because the logic is so simple
     let venue = repo
-        .find_by_id(&VenueId::from(id), &mut tx)
+        .find_by_id(id.into(), &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 

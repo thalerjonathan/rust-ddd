@@ -6,7 +6,7 @@ pub trait RefereeRepository {
 
     async fn find_by_id(
         &self,
-        id: &RefereeId,
+        referee_id: RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Referee>, Self::Error>;
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Referee>, Self::Error>;

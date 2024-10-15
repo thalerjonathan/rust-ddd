@@ -99,7 +99,7 @@ impl FixtureRepository for FixtureRepositoryPg {
     type Error = String;
     type TxCtx = Transaction<'static, Postgres>;
     
-    async fn find_by_id(&self, id: &FixtureId, tx_ctx: &mut Self::TxCtx) -> Result<Option<Fixture>, Self::Error> {
+    async fn find_by_id(&self, fixture_id: FixtureId, tx_ctx: &mut Self::TxCtx) -> Result<Option<Fixture>, Self::Error> {
         let fixture: Option<FixtureDb> = sqlx::query_as!(
             FixtureDb,
             "SELECT f.fixture_id as id, f.date, f.status,
@@ -111,7 +111,7 @@ impl FixtureRepository for FixtureRepositoryPg {
             JOIN rustddd.teams th ON th.team_id = f.team_home_id
             JOIN rustddd.teams ta ON ta.team_id = f.team_away_id
             WHERE f.fixture_id = $1",
-            id.0,
+            fixture_id.0,
         )
         .fetch_optional(&mut **tx_ctx)
         .await
@@ -164,7 +164,7 @@ impl FixtureRepository for FixtureRepositoryPg {
     async fn find_by_day_and_venue(
         &self,
         date: &DateTime<Utc>,
-        venue_id: &crate::domain::aggregates::venue::VenueId,
+        venue_id: crate::domain::aggregates::venue::VenueId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Vec<Fixture>, Self::Error> {
         let day_start = Utc
@@ -202,7 +202,7 @@ impl FixtureRepository for FixtureRepositoryPg {
     async fn find_by_day_and_team(
         &self,
         date: &DateTime<Utc>,
-        team_id: &crate::domain::aggregates::team::TeamId,
+        team_id: TeamId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Vec<Fixture>, Self::Error> {
         let day_start = Utc

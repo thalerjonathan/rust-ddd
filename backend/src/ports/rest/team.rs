@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     adapters::db::team_repo_pg::TeamRepositoryPg,
     application::team_services::create_team,
-    domain::{aggregates::team::TeamId, repositories::team_repo::TeamRepository},
+    domain::{repositories::team_repo::TeamRepository},
 };
 
 use super::{shared::AppError, state::AppState};
@@ -47,9 +47,8 @@ pub async fn get_team_by_id_handler(
 
     let repo = TeamRepositoryPg::new();
 
-    let team_id = TeamId::from(id);
     let team = repo
-        .find_by_id(&team_id, &mut tx)
+        .find_by_id(id.into(), &mut tx)
         .await
         .map_err(|e| AppError::from_error(&e))?;
 

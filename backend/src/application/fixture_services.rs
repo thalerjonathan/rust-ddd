@@ -22,15 +22,15 @@ pub async fn create_fixture<TxCtx>(
     tx_ctx: &mut TxCtx,
 ) -> Result<Fixture, String> {
     let venue = venue_repo
-        .find_by_id(&venue_id, tx_ctx)
+        .find_by_id(venue_id, tx_ctx)
         .await?
         .expect("Venue not found");
     let team_home = team_repo
-        .find_by_id(&team_home_id, tx_ctx)
+        .find_by_id(team_home_id, tx_ctx)
         .await?
         .expect("Team home not found");
     let team_away = team_repo
-        .find_by_id(&team_away_id, tx_ctx)
+        .find_by_id(team_away_id, tx_ctx)
         .await?
         .expect("Team away not found");
 
@@ -40,7 +40,7 @@ pub async fn create_fixture<TxCtx>(
 
     // we simplify the constraint to no other fixture at the same venue on the same day
     let fixtures = fixture_repo
-        .find_by_day_and_venue(&date, &venue_id, tx_ctx)
+        .find_by_day_and_venue(&date, venue_id, tx_ctx)
         .await?;
     if !fixtures.is_empty() {
         return Err("There is already a fixture at the same venue on the same day".to_string());
@@ -48,13 +48,13 @@ pub async fn create_fixture<TxCtx>(
 
     // we simplify the constraint to no other fixture at the same day for the same team
     let fixtures = fixture_repo
-        .find_by_day_and_team(&date, &team_home_id, tx_ctx)
+        .find_by_day_and_team(&date, team_home_id, tx_ctx)
         .await?;
     if !fixtures.is_empty() {
         return Err("There is already a fixture at the same day for the home team".to_string());
     }
     let fixtures = fixture_repo
-        .find_by_day_and_team(&date, &team_away_id, tx_ctx)
+        .find_by_day_and_team(&date, team_away_id, tx_ctx)
         .await?;
     if !fixtures.is_empty() {
         return Err("There is already a fixture at the same day for the away team".to_string());
@@ -76,7 +76,7 @@ pub async fn update_fixture_date<TxCtx>(
     tx_ctx: &mut TxCtx,
 ) -> Result<Fixture, String> {
     let mut fixture = fixture_repo
-        .find_by_id(&fixture_id, tx_ctx)
+        .find_by_id(fixture_id, tx_ctx)
         .await?
         .expect("Fixture not found");
 
@@ -98,12 +98,12 @@ pub async fn update_fixture_venue<TxCtx>(
     tx_ctx: &mut TxCtx,
 ) -> Result<Fixture, String> {
     let mut fixture = fixture_repo
-        .find_by_id(&fixture_id, tx_ctx)
+        .find_by_id(fixture_id, tx_ctx)
         .await?
         .expect("Fixture not found");
 
     let venue = venue_repo
-        .find_by_id(&venue_id, tx_ctx)
+        .find_by_id(venue_id, tx_ctx)
         .await?
         .expect("Venue not found");
 
@@ -123,7 +123,7 @@ pub async fn cancel_fixture<TxCtx>(
     tx_ctx: &mut TxCtx,
 ) -> Result<Fixture, String> {
     let mut fixture = fixture_repo
-        .find_by_id(&fixture_id, tx_ctx)
+        .find_by_id(fixture_id, tx_ctx)
         .await?
         .expect("Fixture not found");
 
