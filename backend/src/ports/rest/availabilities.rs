@@ -16,8 +16,7 @@ use super::state::AppState;
 
 pub async fn declare_availability_handler(
     State(state): State<Arc<AppState>>,
-    Path(fixture_id): Path<Uuid>,
-    Path(referee_id): Path<Uuid>,
+    Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
     debug!("Declaring availability for fixture: {:?} and referee: {:?}", fixture_id, referee_id);
 
@@ -36,8 +35,7 @@ pub async fn declare_availability_handler(
 
 pub async fn withdraw_availability_handler(
     State(state): State<Arc<AppState>>,
-    Path(fixture_id): Path<Uuid>,
-    Path(referee_id): Path<Uuid>,
+    Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
     debug!("Withdrawing availability for fixture: {:?} and referee: {:?}", fixture_id, referee_id);
 
