@@ -11,6 +11,7 @@ Architectural wise, I start simple with a monolith architecture and then transit
 Note that in the implementation of this project I have used LLMs in my coding for the first time, where I focused on the use of Cursor and ChatGPT.
 
 # Progress Reports
+
 I have written daily markdown entries to reflect on and report the progress.
 
 ## [Day 1](reports/week1/day1/README.md)
@@ -61,3 +62,14 @@ Implementing transactional boundaries.
 ## [Day 12](reports/week3/day12/README.md)
 
 Implementing Availabilities.
+
+## [Day 13](reports/week3/day13/README.md)
+
+Implementing Assignments.
+
+
+# Shortcomings
+
+- The UI is not very nice, and just a proof of concept.
+- There is no authentication and authorization.
+- There is no proper error handling of the REST results on UI side. 

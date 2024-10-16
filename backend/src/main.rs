@@ -5,7 +5,14 @@ use axum::{
     Router,
 };
 
-use ports::rest::availabilities::{declare_availability_handler, fetch_availabilities_for_referee_handler, withdraw_availability_handler};
+use ports::rest::assignments::{
+    commit_assignments_handler, fetch_assignments_handler, stage_assignment_handler,
+    validate_assignments_handler,
+};
+use ports::rest::availabilities::{
+    declare_availability_handler, fetch_availabilities_for_referee_handler,
+    withdraw_availability_handler,
+};
 use ports::rest::fixture::{
     cancel_fixture_handler, create_fixture_handler, get_all_fixtures_handler,
     get_fixture_by_id_handler, update_fixture_date_handler, update_fixture_venue_handler,
@@ -54,9 +61,22 @@ async fn main() {
         .route("/fixture/:id/date", post(update_fixture_date_handler))
         .route("/fixture/:id/venue", post(update_fixture_venue_handler))
         .route("/fixture/:id/cancel", post(cancel_fixture_handler))
-        .route("/availabilities/declare/fixture/:fixture_id/referee/:referee_id", post(declare_availability_handler))
-        .route("/availabilities/withdraw/fixture/:fixture_id/referee/:referee_id", post(withdraw_availability_handler))
-        .route("/availabilities/referee/:referee_id", get(fetch_availabilities_for_referee_handler))
+        .route(
+            "/availabilities/declare/fixture/:fixture_id/referee/:referee_id",
+            post(declare_availability_handler),
+        )
+        .route(
+            "/availabilities/withdraw/fixture/:fixture_id/referee/:referee_id",
+            post(withdraw_availability_handler),
+        )
+        .route(
+            "/availabilities/referee/:referee_id",
+            get(fetch_availabilities_for_referee_handler),
+        )
+        .route("/assignments", get(fetch_assignments_handler))
+        .route("/assignments", post(stage_assignment_handler))
+        .route("/assignments/validate", post(validate_assignments_handler))
+        .route("/assignments/commit", post(commit_assignments_handler))
         .layer(cors)
         .with_state(state_arc);
 

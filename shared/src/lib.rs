@@ -15,20 +15,20 @@ pub struct VenueIdDTO(pub Uuid);
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TeamIdDTO(pub Uuid);
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct RefereeDTO {
     pub id: RefereeIdDTO,
     pub name: String,
     pub club: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct RefereeCreationDTO {
     pub name: String,
     pub club: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct VenueDTO {
     pub id: VenueIdDTO,
     pub name: String,
@@ -39,7 +39,7 @@ pub struct VenueDTO {
     pub email: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct VenueCreationDTO {
     pub name: String,
     pub street: String,
@@ -49,14 +49,14 @@ pub struct VenueCreationDTO {
     pub email: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct TeamDTO {
     pub id: TeamIdDTO,
     pub name: String,
     pub club: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct TeamCreationDTO {
     pub name: String,
     pub club: String,
@@ -68,7 +68,7 @@ pub enum FixtureStatusDTO {
     Cancelled,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct FixtureDTO {
     pub id: FixtureIdDTO,
     pub team_home: TeamDTO,
@@ -80,12 +80,39 @@ pub struct FixtureDTO {
     pub second_referee: Option<RefereeDTO>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct FixtureCreationDTO {
     pub team_home_id: TeamIdDTO,
     pub team_away_id: TeamIdDTO,
     pub venue_id: VenueIdDTO,
     pub date: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub enum AssignmentStatusDTO {
+    Committed,
+    Staged,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub enum AssignmentRefereeRoleDTO {
+    First,
+    Second,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct AssignmentDTO {
+    pub status: AssignmentStatusDTO,
+    pub referee_role: AssignmentRefereeRoleDTO,
+    pub fixture_id: FixtureIdDTO,
+    pub referee_id: RefereeIdDTO,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct AssignmentCreationDTO {
+    pub fixture_id: FixtureIdDTO,
+    pub referee_id: RefereeIdDTO,
+    pub referee_role: AssignmentRefereeRoleDTO,
 }
 
 impl From<String> for RefereeIdDTO {
@@ -313,6 +340,36 @@ pub async fn withdraw_availability(
         "http://localhost:3001/availabilities/withdraw/fixture/{}/referee/{}",
         fixture_id.0, referee_id.0
     ));
+    let response = reqwest::Client::new().post(url.unwrap()).send().await?;
+    response.json().await
+}
+
+pub async fn fetch_assignments() -> Vec<AssignmentDTO> {
+    let url = Url::parse("http://localhost:3001/assignments");
+    let response = reqwest::Client::new().get(url.unwrap()).send().await;
+    response.unwrap().json().await.unwrap()
+}
+
+pub async fn stage_assignment(
+    assignment_creation: &AssignmentCreationDTO,
+) -> Result<AssignmentDTO, reqwest::Error> {
+    let url = Url::parse("http://localhost:3001/assignments").unwrap();
+    let response = reqwest::Client::new()
+        .post(url)
+        .json(&assignment_creation)
+        .send()
+        .await?;
+    response.json().await
+}
+
+pub async fn validate_assignments() -> Result<String, reqwest::Error> {
+    let url = Url::parse("http://localhost:3001/assignments/validate");
+    let response = reqwest::Client::new().post(url.unwrap()).send().await?;
+    response.json().await
+}
+
+pub async fn commit_assignments() -> Result<String, reqwest::Error> {
+    let url = Url::parse("http://localhost:3001/assignments/commit");
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
     response.json().await
 }
