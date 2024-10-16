@@ -3,7 +3,8 @@ use leptos::*;
 use log::{debug, error};
 
 use shared::{
-    create_fixture, fetch_fixtures, fetch_teams, fetch_venues, FixtureCreationDTO, FixtureDTO, FixtureStatusDTO, TeamDTO, TeamIdDTO, VenueDTO, VenueIdDTO
+    create_fixture, fetch_fixtures, fetch_teams, fetch_venues, FixtureCreationDTO, FixtureDTO,
+    FixtureStatusDTO, TeamDTO, TeamIdDTO, VenueDTO, VenueIdDTO,
 };
 use uuid::Uuid;
 
@@ -14,9 +15,12 @@ pub fn FixtureList() -> impl IntoView {
     let (teams, set_teams) = create_signal(Vec::<TeamDTO>::new());
 
     let (new_fixture_date, set_new_fixture_date) = create_signal(Utc::now());
-    let (new_fixture_venue_id, set_new_fixture_venue_id) = create_signal(VenueIdDTO(Uuid::new_v4()));
-    let (new_fixture_home_team_id, set_new_fixture_home_team_id) = create_signal(TeamIdDTO(Uuid::new_v4()));
-    let (new_fixture_away_team_id, set_new_fixture_away_team_id) = create_signal(TeamIdDTO(Uuid::new_v4()));
+    let (new_fixture_venue_id, set_new_fixture_venue_id) =
+        create_signal(VenueIdDTO(Uuid::new_v4()));
+    let (new_fixture_home_team_id, set_new_fixture_home_team_id) =
+        create_signal(TeamIdDTO(Uuid::new_v4()));
+    let (new_fixture_away_team_id, set_new_fixture_away_team_id) =
+        create_signal(TeamIdDTO(Uuid::new_v4()));
 
     create_effect(move |_| {
         spawn_local(async move {
@@ -125,6 +129,8 @@ pub fn FixtureList() -> impl IntoView {
                         <p>{format!("{:?}", f.status)}</p>
                         <p>"Home: " {f.team_home.name}</p>
                         <p>"Away: " {f.team_away.name}</p>
+                        <p>"First Referee: " {f.first_referee.map(|r| r.name).unwrap_or("Unassigned".to_string())}</p>
+                        <p>"Second Referee: " {f.second_referee.map(|r| r.name).unwrap_or("Unassigned".to_string())}</p>
                         <button disabled=f.status != FixtureStatusDTO::Scheduled>"Change Venue"</button>
                         <button disabled=f.status != FixtureStatusDTO::Scheduled>"Change Date"</button>
                         <button disabled=f.status != FixtureStatusDTO::Scheduled>"Cancel Fixture"</button>

@@ -5,7 +5,7 @@ use uuid::Uuid;
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub struct TeamId(pub Uuid);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Team {
     id: TeamId,
     name: String,

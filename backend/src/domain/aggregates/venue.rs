@@ -5,7 +5,7 @@ use uuid::Uuid;
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub struct VenueId(pub Uuid);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Venue {
     id: VenueId,
     name: String,

@@ -76,6 +76,8 @@ pub struct FixtureDTO {
     pub venue: VenueDTO,
     pub date: DateTime<Utc>,
     pub status: FixtureStatusDTO,
+    pub first_referee: Option<RefereeDTO>,
+    pub second_referee: Option<RefereeDTO>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -90,7 +92,7 @@ impl From<String> for RefereeIdDTO {
     fn from(value: String) -> Self {
         RefereeIdDTO(Uuid::parse_str(&value).unwrap())
     }
-} 
+}
 
 impl From<String> for FixtureIdDTO {
     fn from(value: String) -> Self {
@@ -119,7 +121,7 @@ impl From<Uuid> for RefereeIdDTO {
 impl From<Uuid> for FixtureIdDTO {
     fn from(value: Uuid) -> Self {
         FixtureIdDTO(value)
-    }   
+    }
 }
 
 impl From<Uuid> for VenueIdDTO {
@@ -158,7 +160,10 @@ pub async fn fetch_referee(referee_id: RefereeIdDTO) -> RefereeDTO {
     response.unwrap().json().await.unwrap()
 }
 
-pub async fn change_referee_club(referee_id: RefereeIdDTO, club: &str) -> Result<String, reqwest::Error> {
+pub async fn change_referee_club(
+    referee_id: RefereeIdDTO,
+    club: &str,
+) -> Result<String, reqwest::Error> {
     let url = Url::parse(&format!(
         "http://localhost:3001/referee/{}/club",
         referee_id.0
@@ -277,7 +282,9 @@ pub async fn cancel_fixture(fixture_id: FixtureIdDTO) -> Result<FixtureDTO, reqw
     response.json().await
 }
 
-pub async fn fetch_availabilities_for_referee(referee_id: RefereeIdDTO) -> Result<Vec<FixtureIdDTO>, reqwest::Error> {
+pub async fn fetch_availabilities_for_referee(
+    referee_id: RefereeIdDTO,
+) -> Result<Vec<FixtureIdDTO>, reqwest::Error> {
     let url = Url::parse(&format!(
         "http://localhost:3001/availabilities/referee/{}",
         referee_id.0
@@ -286,7 +293,10 @@ pub async fn fetch_availabilities_for_referee(referee_id: RefereeIdDTO) -> Resul
     response.json().await
 }
 
-pub async fn declare_availability(fixture_id: FixtureIdDTO, referee_id: RefereeIdDTO) -> Result<(), reqwest::Error> {
+pub async fn declare_availability(
+    fixture_id: FixtureIdDTO,
+    referee_id: RefereeIdDTO,
+) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
         "http://localhost:3001/availabilities/declare/fixture/{}/referee/{}",
         fixture_id.0, referee_id.0
@@ -295,7 +305,10 @@ pub async fn declare_availability(fixture_id: FixtureIdDTO, referee_id: RefereeI
     response.json().await
 }
 
-pub async fn withdraw_availability(fixture_id: FixtureIdDTO, referee_id: RefereeIdDTO) -> Result<(), reqwest::Error> {
+pub async fn withdraw_availability(
+    fixture_id: FixtureIdDTO,
+    referee_id: RefereeIdDTO,
+) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
         "http://localhost:3001/availabilities/withdraw/fixture/{}/referee/{}",
         fixture_id.0, referee_id.0

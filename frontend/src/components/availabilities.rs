@@ -4,10 +4,10 @@ use shared::{fetch_fixtures, fetch_referees, FixtureDTO, FixtureIdDTO, RefereeDT
 
 #[component]
 pub fn Availabilities() -> impl IntoView {
-    let (availabilities, set_availabilities) = create_signal(Vec::<FixtureIdDTO>::new());
+    let (_availabilities, _set_availabilities) = create_signal(Vec::<FixtureIdDTO>::new());
     let (referees, set_referees) = create_signal(Vec::<RefereeDTO>::new());
     let (fixtures, set_fixtures) = create_signal(Vec::<FixtureDTO>::new());
-    
+
     create_effect(move |_| {
         spawn_local(async move {
             let referees = fetch_referees().await;
@@ -36,7 +36,7 @@ pub fn Availabilities() -> impl IntoView {
             </select>
 
             // TODO: add declare/withdraw availability buttons
-            
+
             {move || fixtures.get().into_iter().map(|f| view! {
                 <div>
                     <b>{f.date.to_string()}</b>

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use super::{team::Team, venue::Venue};
+use super::{referee::Referee, team::Team, venue::Venue};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub struct FixtureId(pub Uuid);
@@ -30,7 +30,7 @@ pub enum FixtureStatus {
     Cancelled,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Fixture {
     id: FixtureId,
     date: DateTime<Utc>,
@@ -38,10 +38,19 @@ pub struct Fixture {
     team_home: Team,
     team_away: Team,
     status: FixtureStatus,
+    first_referee: Option<Referee>,
+    second_referee: Option<Referee>,
 }
 
 impl Fixture {
-    pub fn new(date: DateTime<Utc>, venue: Venue, team_home: Team, team_away: Team) -> Self {
+    pub fn new(
+        date: DateTime<Utc>,
+        venue: Venue,
+        team_home: Team,
+        team_away: Team,
+        first_referee: Option<Referee>,
+        second_referee: Option<Referee>,
+    ) -> Self {
         Self {
             id: FixtureId(Uuid::new_v4()),
             date,
@@ -49,6 +58,8 @@ impl Fixture {
             team_home,
             team_away,
             status: FixtureStatus::Scheduled,
+            first_referee,
+            second_referee,
         }
     }
 
@@ -59,6 +70,8 @@ impl Fixture {
         venue: Venue,
         team_home: Team,
         team_away: Team,
+        first_referee: Option<Referee>,
+        second_referee: Option<Referee>,
     ) -> Self {
         Self {
             id,
@@ -67,6 +80,8 @@ impl Fixture {
             team_home,
             team_away,
             status,
+            first_referee,
+            second_referee,
         }
     }
 
@@ -92,6 +107,14 @@ impl Fixture {
 
     pub fn status(&self) -> &FixtureStatus {
         &self.status
+    }
+
+    pub fn first_referee(&self) -> Option<&Referee> {
+        self.first_referee.as_ref()
+    }
+
+    pub fn second_referee(&self) -> Option<&Referee> {
+        self.second_referee.as_ref()
     }
 
     pub fn is_scheduled(&self) -> bool {

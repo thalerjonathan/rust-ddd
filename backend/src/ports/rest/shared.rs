@@ -6,7 +6,10 @@ use axum::{
 };
 use chrono::Utc;
 use log::error;
-use shared::{FixtureCreationDTO, FixtureDTO, FixtureIdDTO, FixtureStatusDTO, RefereeDTO, RefereeIdDTO, TeamCreationDTO, TeamDTO, TeamIdDTO, VenueCreationDTO, VenueDTO, VenueIdDTO};
+use shared::{
+    FixtureCreationDTO, FixtureDTO, FixtureIdDTO, FixtureStatusDTO, RefereeDTO, RefereeIdDTO,
+    TeamCreationDTO, TeamDTO, TeamIdDTO, VenueCreationDTO, VenueDTO, VenueIdDTO,
+};
 
 use crate::domain::aggregates::{
     fixture::{Fixture, FixtureId, FixtureStatus},
@@ -65,6 +68,8 @@ impl From<Fixture> for FixtureDTO {
             team_home: fixture.team_home().clone().into(),
             team_away: fixture.team_away().clone().into(),
             status: fixture.status().clone().into(),
+            first_referee: fixture.first_referee().map(|r| r.clone().into()),
+            second_referee: fixture.second_referee().map(|r| r.clone().into()),
         }
     }
 }
@@ -136,7 +141,7 @@ impl From<RefereeId> for RefereeIdDTO {
     fn from(id: RefereeId) -> Self {
         RefereeIdDTO(id.0)
     }
-}   
+}
 
 impl From<TeamId> for TeamIdDTO {
     fn from(id: TeamId) -> Self {

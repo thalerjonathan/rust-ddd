@@ -63,6 +63,8 @@ pub async fn get_fixture_by_id_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
+    debug!("Fixture: {:?}", fixture);
+
     Ok(Json(fixture.map(|f| f.into())))
 }
 
@@ -166,9 +168,8 @@ pub async fn cancel_fixture_handler(
 mod fixture_tests {
     use chrono::Utc;
     use shared::{
-        cancel_fixture, change_fixture_date, change_fixture_venue, create_venue,
-        fetch_fixture, fetch_fixtures, FixtureStatusDTO,
-        VenueCreationDTO,
+        cancel_fixture, change_fixture_date, change_fixture_venue, create_venue, fetch_fixture,
+        fetch_fixtures, FixtureStatusDTO, VenueCreationDTO,
     };
     use sqlx::PgPool;
 
@@ -242,9 +243,7 @@ mod fixture_tests {
         let new_date = Utc::now();
         let fixture_dto = change_fixture_date(fixture_dto.id.into(), new_date).await;
         assert!(fixture_dto.is_ok(), "Fixture should be changed");
-        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into())
-            .await
-            .unwrap();
+        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into()).await.unwrap();
         assert_eq!(
             fixture_dto.date.timestamp_millis(),
             new_date.timestamp_millis(),
@@ -269,12 +268,9 @@ mod fixture_tests {
         .await
         .unwrap();
 
-        let fixture_dto =
-            change_fixture_venue(fixture_dto.id.into(), new_venue.id.into()).await;
+        let fixture_dto = change_fixture_venue(fixture_dto.id.into(), new_venue.id.into()).await;
         assert!(fixture_dto.is_ok(), "Fixture venue change should be ok");
-        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into())
-            .await
-            .unwrap();
+        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into()).await.unwrap();
         assert_eq!(
             fixture_dto.venue.id, new_venue.id,
             "Fixture venue should have changed"
@@ -289,9 +285,7 @@ mod fixture_tests {
 
         let fixture_dto = cancel_fixture(fixture_dto.id.into()).await;
         assert!(fixture_dto.is_ok(), "Fixture cancellation should be ok");
-        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into())
-            .await
-            .unwrap();
+        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into()).await.unwrap();
         assert_eq!(
             fixture_dto.status,
             FixtureStatusDTO::Cancelled,
@@ -300,7 +294,7 @@ mod fixture_tests {
     }
 
     async fn clear_tables() {
-        let db_url = std::env::var("DB_URL").expect("DB_URL not set");
+        let db_url = "postgres://postgres:postgres@localhost:5432/rustddd?application_name=rustddd&options=-c search_path%3Drustddd"; //std::env::var("DB_URL").expect("DB_URL not set");
         let pool = PgPool::connect(&db_url).await.unwrap();
         sqlx::query!("DELETE FROM rustddd.fixtures")
             .execute(&pool)

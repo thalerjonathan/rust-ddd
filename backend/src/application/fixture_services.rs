@@ -60,7 +60,7 @@ pub async fn create_fixture<TxCtx>(
         return Err("There is already a fixture at the same day for the away team".to_string());
     }
 
-    let fixture = Fixture::new(date, venue, team_home, team_away);
+    let fixture = Fixture::new(date, venue, team_home, team_away, None, None);
 
     fixture_repo
         .save(&fixture, tx_ctx)
@@ -148,7 +148,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        application::fixture_services::cancel_fixture,
+        application::{fixture_services::cancel_fixture, utils::assert_fixtures_values_eq},
         domain::{
             aggregates::{
                 fixture::{Fixture, FixtureId, FixtureStatus},
@@ -231,9 +231,11 @@ mod tests {
             venue,
             team_home,
             team_away,
+            None,
+            None,
         );
 
-        assert_eq!(fixture_created, fixture_expected);
+        assert_fixtures_values_eq(&fixture_created, &fixture_expected);
     }
 
     #[tokio::test]
@@ -264,6 +266,8 @@ mod tests {
             venue,
             team_home,
             team_away,
+            None,
+            None,
         );
 
         fixture_repo
@@ -308,6 +312,8 @@ mod tests {
             venue,
             team_home,
             team_away,
+            None,
+            None,
         );
 
         fixture_repo
