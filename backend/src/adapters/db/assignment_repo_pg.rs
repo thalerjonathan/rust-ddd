@@ -95,7 +95,20 @@ impl AssignmentRepository for AssignmentRepositoryPg {
         .await
         .map_err(|e| e.to_string())?;   
 
-        Ok(assignments.into_iter().map(|a| Assignment::new(a.fixture_id.into(), a.referee_id.into(), a.referee_role.into(), a.status.into())).collect())
+        Ok(assignments.into_iter().map(|a| a.into()).collect())
+    }
+
+    async fn find_all_staged(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Assignment>, Self::Error> {
+        let assignments = sqlx::query_as!(
+            AssignmentDb,
+            "SELECT status as \"status: AssignmentStatusDb\", fixture_id, referee_id, referee_role as \"referee_role: AssignmentRefereeRoleDb\" 
+            FROM rustddd.assignments WHERE status = 'staged'"
+        )
+        .fetch_all(&mut **tx_ctx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        Ok(assignments.into_iter().map(|a| a.into()).collect())
     }
 
     async fn find_by_fixture_and_referee(&self, fixture_id: FixtureId, referee_id: RefereeId, tx_ctx: &mut Self::TxCtx) -> Result<Option<Assignment>, Self::Error> {
@@ -133,7 +146,7 @@ impl AssignmentRepository for AssignmentRepositoryPg {
             "INSERT INTO rustddd.assignments (status, fixture_id, referee_id, referee_role) 
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (fixture_id, referee_id) 
-            DO UPDATE SET referee_role = $4",
+            DO UPDATE SET referee_role = $4, status = $1",
             status as AssignmentStatusDb,
             assignment.fixture_id().0,
             assignment.referee_id().0,

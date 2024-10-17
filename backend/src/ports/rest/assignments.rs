@@ -4,7 +4,7 @@ use axum::{extract::{Path, State}, Json};
 use log::debug;
 use shared::{AssignmentStagingDTO, AssignmentDTO, FixtureIdDTO, RefereeIdDTO};
 
-use crate::{adapters::db::assignment_repo_pg::AssignmentRepositoryPg, application::assignment_services::{commit_assignments, delete_staged_assignment, stage_assignment, validate_assignments}, domain::repositories::assignment_repo::AssignmentRepository};
+use crate::{adapters::db::{assignment_repo_pg::AssignmentRepositoryPg, fixture_repo_pg::FixtureRepositoryPg, referee_repo_pg::RefereeRepositoryPg}, application::assignment_services::{commit_assignments, delete_staged_assignment, stage_assignment, validate_assignments}, domain::repositories::assignment_repo::AssignmentRepository};
 
 use super::{shared::AppError, state::AppState};
 
@@ -30,7 +30,9 @@ pub async fn stage_assignment_handler(
 
     let mut tx = state.connection_pool.begin().await.unwrap();
     let assignment_repo = AssignmentRepositoryPg::new();
-    let result = stage_assignment(assignment_staging, &assignment_repo, &mut tx).await.unwrap();
+    let fixture_repo = FixtureRepositoryPg::new();
+    let referee_repo = RefereeRepositoryPg::new();
+    let result = stage_assignment(&assignment_staging, &assignment_repo, &fixture_repo, &referee_repo, &mut tx).await.unwrap();
     tx.commit().await.unwrap();
 
     Ok(Json(result))
@@ -71,7 +73,9 @@ pub async fn commit_assignments_handler(
 
     let mut tx = state.connection_pool.begin().await.unwrap();
     let assignment_repo = AssignmentRepositoryPg::new();
-    let result = commit_assignments(&assignment_repo, &mut tx).await.unwrap();
+    let fixture_repo = FixtureRepositoryPg::new();
+    let referee_repo = RefereeRepositoryPg::new();      
+    let result = commit_assignments(&assignment_repo, &fixture_repo, &referee_repo, &mut tx).await.unwrap();
     tx.commit().await.unwrap();
 
     Ok(result)
@@ -80,9 +84,7 @@ pub async fn commit_assignments_handler(
 #[cfg(test)]
 mod assignments_tests {
     use shared::{
-        commit_assignments, fetch_assignments, fetch_fixture, stage_assignment,
-        validate_assignments, AssignmentStagingDTO, AssignmentRefereeRoleDTO, AssignmentStatusDTO,
-        RefereeCreationDTO,
+        commit_assignments, delete_staged_assignment, fetch_assignments, fetch_fixture, stage_assignment, validate_assignments, AssignmentRefereeRoleDTO, AssignmentStagingDTO, AssignmentStatusDTO, RefereeCreationDTO
     };
     use sqlx::PgPool;
 
@@ -173,19 +175,34 @@ mod assignments_tests {
             "Assignment should be the same"
         );
 
-        // TODO: delete delete_staged_assignment
+        // delete the first assignment
+        delete_staged_assignment(&first_ref_assignment_dto).await.unwrap();
 
+        let assignments = fetch_assignments().await;
+        assert_eq!(assignments.len(), 1, "Assignments should have 1 element");
+        assert_eq!(
+            assignments[0].status,
+            AssignmentStatusDTO::Staged,
+            "Assignment status should be staged"
+        );
+        assert_eq!(
+            assignments[0], second_ref_assignment_dto,
+            "Assignment should be the same"
+        );
+
+        let first_ref_assignment_dto = stage_assignment(&first_assignment_creation).await.unwrap();
+        
         // no conflicts, so validate_assignments() should return an empty string
         let result = validate_assignments().await.unwrap();
         assert_eq!(
-            result, "",
+            result, "Assignments validated",
             "Validate assignments should return an empty string"
         );
 
         // committing the assignments should work
         let result = commit_assignments().await.unwrap();
         assert_eq!(
-            result, "",
+            result, "Assignments committed",
             "Commit assignments should return an empty string"
         );
 
@@ -198,14 +215,11 @@ mod assignments_tests {
             "Assignment status should be committed"
         );
         assert_eq!(
-            assignments[0].fixture_id, fixture_dto.id,
-            "Assignment fixture_id should be the same"
+            assignments[1].status,
+            AssignmentStatusDTO::Committed,
+            "Assignment status should be committed"
         );
-        assert_eq!(
-            assignments[0].referee_id, first_referee_dto.id,
-            "Assignment referee_id should be the same"
-        );
-
+        
         // when refetching the fixture, the referees should be set
         let fixture_dto = fetch_fixture(fixture_dto.id).await.unwrap();
         assert_eq!(

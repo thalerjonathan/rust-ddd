@@ -63,13 +63,12 @@ Implementing transactional boundaries.
 
 Implementing Availabilities.
 
-## [Day 13](reports/week3/day13/README.md)
+## [Day 13 + 14](reports/week3/day13/README.md)
 
 Implementing Assignments.
 
-
 # Shortcomings
 
-- The UI is not very nice, and just a proof of concept.
+- The UI is just a proof of concept and not very nice (no CSS whatsoever).
 - There is no authentication and authorization.
 - There is no proper error handling of the REST results on UI side. 

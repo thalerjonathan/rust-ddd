@@ -141,4 +141,22 @@ impl Fixture {
     pub fn change_date(&mut self, date: DateTime<Utc>) {
         self.date = date;
     }
+
+    pub fn assign_first_referee(&mut self, referee: Referee) {
+        if self.first_referee.is_some() {
+            // NOTE: this is not how we would like to handle this in a real application
+            panic!("First referee already assigned");
+        }
+
+        self.first_referee = Some(referee);
+    }
+
+    pub fn assign_second_referee(&mut self, referee: Referee) {
+        if self.second_referee.is_some() {
+            // NOTE: this is not how we would like to handle this in a real application
+            panic!("Second referee already assigned");
+        }
+
+        self.second_referee = Some(referee);
+    }
 }

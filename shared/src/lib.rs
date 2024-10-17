@@ -88,13 +88,13 @@ pub struct FixtureCreationDTO {
     pub date: DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AssignmentStatusDTO {
     Committed,
     Staged,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AssignmentRefereeRoleDTO {
     First,
     Second,
@@ -363,7 +363,7 @@ pub async fn stage_assignment(
 }
 
 pub async fn delete_staged_assignment(
-    assignment: AssignmentDTO,
+    assignment: &AssignmentDTO,
 ) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
         "http://localhost:3001/assignments/{}/{}",
@@ -378,11 +378,11 @@ pub async fn delete_staged_assignment(
 pub async fn validate_assignments() -> Result<String, reqwest::Error> {
     let url = Url::parse("http://localhost:3001/assignments/validate");
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
-    response.json().await
+    response.text().await
 }
 
 pub async fn commit_assignments() -> Result<String, reqwest::Error> {
     let url = Url::parse("http://localhost:3001/assignments/commit");
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
-    response.json().await
+    response.text().await
 }

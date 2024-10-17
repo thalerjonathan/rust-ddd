@@ -160,6 +160,15 @@ impl From<AssignmentRefereeRole> for AssignmentRefereeRoleDTO {
     }
 }
 
+impl From<AssignmentRefereeRoleDTO> for AssignmentRefereeRole {
+    fn from(role: AssignmentRefereeRoleDTO) -> Self {
+        match role {
+            AssignmentRefereeRoleDTO::First => AssignmentRefereeRole::First,
+            AssignmentRefereeRoleDTO::Second => AssignmentRefereeRole::Second,
+        }
+    }
+}
+
 impl From<AssignmentStatus> for AssignmentStatusDTO {
     fn from(status: AssignmentStatus) -> Self {
         match status {
@@ -168,6 +177,8 @@ impl From<AssignmentStatus> for AssignmentStatusDTO {
         }
     }
 }
+
+
 
 impl From<Assignment> for AssignmentDTO {
     fn from(assignment: Assignment) -> Self {

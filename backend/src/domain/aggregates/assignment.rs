@@ -21,6 +21,15 @@ pub struct Assignment {
 }
 
 impl Assignment {
+    pub fn staged(fixture_id: FixtureId, referee_id: RefereeId, referee_role: AssignmentRefereeRole) -> Self {
+        Self {
+            status: AssignmentStatus::Staged,
+            fixture_id,
+            referee_id,
+            referee_role,
+        }
+    }
+
     pub fn new(fixture_id: FixtureId, referee_id: RefereeId, referee_role: AssignmentRefereeRole, status: AssignmentStatus) -> Self {
         Self {
             status,

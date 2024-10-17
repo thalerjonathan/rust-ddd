@@ -13,5 +13,10 @@ Then I can start implementing the *Assignments* feature, driven by the E2E test 
 
 The first step, adding a first and second *Referee* to the *Fixture* entity, turned out to be much more work than expected because I ran into some annoying problems with SQLx regarding nullable types and enums. Ultimately this all boiled down to how to correctly map the enums and the nullable fields, with SQLx having still some issues with that, therefore in some cases it needs explicit help from the developer.
 
+However the rest was straightforward, with Cursor providing excellent support - as usual.
+
 ## Conclusions
 
+Due to higher complexity, more refactoring work and interview preparation I had to stretch the Assignments implementation over 2 days, and leave the UI implementation for tomorrow. 
+
+All in all it was pretty straightforward, I only ran into small unexpected issues with SQLx, where again, I didn't get useful help from Cursor but needed to dig my way into some internet forums and stackoverflow.
