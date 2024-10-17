@@ -15,12 +15,6 @@ use crate::domain::{
 
 pub struct FixtureRepositoryPg();
 
-impl FixtureRepositoryPg {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
 #[derive(sqlx::Type, Debug)]
 #[sqlx(type_name = "rustddd.fixture_status", rename_all = "lowercase")]
 enum FixtureStatusDb {
@@ -52,6 +46,12 @@ struct FixtureDb {
     pub second_referee_id: Option<Uuid>,
     pub second_referee_name: Option<String>,
     pub second_referee_club: Option<String>,
+}
+
+impl FixtureRepositoryPg {
+    pub fn new() -> Self {
+        Self {}
+    }
 }
 
 impl From<FixtureStatusDb> for FixtureStatus {

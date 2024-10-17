@@ -109,7 +109,7 @@ pub struct AssignmentDTO {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct AssignmentCreationDTO {
+pub struct AssignmentStagingDTO {
     pub fixture_id: FixtureIdDTO,
     pub referee_id: RefereeIdDTO,
     pub referee_role: AssignmentRefereeRoleDTO,
@@ -351,17 +351,30 @@ pub async fn fetch_assignments() -> Vec<AssignmentDTO> {
 }
 
 pub async fn stage_assignment(
-    assignment_creation: &AssignmentCreationDTO,
+    assignment_staging: &AssignmentStagingDTO,
 ) -> Result<AssignmentDTO, reqwest::Error> {
     let url = Url::parse("http://localhost:3001/assignments").unwrap();
     let response = reqwest::Client::new()
-        .post(url)
-        .json(&assignment_creation)
+        .put(url)
+        .json(&assignment_staging)
         .send()
         .await?;
     response.json().await
 }
 
+pub async fn delete_staged_assignment(
+    assignment: AssignmentDTO,
+) -> Result<(), reqwest::Error> {
+    let url = Url::parse(&format!(
+        "http://localhost:3001/assignments/{}/{}",
+        assignment.fixture_id.0, assignment.referee_id.0
+    )).unwrap();
+    let response = reqwest::Client::new()
+        .delete(url)
+        .send()
+        .await?;
+    response.json().await
+}
 pub async fn validate_assignments() -> Result<String, reqwest::Error> {
     let url = Url::parse("http://localhost:3001/assignments/validate");
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;

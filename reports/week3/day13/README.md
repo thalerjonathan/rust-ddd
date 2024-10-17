@@ -1,4 +1,4 @@
-# Day 13: Implementing Assignments
+# Day 13 + 14: Implementing Assignments
 
 The plan for today was to implement the *Assignments* feature, which allows for assigning *Referees* to *Fixtures*.
 
@@ -14,3 +14,4 @@ Then I can start implementing the *Assignments* feature, driven by the E2E test 
 The first step, adding a first and second *Referee* to the *Fixture* entity, turned out to be much more work than expected because I ran into some annoying problems with SQLx regarding nullable types and enums. Ultimately this all boiled down to how to correctly map the enums and the nullable fields, with SQLx having still some issues with that, therefore in some cases it needs explicit help from the developer.
 
 ## Conclusions
+

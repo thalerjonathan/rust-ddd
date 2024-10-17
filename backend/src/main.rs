@@ -1,13 +1,13 @@
 use crate::config::AppConfig;
 use axum::http::Method;
+use axum::routing::{delete, put};
 use axum::{
     routing::{get, post},
     Router,
 };
 
 use ports::rest::assignments::{
-    commit_assignments_handler, fetch_assignments_handler, stage_assignment_handler,
-    validate_assignments_handler,
+    commit_assignments_handler, delete_staged_assignment_handler, fetch_assignments_handler, stage_assignment_handler, validate_assignments_handler
 };
 use ports::rest::availabilities::{
     declare_availability_handler, fetch_availabilities_for_referee_handler,
@@ -74,7 +74,8 @@ async fn main() {
             get(fetch_availabilities_for_referee_handler),
         )
         .route("/assignments", get(fetch_assignments_handler))
-        .route("/assignments", post(stage_assignment_handler))
+        .route("/assignments", put(stage_assignment_handler))
+        .route("/assignments/:fixture_id/:referee_id", delete(delete_staged_assignment_handler))
         .route("/assignments/validate", post(validate_assignments_handler))
         .route("/assignments/commit", post(commit_assignments_handler))
         .layer(cors)

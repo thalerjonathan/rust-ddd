@@ -1,48 +1,87 @@
 use std::sync::Arc;
 
-use axum::{extract::State, Json};
-use shared::{AssignmentCreationDTO, AssignmentDTO};
+use axum::{extract::{Path, State}, Json};
+use log::debug;
+use shared::{AssignmentStagingDTO, AssignmentDTO, FixtureIdDTO, RefereeIdDTO};
+
+use crate::{adapters::db::assignment_repo_pg::AssignmentRepositoryPg, application::assignment_services::{commit_assignments, delete_staged_assignment, stage_assignment, validate_assignments}, domain::repositories::assignment_repo::AssignmentRepository};
 
 use super::{shared::AppError, state::AppState};
 
 pub async fn fetch_assignments_handler(
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<AssignmentDTO>>, AppError> {
-    Err(AppError::from_error(
-        "fetch_assignments_handler not implemented",
-    ))
+    debug!("Fetching assignments");
+
+    let mut tx = state.connection_pool.begin().await.unwrap();
+    let assignment_repo = AssignmentRepositoryPg::new();
+    let assignments = assignment_repo.get_all(&mut tx).await.unwrap();
+
+    // NOTE: read-only, therefore dont commit TX
+
+    Ok(Json(assignments.into_iter().map(|a| a.into()).collect()))
 }
 
 pub async fn stage_assignment_handler(
-    State(_state): State<Arc<AppState>>,
-    Json(_assignments): Json<Vec<AssignmentCreationDTO>>,
-) -> Result<Json<Vec<AssignmentDTO>>, AppError> {
-    Err(AppError::from_error(
-        "stage_assignment_handler not implemented",
-    ))
+    State(state): State<Arc<AppState>>,
+    Json(assignment_staging): Json <AssignmentStagingDTO>,
+) -> Result<Json<AssignmentDTO>, AppError> {
+    debug!("Staging assignment: {:?}", assignment_staging);
+
+    let mut tx = state.connection_pool.begin().await.unwrap();
+    let assignment_repo = AssignmentRepositoryPg::new();
+    let result = stage_assignment(assignment_staging, &assignment_repo, &mut tx).await.unwrap();
+    tx.commit().await.unwrap();
+
+    Ok(Json(result))
+}
+
+pub async fn delete_staged_assignment_handler(
+    State(state): State<Arc<AppState>>,
+    Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
+) -> Result<Json<()>, AppError> {
+    debug!("Deleting assignment: {:?} {:?}", fixture_id, referee_id);
+
+    let mut tx = state.connection_pool.begin().await.unwrap();
+    let assignment_repo = AssignmentRepositoryPg::new();
+    let result = delete_staged_assignment(fixture_id.into(), referee_id.into(), &assignment_repo, &mut tx).await.unwrap();
+    tx.commit().await.unwrap();
+
+    Ok(Json(result))
 }
 
 pub async fn validate_assignments_handler(
-    State(_state): State<Arc<AppState>>,
-) -> Result<Json<Vec<AssignmentDTO>>, AppError> {
-    Err(AppError::from_error(
-        "validate_assignments_handler not implemented",
-    ))
+    State(state): State<Arc<AppState>>,
+) -> Result<String, AppError> {
+    debug!("Validating assignments");
+
+    let mut tx = state.connection_pool.begin().await.unwrap();
+    let assignment_repo = AssignmentRepositoryPg::new();
+    let result = validate_assignments(&assignment_repo, &mut tx).await.unwrap();
+
+    // NOTE: read-only, therefore dont commit TX
+
+    Ok(result)
 }
 
 pub async fn commit_assignments_handler(
-    State(_state): State<Arc<AppState>>,
-) -> Result<Json<Vec<AssignmentDTO>>, AppError> {
-    Err(AppError::from_error(
-        "commit_assignments_handler not implemented",
-    ))
+    State(state): State<Arc<AppState>>,
+) -> Result<String, AppError> {
+    debug!("Committing assignments");   
+
+    let mut tx = state.connection_pool.begin().await.unwrap();
+    let assignment_repo = AssignmentRepositoryPg::new();
+    let result = commit_assignments(&assignment_repo, &mut tx).await.unwrap();
+    tx.commit().await.unwrap();
+
+    Ok(result)
 }
 
 #[cfg(test)]
 mod assignments_tests {
     use shared::{
         commit_assignments, fetch_assignments, fetch_fixture, stage_assignment,
-        validate_assignments, AssignmentCreationDTO, AssignmentRefereeRoleDTO, AssignmentStatusDTO,
+        validate_assignments, AssignmentStagingDTO, AssignmentRefereeRoleDTO, AssignmentStatusDTO,
         RefereeCreationDTO,
     };
     use sqlx::PgPool;
@@ -72,7 +111,7 @@ mod assignments_tests {
             .await
             .unwrap();
 
-        let first_assignment_creation = AssignmentCreationDTO {
+        let first_assignment_creation = AssignmentStagingDTO {
             fixture_id: fixture_dto.id,
             referee_id: first_referee_dto.id,
             referee_role: AssignmentRefereeRoleDTO::First,
@@ -92,7 +131,7 @@ mod assignments_tests {
             "Assignment referee_id should be the same"
         );
 
-        let second_assignment_creation = AssignmentCreationDTO {
+        let second_assignment_creation = AssignmentStagingDTO {
             fixture_id: fixture_dto.id,
             referee_id: second_referee_dto.id,
             referee_role: AssignmentRefereeRoleDTO::Second,
@@ -133,6 +172,8 @@ mod assignments_tests {
             assignments[1], second_ref_assignment_dto,
             "Assignment should be the same"
         );
+
+        // TODO: delete delete_staged_assignment
 
         // no conflicts, so validate_assignments() should return an empty string
         let result = validate_assignments().await.unwrap();

@@ -7,15 +7,11 @@ use axum::{
 use chrono::Utc;
 use log::error;
 use shared::{
-    FixtureCreationDTO, FixtureDTO, FixtureIdDTO, FixtureStatusDTO, RefereeDTO, RefereeIdDTO,
-    TeamCreationDTO, TeamDTO, TeamIdDTO, VenueCreationDTO, VenueDTO, VenueIdDTO,
+    AssignmentDTO, AssignmentRefereeRoleDTO, AssignmentStatusDTO, FixtureCreationDTO, FixtureDTO, FixtureIdDTO, FixtureStatusDTO, RefereeDTO, RefereeIdDTO, TeamCreationDTO, TeamDTO, TeamIdDTO, VenueCreationDTO, VenueDTO, VenueIdDTO
 };
 
 use crate::domain::aggregates::{
-    fixture::{Fixture, FixtureId, FixtureStatus},
-    referee::{Referee, RefereeId},
-    team::{Team, TeamId},
-    venue::{Venue, VenueId},
+    assignment::{Assignment, AssignmentRefereeRole, AssignmentStatus}, fixture::{Fixture, FixtureId, FixtureStatus}, referee::{Referee, RefereeId}, team::{Team, TeamId}, venue::{Venue, VenueId}
 };
 /// Represents an application error, where the application failed to handle a response
 /// This is used to map such errors to 500 internal server error HTTP codes
@@ -152,6 +148,35 @@ impl From<TeamId> for TeamIdDTO {
 impl From<FixtureId> for FixtureIdDTO {
     fn from(id: FixtureId) -> Self {
         FixtureIdDTO(id.0)
+    }
+}
+
+impl From<AssignmentRefereeRole> for AssignmentRefereeRoleDTO {
+    fn from(role: AssignmentRefereeRole) -> Self {
+        match role {
+            AssignmentRefereeRole::First => AssignmentRefereeRoleDTO::First,
+            AssignmentRefereeRole::Second => AssignmentRefereeRoleDTO::Second,
+        }
+    }
+}
+
+impl From<AssignmentStatus> for AssignmentStatusDTO {
+    fn from(status: AssignmentStatus) -> Self {
+        match status {
+            AssignmentStatus::Committed => AssignmentStatusDTO::Committed,
+            AssignmentStatus::Staged => AssignmentStatusDTO::Staged,
+        }
+    }
+}
+
+impl From<Assignment> for AssignmentDTO {
+    fn from(assignment: Assignment) -> Self {
+        AssignmentDTO {
+            status: assignment.status().into(),
+            fixture_id: assignment.fixture_id().into(),
+            referee_id: assignment.referee_id().into(),
+            referee_role: assignment.referee_role().into(),
+        }
     }
 }
 
