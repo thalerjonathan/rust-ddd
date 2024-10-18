@@ -2,7 +2,7 @@ use shared::{AssignmentDTO, AssignmentStagingDTO};
 
 use crate::domain::{aggregates::{assignment::{Assignment, AssignmentRefereeRole}, fixture::FixtureId, referee::RefereeId}, repositories::{assignment_repo::AssignmentRepository, fixture_repo::FixtureRepository, referee_repo::RefereeRepository}};
 
-pub async fn delete_staged_assignment<TxCtx>(
+pub async fn remove_staged_assignment<TxCtx>(
     fixture_id: FixtureId,
     referee_id: RefereeId,
     assignment_repo: &impl AssignmentRepository<TxCtx = TxCtx, Error = String>,
@@ -23,6 +23,56 @@ pub async fn delete_staged_assignment<TxCtx>(
     assignment_repo.delete(&assignment, tx_ctx).await
 }
 
+pub async fn remove_committed_assignment<TxCtx>(
+    fixture_id: FixtureId,
+    referee_id: RefereeId,
+    assignment_repo: &impl AssignmentRepository<TxCtx = TxCtx, Error = String>,
+    fixture_repo: &impl FixtureRepository<TxCtx = TxCtx, Error = String>,
+    tx_ctx: &mut TxCtx,
+) -> Result<(), String> {
+    let assignment = assignment_repo.find_by_fixture_and_referee(fixture_id, referee_id, tx_ctx).await?;
+
+    if assignment.is_none() {
+        return Err(format!("Assignment with fixture_id {} and referee_id {} not found", fixture_id.0, referee_id.0));
+    }
+
+    let assignment = assignment.unwrap();
+
+    if assignment.is_staged() {
+        return Err(format!("Assignment with fixture_id {} and referee_id {} not committed", fixture_id.0, referee_id.0));
+    }
+
+    let mut fixture = fixture_repo.find_by_id(assignment.fixture_id(), tx_ctx).await?.expect(&format!("Fixture {} not found when removing committed assignment", assignment.fixture_id().0));
+
+    match assignment.referee_role() {
+        AssignmentRefereeRole::First => {
+            if fixture.first_referee().is_none() {
+                return Err(format!("First referee not assigned for fixture {}", fixture.id().0));
+            }
+
+            if fixture.first_referee().unwrap().id() != assignment.referee_id() {
+                return Err(format!("First referee not assigned for fixture {}", fixture.id().0));
+            }
+
+            fixture.unassign_first_referee();
+        },
+        AssignmentRefereeRole::Second => {
+            if fixture.second_referee().is_none() {
+                return Err(format!("Second referee not assigned for fixture {}", fixture.id().0));
+            }
+
+            if fixture.second_referee().unwrap().id() != assignment.referee_id() {
+                return Err(format!("Second referee not assigned for fixture {}", fixture.id().0));
+            }
+
+            fixture.unassign_second_referee()
+        },
+    }
+
+    fixture_repo.save(&fixture, tx_ctx).await?;
+    assignment_repo.delete(&assignment, tx_ctx).await
+}
+
 pub async fn stage_assignment<TxCtx>(
     assignment_staging: &AssignmentStagingDTO,
     assignment_repo: &impl AssignmentRepository<TxCtx = TxCtx, Error = String>,
@@ -37,7 +87,8 @@ pub async fn stage_assignment<TxCtx>(
     let assignment_lookup = assignment_repo.find_by_fixture_and_referee(fixture.id().0.into(), referee.id().0.into(), tx_ctx).await?;
 
     let mut assignment = match assignment_lookup {
-        Some(a) => a, // if assignment already exists, we simply use this
+        // NOTE: if assignment already exists, we simply override it as staged
+        Some(a) => Assignment::staged(a.fixture_id(), a.referee_id(), a.referee_role()),
         None => Assignment::staged(assignment_staging.fixture_id.0.into(), assignment_staging.referee_id.0.into(), assignment_staging.referee_role.into()), // otherwise we create a new one
     };
 

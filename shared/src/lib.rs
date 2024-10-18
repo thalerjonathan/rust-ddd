@@ -362,11 +362,24 @@ pub async fn stage_assignment(
     response.json().await
 }
 
-pub async fn delete_staged_assignment(
+pub async fn remove_committed_assignment(
     assignment: &AssignmentDTO,
 ) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/assignments/{}/{}",
+        "http://localhost:3001/assignments/committed/{}/{}",
+        assignment.fixture_id.0, assignment.referee_id.0
+    )).unwrap();
+    let response = reqwest::Client::new()
+        .delete(url)
+        .send()
+        .await?;
+    response.json().await
+}
+pub async fn remove_staged_assignment(
+    assignment: &AssignmentDTO,
+) -> Result<(), reqwest::Error> {
+    let url = Url::parse(&format!(
+        "http://localhost:3001/assignments/staged/{}/{}",
         assignment.fixture_id.0, assignment.referee_id.0
     )).unwrap();
     let response = reqwest::Client::new()

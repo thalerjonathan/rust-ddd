@@ -159,4 +159,22 @@ impl Fixture {
 
         self.second_referee = Some(referee);
     }
+
+    pub fn unassign_first_referee(&mut self) {
+        if self.first_referee.is_none() {
+            // NOTE: this is not how we would like to handle this in a real application
+            panic!("First referee not assigned");
+        }
+
+        self.first_referee = None;
+    }
+
+    pub fn unassign_second_referee(&mut self) {
+        if self.second_referee.is_none() {
+            // NOTE: this is not how we would like to handle this in a real application
+            panic!("Second referee not assigned");
+        }
+
+        self.second_referee = None;
+    }
 }
