@@ -49,7 +49,9 @@ impl VenueRepository for VenueRepositoryPg {
     ) -> Result<Option<Venue>, Self::Error> {
         let venue: Option<VenueDb> = sqlx::query_as!(
                 VenueDb,
-            "SELECT venue_id as id, name, street, zip, city, telephone, email FROM rustddd.venues WHERE venue_id = $1",
+            "SELECT venue_id as id, name, street, zip, city, telephone, email
+            FROM rustddd.venues 
+            WHERE venue_id = $1",
             venue_id.0
         )
         .fetch_optional(&mut **tx_ctx)
@@ -62,7 +64,9 @@ impl VenueRepository for VenueRepositoryPg {
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Venue>, Self::Error> {
         let venues: Vec<VenueDb> = sqlx::query_as!(
             VenueDb,
-            "SELECT venue_id as id, name, street, zip, city, telephone, email FROM rustddd.venues"
+            "SELECT venue_id as id, name, street, zip, city, telephone, email 
+            FROM rustddd.venues
+            ORDER BY name ASC"
         )
         .fetch_all(&mut **tx_ctx)
         .await

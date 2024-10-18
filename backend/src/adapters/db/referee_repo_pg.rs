@@ -37,7 +37,9 @@ impl RefereeRepository for RefereeRepositoryPg {
     ) -> Result<Option<Referee>, Self::Error> {
         let referee: Option<RefereeDb> = sqlx::query_as!(
             RefereeDb,
-            "SELECT referee_id as id, name, club FROM rustddd.referees WHERE referee_id = $1",
+            "SELECT referee_id as id, name, club 
+            FROM rustddd.referees 
+            WHERE referee_id = $1",
             referee_id.0
         )
         .fetch_optional(&mut **tx_ctx)
@@ -50,7 +52,9 @@ impl RefereeRepository for RefereeRepositoryPg {
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Referee>, Self::Error> {
         let referees: Vec<RefereeDb> = sqlx::query_as!(
             RefereeDb,
-            "SELECT referee_id as id, name, club FROM rustddd.referees"
+            "SELECT referee_id as id, name, club 
+            FROM rustddd.referees
+            ORDER BY name ASC"
         )
         .fetch_all(&mut **tx_ctx)
         .await

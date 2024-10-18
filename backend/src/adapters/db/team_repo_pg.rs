@@ -37,7 +37,9 @@ impl TeamRepository for TeamRepositoryPg {
     ) -> Result<Option<Team>, Self::Error> {
         let team: Option<TeamDb> = sqlx::query_as!(
             TeamDb,
-            "SELECT team_id as id, name, club FROM rustddd.teams WHERE team_id = $1",
+            "SELECT team_id as id, name, club 
+            FROM rustddd.teams 
+            WHERE team_id = $1",
             team_id.0
         )
         .fetch_optional(&mut **tx_ctx)
@@ -50,7 +52,9 @@ impl TeamRepository for TeamRepositoryPg {
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Team>, Self::Error> {
         let teams: Vec<TeamDb> = sqlx::query_as!(
             TeamDb,
-            "SELECT team_id as id, name, club FROM rustddd.teams"
+            "SELECT team_id as id, name, club 
+            FROM rustddd.teams
+            ORDER BY name ASC"
         )
         .fetch_all(&mut **tx_ctx)
         .await
