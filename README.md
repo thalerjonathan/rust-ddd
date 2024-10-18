@@ -67,6 +67,14 @@ Implementing Availabilities.
 
 Implementing Assignments.
 
+## [Day 15](reports/week3/day15/README.md)
+
+Finishing the *Availabilities* and implementing the *Assignments* UI.
+
+# Time Needed
+
+Due to interview preparations and processes and other obligations I could contributed less time than expected. (Unfortunately) I didn't track the hours I needed every day, but on average it was between 2-3 hours per day, so totalling at ~45 hours after day 15. 
+
 # Shortcomings
 
 - The UI is just a proof of concept and not very nice (no CSS whatsoever).
