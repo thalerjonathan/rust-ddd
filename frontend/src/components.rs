@@ -7,3 +7,4 @@ pub mod team_list;
 pub mod venue_details;
 pub mod venue_list;
 pub mod availabilities;
+pub mod assignments;

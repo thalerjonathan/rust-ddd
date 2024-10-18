@@ -11,6 +11,7 @@ pub fn Home() -> impl IntoView {
             <p><a href="/venues">"Venues"</a></p>
             <p><a href="/teams">"Teams"</a></p>
             <p><a href="/availabilities">"Availabilities"</a></p>
+            <p><a href="/assignments">"Assignments"</a></p>
         </div>
     }
 }
