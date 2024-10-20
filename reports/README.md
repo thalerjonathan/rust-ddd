@@ -58,3 +58,7 @@ Implementing Assignments.
 ## [Day 15](reports/week3/day15/README.md)
 
 Finishing the *Availabilities* and implementing the *Assignments* UI.
+
+## [Day 16](reports/week4/day16/README.md)
+
+Started refactoring the monolith into microservices.

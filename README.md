@@ -53,7 +53,7 @@ When transitioning to Microservices we gonna see the following consequences:
 - Committing Assignments has to have some form of cross-service (Referees are assigned to Fixtures when Assignments are committed) transactional behaviour, which I am probably going to implement via Sagas.
 - Using Kafka for broadcasting domain events, and implementing some form of idempotency on the domain level to avoid issues in case of duplicate event processing.
 - Each service gets its own DB - but within the same postgres instance, which should be enough for the scaling requirements of this project.
-- Using nginx as a reverse proxy to act as an API layer that hides the deployment details from the outside, so FE doesn't need to be adjusted, which is paramount for this undertaking. Also by using this API layer, microservices can call into each other via the same interface the UI uses.
+- Using nginx as a reverse proxy to act as an API Gateway that hides the deployment details from the outside, so FE doesn't need to be adjusted, which is paramount for this undertaking. Also by using this API Gateway, microservices can call into each other via the same interface the UI uses.
 
 ### Running the Monolith
 
@@ -62,8 +62,12 @@ When transitioning to Microservices we gonna see the following consequences:
 3. Install `trunk` via `cargo install trunk` which is required for the Leptos frontend.
 4. Switch to `nightly` Rust via `rustup toolchain install nightly` which is required for the Leptos frontend.
 5. Add the wasm32 compile target via `rustup target add wasm32-unknown-unknown` which is required for the Leptos frontend to compile to WASM.
-6. Start the Postgres DB by running `sh start_db.sh` from within the `./backend` folder
-7. Start the Backend by running `sh run.sh` from within the `./backend` folder. The first time it compiles the backend from soure, which might take 1-2 minutes.
+6. Start the Postgres DB by running `sh start_db.sh` from within the `./monolith` folder
+7. Start the Backend by running `sh run.sh` from within the `./monolith` folder. The first time it compiles the backend from soure, which might take 1-2 minutes.
 8. Start the Frontend by running `sh run.sh` from within the `./frontend` folder. The first time it compiles the frontend from sourvce, which might take 1-2 minutes. Once finished, it opens a browser for you and displays the starting page.
 
-If you want to run the test suite, make sure you have a backend running and then simply run `sh tests.sh` from within the `./backend` folder.
+If you want to run the test suite, make sure you have a backend running and then simply run `sh tests.sh` from within the `./monolith` folder.
+
+## Refactoring into Microservices
+
+Currently I am working on refactoring the monolith into microservices, for which I started by writing [Architecture Decision Records](/microservice/ADR) for the overalle approach.
