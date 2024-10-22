@@ -7,11 +7,17 @@ use axum::{
 use chrono::Utc;
 use log::error;
 use shared::{
-    AssignmentDTO, AssignmentRefereeRoleDTO, AssignmentStatusDTO, FixtureCreationDTO, FixtureDTO, FixtureIdDTO, FixtureStatusDTO, RefereeDTO, RefereeIdDTO, TeamCreationDTO, TeamDTO, TeamIdDTO, VenueCreationDTO, VenueDTO, VenueIdDTO
+    AssignmentDTO, AssignmentRefereeRoleDTO, AssignmentStatusDTO, FixtureCreationDTO, FixtureDTO,
+    FixtureIdDTO, FixtureStatusDTO, RefereeDTO, RefereeIdDTO, TeamCreationDTO, TeamDTO, TeamIdDTO,
+    VenueCreationDTO, VenueDTO, VenueIdDTO,
 };
 
 use crate::domain::aggregates::{
-    assignment::{Assignment, AssignmentRefereeRole, AssignmentStatus}, fixture::{Fixture, FixtureId, FixtureStatus}, referee::{Referee, RefereeId}, team::{Team, TeamId}, venue::{Venue, VenueId}
+    assignment::{Assignment, AssignmentRefereeRole, AssignmentStatus},
+    fixture::{Fixture, FixtureId, FixtureStatus},
+    referee::{Referee, RefereeId},
+    team::{Team, TeamId},
+    venue::{Venue, VenueId},
 };
 /// Represents an application error, where the application failed to handle a response
 /// This is used to map such errors to 500 internal server error HTTP codes
@@ -177,8 +183,6 @@ impl From<AssignmentStatus> for AssignmentStatusDTO {
         }
     }
 }
-
-
 
 impl From<Assignment> for AssignmentDTO {
     fn from(assignment: Assignment) -> Self {

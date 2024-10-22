@@ -9,6 +9,16 @@
             "database": "rustddd",
             "username": "postgres",
             "password": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5433,
+            "driver": "PostgreSQL",
+            "name": "Rust DDD Referees ",
+            "database": "referees",
+            "username": "postgres",
+            "password": "postgres"
         }
     ]
 }
