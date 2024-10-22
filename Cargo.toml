@@ -8,4 +8,5 @@ members = [
     "shared",
     "microservice/referees",
     "microservice/venues",
+    "microservice/teams",
 ]

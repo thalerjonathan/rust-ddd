@@ -233,19 +233,19 @@ pub async fn fetch_venue(venue_id: VenueIdDTO) -> Result<VenueDTO, reqwest::Erro
 }
 
 pub async fn fetch_teams() -> Vec<TeamDTO> {
-    let url = Url::parse(&format!("{}/teams", REFEREES_SERVICE_HOST));
+    let url = Url::parse(&format!("{}/teams/all", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
 
 pub async fn fetch_team(team_id: TeamIdDTO) -> Result<TeamDTO, reqwest::Error> {
-    let url = Url::parse(&format!("{}/team/{}", REFEREES_SERVICE_HOST, team_id.0));
+    let url = Url::parse(&format!("{}/teams/{}", REFEREES_SERVICE_HOST, team_id.0));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
     response.json().await
 }
 
 pub async fn create_team(team_creation: &TeamCreationDTO) -> Result<TeamDTO, reqwest::Error> {
-    let url = Url::parse(&format!("{}/team", REFEREES_SERVICE_HOST));
+    let url = Url::parse(&format!("{}/teams", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new()
         .post(url.unwrap())
         .json(&team_creation)

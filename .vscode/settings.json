@@ -5,7 +5,7 @@
             "server": "localhost",
             "port": 5432,
             "driver": "PostgreSQL",
-            "name": "Rust DDD",
+            "name": "Rust DDD Monolith",
             "database": "rustddd",
             "username": "postgres",
             "password": "postgres"
@@ -15,8 +15,28 @@
             "server": "localhost",
             "port": 5433,
             "driver": "PostgreSQL",
-            "name": "Rust DDD Referees ",
+            "name": "Rust DDD Referees",
             "database": "referees",
+            "username": "postgres",
+            "password": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5434,
+            "driver": "PostgreSQL",
+            "name": "Rust DDD Venues",
+            "database": "venues",
+            "username": "postgres",
+            "password": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5435,
+            "driver": "PostgreSQL",
+            "name": "Rust DDD Teams",
+            "database": "teams",
             "username": "postgres",
             "password": "postgres"
         }
