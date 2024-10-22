@@ -48,10 +48,10 @@ async fn main() {
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
-        .route("/referee", post(create_referee_handler))
-        .route("/referee/:id", get(get_referee_by_id_handler))
-        .route("/referees", get(get_all_referees_handler))
-        .route("/referee/:id/club", post(update_referee_club_handler))
+        .route("/referees", post(create_referee_handler))
+        .route("/referees/:id", get(get_referee_by_id_handler))
+        .route("/referees/all", get(get_all_referees_handler))
+        .route("/referees/:id/club", post(update_referee_club_handler))
         .layer(cors)
         .with_state(state_arc);
 

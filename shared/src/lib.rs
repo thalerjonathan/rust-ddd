@@ -168,7 +168,7 @@ impl From<Uuid> for TeamIdDTO {
 }
 
 pub async fn fetch_referees() -> Vec<RefereeDTO> {
-    let url = Url::parse(&format!("{}/referees", REFEREES_SERVICE_HOST));
+    let url = Url::parse(&format!("{}/referees/all", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
@@ -176,7 +176,7 @@ pub async fn fetch_referees() -> Vec<RefereeDTO> {
 pub async fn create_referee(
     ref_creation: &RefereeCreationDTO,
 ) -> Result<RefereeDTO, reqwest::Error> {
-    let url = Url::parse(&format!("{}/referee", REFEREES_SERVICE_HOST));
+    let url = Url::parse(&format!("{}/referees", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new()
         .post(url.unwrap())
         .json(&ref_creation)
@@ -187,7 +187,7 @@ pub async fn create_referee(
 
 pub async fn fetch_referee(referee_id: RefereeIdDTO) -> RefereeDTO {
     let url = Url::parse(&format!(
-        "{}/referee/{}",
+        "{}/referees/{}",
         REFEREES_SERVICE_HOST, referee_id.0
     ));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
@@ -199,7 +199,7 @@ pub async fn change_referee_club(
     club: &str,
 ) -> Result<String, reqwest::Error> {
     let url = Url::parse(&format!(
-        "{}/referee/{}/club",
+        "{}/referees/{}/club",
         REFEREES_SERVICE_HOST, referee_id.0
     ));
     let response = reqwest::Client::new()

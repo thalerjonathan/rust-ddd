@@ -7,7 +7,8 @@ use axum::{
 };
 
 use ports::rest::assignments::{
-    commit_assignments_handler, fetch_assignments_handler, remove_committed_assignment_handler, remove_staged_assignment_handler, stage_assignment_handler, validate_assignments_handler
+    commit_assignments_handler, fetch_assignments_handler, remove_committed_assignment_handler,
+    remove_staged_assignment_handler, stage_assignment_handler, validate_assignments_handler,
 };
 use ports::rest::availabilities::{
     declare_availability_handler, fetch_availabilities_for_referee_handler,
@@ -40,15 +41,21 @@ async fn main() {
     let state_arc = Arc::new(app_state);
 
     let cors = tower_http::cors::CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
         .allow_headers(tower_http::cors::Any)
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
-        .route("/referee", post(create_referee_handler))
-        .route("/referee/:id", get(get_referee_by_id_handler))
-        .route("/referees", get(get_all_referees_handler))
-        .route("/referee/:id/club", post(update_referee_club_handler))
+        .route("/referees", post(create_referee_handler))
+        .route("/referees/:id", get(get_referee_by_id_handler))
+        .route("/referees/all", get(get_all_referees_handler))
+        .route("/referees/:id/club", post(update_referee_club_handler))
         .route("/venue", post(create_venue_handler))
         .route("/venue/:id", get(get_venue_by_id_handler))
         .route("/venues", get(get_all_venues_handler))
@@ -75,8 +82,14 @@ async fn main() {
         )
         .route("/assignments", get(fetch_assignments_handler))
         .route("/assignments", put(stage_assignment_handler))
-        .route("/assignments/staged/:fixture_id/:referee_id", delete(remove_staged_assignment_handler))
-        .route("/assignments/committed/:fixture_id/:referee_id", delete(remove_committed_assignment_handler))
+        .route(
+            "/assignments/staged/:fixture_id/:referee_id",
+            delete(remove_staged_assignment_handler),
+        )
+        .route(
+            "/assignments/committed/:fixture_id/:referee_id",
+            delete(remove_committed_assignment_handler),
+        )
         .route("/assignments/validate", post(validate_assignments_handler))
         .route("/assignments/commit", post(commit_assignments_handler))
         .layer(cors)
