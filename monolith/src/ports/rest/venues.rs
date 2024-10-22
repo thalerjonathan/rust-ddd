@@ -5,15 +5,14 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{VenueCreationDTO, VenueDTO, VenueIdDTO};
+use shared::{app_error::AppError, VenueCreationDTO, VenueDTO, VenueIdDTO};
 
 use crate::{
-    adapters::db::venue_repo_pg::VenueRepositoryPg,
-    application,
+    adapters::db::venue_repo_pg::VenueRepositoryPg, application,
     domain::repositories::venue_repo::VenueRepository,
 };
 
-use super::{shared::AppError, state::AppState};
+use super::state::AppState;
 
 pub async fn create_venue_handler(
     State(state): State<Arc<AppState>>,

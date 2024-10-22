@@ -5,15 +5,13 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
+use shared::{app_error::AppError, RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
 
 use crate::{
-    adapters::db::referee_repo_pg::RefereeRepositoryPg,
-    application,
+    adapters::db::referee_repo_pg::RefereeRepositoryPg, application,
     domain::repositories::referee_repo::RefereeRepository,
 };
 
-use super::shared::AppError;
 use super::state::AppState;
 
 pub async fn create_referee_handler(
@@ -163,8 +161,7 @@ mod referee_tests {
 
         let referee_dto = referee_dto.unwrap();
         let updated_club = "Club B".to_string();
-        let updated_referee_dto =
-            change_referee_club(referee_dto.id.into(), &updated_club).await;
+        let updated_referee_dto = change_referee_club(referee_dto.id.into(), &updated_club).await;
         assert!(
             updated_referee_dto.is_ok(),
             "Referee club should be updated"

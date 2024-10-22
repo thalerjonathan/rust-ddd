@@ -5,15 +5,14 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{TeamCreationDTO, TeamDTO, TeamIdDTO};
+use shared::{app_error::AppError, TeamCreationDTO, TeamDTO, TeamIdDTO};
 
 use crate::{
-    adapters::db::team_repo_pg::TeamRepositoryPg,
-    application::team_services::create_team,
+    adapters::db::team_repo_pg::TeamRepositoryPg, application::team_services::create_team,
     domain::repositories::team_repo::TeamRepository,
 };
 
-use super::{shared::AppError, state::AppState};
+use super::state::AppState;
 
 pub async fn create_team_handler(
     State(state): State<Arc<AppState>>,

@@ -9,11 +9,10 @@ use axum::extract::{Path, State};
 use axum::Json;
 use chrono::{DateTime, Utc};
 use log::debug;
+use shared::app_error::AppError;
 use shared::{FixtureCreationDTO, FixtureDTO, FixtureIdDTO};
 use std::sync::Arc;
 use uuid::Uuid;
-
-use super::shared::AppError;
 
 pub async fn create_fixture_handler(
     State(state): State<Arc<AppState>>,

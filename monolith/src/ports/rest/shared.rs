@@ -2,7 +2,7 @@ use chrono::Utc;
 use shared::{
     AssignmentDTO, AssignmentRefereeRoleDTO, AssignmentStatusDTO, FixtureCreationDTO, FixtureDTO,
     FixtureIdDTO, FixtureStatusDTO, RefereeDTO, RefereeIdDTO, TeamCreationDTO, TeamDTO, TeamIdDTO,
-    VenueCreationDTO,
+    VenueCreationDTO, VenueDTO, VenueIdDTO,
 };
 
 use crate::domain::aggregates::{
@@ -10,7 +10,34 @@ use crate::domain::aggregates::{
     fixture::{Fixture, FixtureId, FixtureStatus},
     referee::{Referee, RefereeId},
     team::{Team, TeamId},
+    venue::{Venue, VenueId},
 };
+
+impl From<VenueIdDTO> for VenueId {
+    fn from(value: VenueIdDTO) -> Self {
+        Self(value.0)
+    }
+}
+
+impl From<VenueId> for VenueIdDTO {
+    fn from(id: VenueId) -> Self {
+        VenueIdDTO(id.0)
+    }
+}
+
+impl From<Venue> for VenueDTO {
+    fn from(venue: Venue) -> Self {
+        VenueDTO {
+            id: venue.id().into(),
+            name: venue.name().to_string(),
+            street: venue.street().to_string(),
+            zip: venue.zip().to_string(),
+            city: venue.city().to_string(),
+            telephone: venue.telephone(),
+            email: venue.email(),
+        }
+    }
+}
 
 impl From<FixtureStatus> for FixtureStatusDTO {
     fn from(status: FixtureStatus) -> Self {

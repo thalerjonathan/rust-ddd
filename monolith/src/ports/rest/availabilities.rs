@@ -3,6 +3,7 @@ use std::sync::Arc;
 use axum::extract::{Path, State};
 use axum::Json;
 use log::debug;
+use shared::app_error::AppError;
 use shared::{FixtureIdDTO, RefereeIdDTO};
 
 use crate::adapters::db::availability_repo_pg::AvailabilityRepositoryPg;
@@ -12,7 +13,6 @@ use crate::application::availability_services::{
     declare_availability, get_availabilities_for_referee, withdraw_availability,
 };
 
-use super::shared::AppError;
 use super::state::AppState;
 
 pub async fn declare_availability_handler(
