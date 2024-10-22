@@ -43,10 +43,6 @@ pub async fn update_referee_club<TxCtx>(
 
 #[cfg(test)]
 mod tests {
-    use async_trait::async_trait;
-    use std::cell::RefCell;
-    use std::collections::HashMap;
-
     use crate::{
         application::referee_services::{create_referee, update_referee_club},
         domain::{
@@ -54,6 +50,8 @@ mod tests {
             repositories::referee_repo::RefereeRepository,
         },
     };
+    use std::cell::RefCell;
+    use std::collections::HashMap;
 
     struct TestRepo {
         // NOTE: we use a RefCell to allow for interior mutability because RefereeRepository trait does not pass by mutable reference

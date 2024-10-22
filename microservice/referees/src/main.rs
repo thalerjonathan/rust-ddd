@@ -3,6 +3,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use clap::Parser;
 use referees::ports::rest::referee::{
     create_referee_handler, get_all_referees_handler, get_referee_by_id_handler,
     update_referee_club_handler,
@@ -16,12 +17,22 @@ pub mod application;
 pub mod domain;
 pub mod ports;
 
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(short, long)]
+    db_url: String,
+    #[arg(short, long)]
+    server_host: String,
+}
+
 #[tokio::main]
 async fn main() {
-    let db_url = std::env::var("DATABASE_URL").unwrap();
-    let server_host = std::env::var("SERVER_HOST").unwrap();
-    let connection_pool = PgPool::connect(&db_url).await.unwrap();
+    env_logger::init();
 
+    let args = Args::parse();
+
+    let connection_pool = PgPool::connect(&args.db_url).await.unwrap();
     let app_state = AppState { connection_pool };
     let state_arc = Arc::new(app_state);
 
@@ -44,7 +55,9 @@ async fn main() {
         .layer(cors)
         .with_state(state_arc);
 
-    let listener = tokio::net::TcpListener::bind(&server_host).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&args.server_host)
+        .await
+        .unwrap();
 
     axum::serve(listener, app).await.unwrap();
 }

@@ -1,4 +1,3 @@
-use axum::async_trait;
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
@@ -27,7 +26,6 @@ impl RefereeRepositoryPg {
     }
 }
 
-#[async_trait]
 impl RefereeRepository for RefereeRepositoryPg {
     type Error = String;
     type TxCtx = Transaction<'static, Postgres>;

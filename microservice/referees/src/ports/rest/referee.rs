@@ -200,7 +200,7 @@ mod referee_tests {
     }
 
     async fn clear_referee_table() {
-        let db_url = std::env::var("DB_URL").expect("DB_URL not set");
+        let db_url = "postgres://postgres:postgres@localhost:5433/referees?application_name=rustddd&options=-c search_path%3Drustddd";
         let connection_pool = PgPool::connect(&db_url).await.unwrap();
 
         sqlx::query("DELETE FROM rustddd.referees")

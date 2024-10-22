@@ -1,7 +1,6 @@
 use crate::domain::aggregates::referee::{Referee, RefereeId};
-use async_trait::async_trait;
 
-#[async_trait]
+#[allow(async_fn_in_trait)]
 pub trait RefereeRepository {
     type Error;
     type TxCtx;

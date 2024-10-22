@@ -5,6 +5,8 @@ use uuid::Uuid;
 
 pub mod app_error;
 
+pub const REFEREES_SERVICE_HOST: &str = "http://localhost:3000";
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RefereeIdDTO(pub Uuid);
 
@@ -166,7 +168,7 @@ impl From<Uuid> for TeamIdDTO {
 }
 
 pub async fn fetch_referees() -> Vec<RefereeDTO> {
-    let url = Url::parse("http://localhost:3001/referees");
+    let url = Url::parse(&format!("{}/referees", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
@@ -174,9 +176,9 @@ pub async fn fetch_referees() -> Vec<RefereeDTO> {
 pub async fn create_referee(
     ref_creation: &RefereeCreationDTO,
 ) -> Result<RefereeDTO, reqwest::Error> {
-    let url = Url::parse("http://localhost:3001/referee").unwrap();
+    let url = Url::parse(&format!("{}/referee", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new()
-        .post(url)
+        .post(url.unwrap())
         .json(&ref_creation)
         .send()
         .await?;
@@ -184,7 +186,10 @@ pub async fn create_referee(
 }
 
 pub async fn fetch_referee(referee_id: RefereeIdDTO) -> RefereeDTO {
-    let url = Url::parse(&format!("http://localhost:3001/referee/{}", referee_id.0));
+    let url = Url::parse(&format!(
+        "{}/referee/{}",
+        REFEREES_SERVICE_HOST, referee_id.0
+    ));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
@@ -194,24 +199,27 @@ pub async fn change_referee_club(
     club: &str,
 ) -> Result<String, reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/referee/{}/club",
-        referee_id.0
-    ))
-    .unwrap();
-    let response = reqwest::Client::new().post(url).json(&club).send().await?;
+        "{}/referee/{}/club",
+        REFEREES_SERVICE_HOST, referee_id.0
+    ));
+    let response = reqwest::Client::new()
+        .post(url.unwrap())
+        .json(&club)
+        .send()
+        .await?;
     response.json().await
 }
 
 pub async fn fetch_venues() -> Vec<VenueDTO> {
-    let url = Url::parse("http://localhost:3001/venues");
+    let url = Url::parse(&format!("{}/venues", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
 
 pub async fn create_venue(venue_creation: &VenueCreationDTO) -> Result<VenueDTO, reqwest::Error> {
-    let url = Url::parse("http://localhost:3001/venue").unwrap();
+    let url = Url::parse(&format!("{}/venue", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new()
-        .post(url)
+        .post(url.unwrap())
         .json(&venue_creation)
         .send()
         .await?;
@@ -219,27 +227,27 @@ pub async fn create_venue(venue_creation: &VenueCreationDTO) -> Result<VenueDTO,
 }
 
 pub async fn fetch_venue(venue_id: VenueIdDTO) -> Result<VenueDTO, reqwest::Error> {
-    let url = Url::parse(&format!("http://localhost:3001/venue/{}", venue_id.0));
+    let url = Url::parse(&format!("{}/venue/{}", REFEREES_SERVICE_HOST, venue_id.0));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
     response.json().await
 }
 
 pub async fn fetch_teams() -> Vec<TeamDTO> {
-    let url = Url::parse("http://localhost:3001/teams");
+    let url = Url::parse(&format!("{}/teams", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
 
 pub async fn fetch_team(team_id: TeamIdDTO) -> Result<TeamDTO, reqwest::Error> {
-    let url = Url::parse(&format!("http://localhost:3001/team/{}", team_id.0));
+    let url = Url::parse(&format!("{}/team/{}", REFEREES_SERVICE_HOST, team_id.0));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
     response.json().await
 }
 
 pub async fn create_team(team_creation: &TeamCreationDTO) -> Result<TeamDTO, reqwest::Error> {
-    let url = Url::parse("http://localhost:3001/team").unwrap();
+    let url = Url::parse(&format!("{}/team", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new()
-        .post(url)
+        .post(url.unwrap())
         .json(&team_creation)
         .send()
         .await?;
@@ -247,7 +255,7 @@ pub async fn create_team(team_creation: &TeamCreationDTO) -> Result<TeamDTO, req
 }
 
 pub async fn fetch_fixtures() -> Vec<FixtureDTO> {
-    let url = Url::parse("http://localhost:3001/fixtures");
+    let url = Url::parse(&format!("{}/fixtures", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
@@ -255,9 +263,9 @@ pub async fn fetch_fixtures() -> Vec<FixtureDTO> {
 pub async fn create_fixture(
     fixture_creation: &FixtureCreationDTO,
 ) -> Result<FixtureDTO, reqwest::Error> {
-    let url = Url::parse("http://localhost:3001/fixture").unwrap();
+    let url = Url::parse(&format!("{}/fixture", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new()
-        .post(url)
+        .post(url.unwrap())
         .json(&fixture_creation)
         .send()
         .await?;
@@ -265,7 +273,10 @@ pub async fn create_fixture(
 }
 
 pub async fn fetch_fixture(fixture_id: FixtureIdDTO) -> Result<FixtureDTO, reqwest::Error> {
-    let url = Url::parse(&format!("http://localhost:3001/fixture/{}", fixture_id.0));
+    let url = Url::parse(&format!(
+        "{}/fixture/{}",
+        REFEREES_SERVICE_HOST, fixture_id.0
+    ));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
     response.json().await
 }
@@ -275,8 +286,8 @@ pub async fn change_fixture_date(
     date: DateTime<Utc>,
 ) -> Result<FixtureDTO, reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/fixture/{}/date",
-        fixture_id.0
+        "{}/fixture/{}/date",
+        REFEREES_SERVICE_HOST, fixture_id.0
     ));
     let response = reqwest::Client::new()
         .post(url.unwrap())
@@ -291,8 +302,8 @@ pub async fn change_fixture_venue(
     venue_id: VenueIdDTO,
 ) -> Result<FixtureDTO, reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/fixture/{}/venue",
-        fixture_id.0
+        "{}/fixture/{}/venue",
+        REFEREES_SERVICE_HOST, fixture_id.0
     ));
     let response = reqwest::Client::new()
         .post(url.unwrap())
@@ -304,8 +315,8 @@ pub async fn change_fixture_venue(
 
 pub async fn cancel_fixture(fixture_id: FixtureIdDTO) -> Result<FixtureDTO, reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/fixture/{}/cancel",
-        fixture_id.0
+        "{}/fixture/{}/cancel",
+        REFEREES_SERVICE_HOST, fixture_id.0
     ));
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
     response.json().await
@@ -315,8 +326,8 @@ pub async fn fetch_availabilities_for_referee(
     referee_id: RefereeIdDTO,
 ) -> Result<Vec<FixtureIdDTO>, reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/availabilities/referee/{}",
-        referee_id.0
+        "{}/availabilities/referee/{}",
+        REFEREES_SERVICE_HOST, referee_id.0
     ));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
     response.json().await
@@ -327,8 +338,8 @@ pub async fn declare_availability(
     referee_id: RefereeIdDTO,
 ) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/availabilities/declare/fixture/{}/referee/{}",
-        fixture_id.0, referee_id.0
+        "{}/availabilities/declare/fixture/{}/referee/{}",
+        REFEREES_SERVICE_HOST, fixture_id.0, referee_id.0
     ));
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
     response.json().await
@@ -339,15 +350,15 @@ pub async fn withdraw_availability(
     referee_id: RefereeIdDTO,
 ) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/availabilities/withdraw/fixture/{}/referee/{}",
-        fixture_id.0, referee_id.0
+        "{}/availabilities/withdraw/fixture/{}/referee/{}",
+        REFEREES_SERVICE_HOST, fixture_id.0, referee_id.0
     ));
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
     response.json().await
 }
 
 pub async fn fetch_assignments() -> Vec<AssignmentDTO> {
-    let url = Url::parse("http://localhost:3001/assignments");
+    let url = Url::parse(&format!("{}/assignments", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
@@ -355,9 +366,9 @@ pub async fn fetch_assignments() -> Vec<AssignmentDTO> {
 pub async fn stage_assignment(
     assignment_staging: &AssignmentStagingDTO,
 ) -> Result<AssignmentDTO, reqwest::Error> {
-    let url = Url::parse("http://localhost:3001/assignments").unwrap();
+    let url = Url::parse(&format!("{}/assignments", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new()
-        .put(url)
+        .put(url.unwrap())
         .json(&assignment_staging)
         .send()
         .await?;
@@ -366,30 +377,28 @@ pub async fn stage_assignment(
 
 pub async fn remove_committed_assignment(assignment: &AssignmentDTO) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/assignments/committed/{}/{}",
-        assignment.fixture_id.0, assignment.referee_id.0
-    ))
-    .unwrap();
-    let response = reqwest::Client::new().delete(url).send().await?;
+        "{}/assignments/committed/{}/{}",
+        REFEREES_SERVICE_HOST, assignment.fixture_id.0, assignment.referee_id.0
+    ));
+    let response = reqwest::Client::new().delete(url.unwrap()).send().await?;
     response.json().await
 }
 pub async fn remove_staged_assignment(assignment: &AssignmentDTO) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
-        "http://localhost:3001/assignments/staged/{}/{}",
-        assignment.fixture_id.0, assignment.referee_id.0
-    ))
-    .unwrap();
-    let response = reqwest::Client::new().delete(url).send().await?;
+        "{}/assignments/staged/{}/{}",
+        REFEREES_SERVICE_HOST, assignment.fixture_id.0, assignment.referee_id.0
+    ));
+    let response = reqwest::Client::new().delete(url.unwrap()).send().await?;
     response.json().await
 }
 pub async fn validate_assignments() -> Result<String, reqwest::Error> {
-    let url = Url::parse("http://localhost:3001/assignments/validate");
+    let url = Url::parse(&format!("{}/assignments/validate", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
     response.text().await
 }
 
 pub async fn commit_assignments() -> Result<String, reqwest::Error> {
-    let url = Url::parse("http://localhost:3001/assignments/commit");
+    let url = Url::parse(&format!("{}/assignments/commit", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
     response.text().await
 }
