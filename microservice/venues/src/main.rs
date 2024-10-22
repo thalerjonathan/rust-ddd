@@ -5,13 +5,12 @@ use axum::{
 };
 use clap::Parser;
 
-use referees::ports::rest::referee::{
-    create_referee_handler, get_all_referees_handler, get_referee_by_id_handler,
-    update_referee_club_handler,
-};
-use referees::AppState;
 use sqlx::PgPool;
 use std::sync::Arc;
+use venues::ports::rest::venues::{
+    create_venue_handler, get_all_venues_handler, get_venue_by_id_handler,
+};
+use venues::AppState;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -44,10 +43,9 @@ async fn main() {
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
-        .route("/referees", post(create_referee_handler))
-        .route("/referees/:id", get(get_referee_by_id_handler))
-        .route("/referees/all", get(get_all_referees_handler))
-        .route("/referees/:id/club", post(update_referee_club_handler))
+        .route("/venues", post(create_venue_handler))
+        .route("/venues/:id", get(get_venue_by_id_handler))
+        .route("/venues/all", get(get_all_venues_handler))
         .layer(cors)
         .with_state(state_arc);
 

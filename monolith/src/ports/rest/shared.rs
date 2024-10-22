@@ -1,15 +1,8 @@
-use std::fmt::Display;
-
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
 use chrono::Utc;
-use log::error;
 use shared::{
     AssignmentDTO, AssignmentRefereeRoleDTO, AssignmentStatusDTO, FixtureCreationDTO, FixtureDTO,
     FixtureIdDTO, FixtureStatusDTO, RefereeDTO, RefereeIdDTO, TeamCreationDTO, TeamDTO, TeamIdDTO,
-    VenueCreationDTO, VenueDTO, VenueIdDTO,
+    VenueCreationDTO,
 };
 
 use crate::domain::aggregates::{
@@ -17,40 +10,7 @@ use crate::domain::aggregates::{
     fixture::{Fixture, FixtureId, FixtureStatus},
     referee::{Referee, RefereeId},
     team::{Team, TeamId},
-    venue::{Venue, VenueId},
 };
-/// Represents an application error, where the application failed to handle a response
-/// This is used to map such errors to 500 internal server error HTTP codes
-#[derive(Debug)]
-pub struct AppError {
-    error: String,
-}
-
-impl Display for AppError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.error.fmt(f)
-    }
-}
-
-// NOTE: need to implement IntoResponse so that axum knows how to return 500 from an AppError
-impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
-        error!("Response error: {}", self);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed processing request due to error: {}", self),
-        )
-            .into_response()
-    }
-}
-
-impl AppError {
-    pub fn from_error(error: &str) -> Self {
-        Self {
-            error: error.to_string(),
-        }
-    }
-}
 
 impl From<FixtureStatus> for FixtureStatusDTO {
     fn from(status: FixtureStatus) -> Self {
@@ -95,25 +55,6 @@ impl From<Team> for TeamDTO {
         }
     }
 }
-impl From<Venue> for VenueDTO {
-    fn from(venue: Venue) -> Self {
-        VenueDTO {
-            id: venue.id().into(),
-            name: venue.name().to_string(),
-            street: venue.street().to_string(),
-            zip: venue.zip().to_string(),
-            city: venue.city().to_string(),
-            telephone: venue.telephone(),
-            email: venue.email(),
-        }
-    }
-}
-
-impl From<VenueIdDTO> for VenueId {
-    fn from(value: VenueIdDTO) -> Self {
-        Self(value.0)
-    }
-}
 
 impl From<RefereeIdDTO> for RefereeId {
     fn from(value: RefereeIdDTO) -> Self {
@@ -130,12 +71,6 @@ impl From<TeamIdDTO> for TeamId {
 impl From<FixtureIdDTO> for FixtureId {
     fn from(id: FixtureIdDTO) -> Self {
         Self(id.0)
-    }
-}
-
-impl From<VenueId> for VenueIdDTO {
-    fn from(id: VenueId) -> Self {
-        VenueIdDTO(id.0)
     }
 }
 

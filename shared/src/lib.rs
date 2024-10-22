@@ -211,13 +211,13 @@ pub async fn change_referee_club(
 }
 
 pub async fn fetch_venues() -> Vec<VenueDTO> {
-    let url = Url::parse(&format!("{}/venues", REFEREES_SERVICE_HOST));
+    let url = Url::parse(&format!("{}/venues/all", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
 
 pub async fn create_venue(venue_creation: &VenueCreationDTO) -> Result<VenueDTO, reqwest::Error> {
-    let url = Url::parse(&format!("{}/venue", REFEREES_SERVICE_HOST));
+    let url = Url::parse(&format!("{}/venues", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new()
         .post(url.unwrap())
         .json(&venue_creation)
@@ -227,7 +227,7 @@ pub async fn create_venue(venue_creation: &VenueCreationDTO) -> Result<VenueDTO,
 }
 
 pub async fn fetch_venue(venue_id: VenueIdDTO) -> Result<VenueDTO, reqwest::Error> {
-    let url = Url::parse(&format!("{}/venue/{}", REFEREES_SERVICE_HOST, venue_id.0));
+    let url = Url::parse(&format!("{}/venues/{}", REFEREES_SERVICE_HOST, venue_id.0));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
     response.json().await
 }
