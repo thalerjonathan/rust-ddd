@@ -1,6 +1,6 @@
 use leptos::*;
 use leptos_router::use_params_map;
-use shared::fetch_team;
+use restinterface::fetch_team;
 
 #[component]
 pub fn TeamDetails() -> impl IntoView {
@@ -12,11 +12,11 @@ pub fn TeamDetails() -> impl IntoView {
     create_effect(move |_| {
         let id = id().unwrap_or_default();
         spawn_local(async move {
-            let team_details: shared::TeamDTO = fetch_team(id.into()).await.unwrap();
+            let team_details: restinterface::TeamDTO = fetch_team(id.into()).await.unwrap();
             set_team(Some(team_details));
         });
     });
-    
+
     view! {
         <div>
             <h2>"Team Details"</h2>

@@ -1,31 +1,11 @@
-use std::str::FromStr;
-
+use microservices_shared::domain_ids::TeamId;
 use uuid::Uuid;
-
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
-pub struct TeamId(pub Uuid);
 
 #[derive(Debug, Clone)]
 pub struct Team {
     id: TeamId,
     name: String,
     club: String,
-}
-
-impl TryFrom<String> for TeamId {
-    type Error = String;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Uuid::from_str(&value)
-            .map_err(|e| e.to_string())
-            .map(TeamId)
-    }
-}
-
-impl From<Uuid> for TeamId {
-    fn from(value: Uuid) -> Self {
-        Self(value)
-    }
 }
 
 impl Team {

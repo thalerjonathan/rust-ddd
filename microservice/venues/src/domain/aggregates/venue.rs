@@ -1,9 +1,5 @@
-use std::str::FromStr;
-
+use microservices_shared::domain_ids::VenueId;
 use uuid::Uuid;
-
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
-pub struct VenueId(pub Uuid);
 
 #[derive(Debug, Clone)]
 pub struct Venue {
@@ -14,22 +10,6 @@ pub struct Venue {
     city: String,
     telephone: Option<String>,
     email: Option<String>,
-}
-
-impl TryFrom<String> for VenueId {
-    type Error = String;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Uuid::from_str(&value)
-            .map_err(|e| e.to_string())
-            .map(VenueId)
-    }
-}
-
-impl From<Uuid> for VenueId {
-    fn from(value: Uuid) -> Self {
-        Self(value)
-    }
 }
 
 impl Venue {

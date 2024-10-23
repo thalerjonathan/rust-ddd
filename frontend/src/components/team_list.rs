@@ -1,7 +1,7 @@
 use ev::SubmitEvent;
 use leptos::*;
 use log::error;
-use shared::{create_team, fetch_teams, TeamCreationDTO, TeamDTO};
+use restinterface::{create_team, fetch_teams, TeamCreationDTO, TeamDTO};
 
 #[component]
 pub fn TeamList() -> impl IntoView {

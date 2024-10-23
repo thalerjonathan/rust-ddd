@@ -1,10 +1,8 @@
+use microservices_shared::domain_ids::TeamId;
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::domain::{
-    aggregates::team::{Team, TeamId},
-    repositories::team_repo::TeamRepository,
-};
+use crate::domain::{aggregates::team::Team, repositories::team_repo::TeamRepository};
 
 pub struct TeamRepositoryPg();
 

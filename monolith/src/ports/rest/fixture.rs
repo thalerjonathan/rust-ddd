@@ -9,8 +9,8 @@ use axum::extract::{Path, State};
 use axum::Json;
 use chrono::{DateTime, Utc};
 use log::debug;
-use shared::app_error::AppError;
-use shared::{FixtureCreationDTO, FixtureDTO, FixtureIdDTO};
+use restinterface::app_error::AppError;
+use restinterface::{FixtureCreationDTO, FixtureDTO, FixtureIdDTO};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -166,7 +166,7 @@ pub async fn cancel_fixture_handler(
 #[cfg(test)]
 mod fixture_tests {
     use chrono::Utc;
-    use shared::{
+    use restinterface::{
         cancel_fixture, change_fixture_date, change_fixture_venue, create_venue, fetch_fixture,
         fetch_fixtures, FixtureStatusDTO, VenueCreationDTO,
     };

@@ -39,6 +39,16 @@
             "database": "teams",
             "username": "postgres",
             "password": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5436,
+            "driver": "PostgreSQL",
+            "name": "Rust DDD Fixtures",
+            "database": "fixtures",
+            "username": "postgres",
+            "password": "postgres"
         }
     ]
 }

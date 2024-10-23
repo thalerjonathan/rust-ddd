@@ -5,15 +5,12 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{app_error::AppError, RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
+use restinterface::{app_error::AppError, RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
 
 use crate::{
     adapters::db::referee_repo_pg::RefereeRepositoryPg,
     application,
-    domain::{
-        aggregates::referee::{Referee, RefereeId},
-        repositories::referee_repo::RefereeRepository,
-    },
+    domain::{aggregates::referee::Referee, repositories::referee_repo::RefereeRepository},
     AppState,
 };
 
@@ -24,18 +21,6 @@ impl From<Referee> for RefereeDTO {
             name: referee.name().to_string(),
             club: referee.club().to_string(),
         }
-    }
-}
-
-impl From<RefereeIdDTO> for RefereeId {
-    fn from(value: RefereeIdDTO) -> Self {
-        Self(value.0)
-    }
-}
-
-impl From<RefereeId> for RefereeIdDTO {
-    fn from(id: RefereeId) -> Self {
-        RefereeIdDTO(id.0)
     }
 }
 
@@ -139,7 +124,7 @@ pub async fn update_referee_club_handler(
 
 #[cfg(test)]
 mod referee_tests {
-    use shared::{change_referee_club, fetch_referees, RefereeCreationDTO};
+    use restinterface::{change_referee_club, fetch_referees, RefereeCreationDTO};
     use sqlx::PgPool;
 
     #[tokio::test]
@@ -159,7 +144,7 @@ mod referee_tests {
             club: "Club A".to_string(),
         };
 
-        let referee_dto = shared::create_referee(&referee_creation).await;
+        let referee_dto = restinterface::create_referee(&referee_creation).await;
         assert!(referee_dto.is_ok(), "Referee should be created");
 
         let referees = fetch_referees().await;
@@ -181,7 +166,7 @@ mod referee_tests {
             club: "Club A".to_string(),
         };
 
-        let referee_dto = shared::create_referee(&referee_creation).await;
+        let referee_dto = restinterface::create_referee(&referee_creation).await;
         assert!(referee_dto.is_ok(), "Referee should be created");
 
         let referee_dto = referee_dto.unwrap();
@@ -192,7 +177,7 @@ mod referee_tests {
             "Referee club should be updated"
         );
 
-        let referee_dto = shared::fetch_referee(referee_dto.id.into()).await;
+        let referee_dto = restinterface::fetch_referee(referee_dto.id.into()).await;
         assert_eq!(
             referee_dto.club, updated_club,
             "Referee club should be updated"

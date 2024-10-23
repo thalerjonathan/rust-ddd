@@ -185,13 +185,13 @@ pub async fn create_referee(
     response.json().await
 }
 
-pub async fn fetch_referee(referee_id: RefereeIdDTO) -> RefereeDTO {
+pub async fn fetch_referee(referee_id: RefereeIdDTO) -> Result<RefereeDTO, reqwest::Error> {
     let url = Url::parse(&format!(
         "{}/referees/{}",
         REFEREES_SERVICE_HOST, referee_id.0
     ));
-    let response = reqwest::Client::new().get(url.unwrap()).send().await;
-    response.unwrap().json().await.unwrap()
+    let response = reqwest::Client::new().get(url.unwrap()).send().await?;
+    response.json().await
 }
 
 pub async fn change_referee_club(
@@ -255,7 +255,7 @@ pub async fn create_team(team_creation: &TeamCreationDTO) -> Result<TeamDTO, req
 }
 
 pub async fn fetch_fixtures() -> Vec<FixtureDTO> {
-    let url = Url::parse(&format!("{}/fixtures", REFEREES_SERVICE_HOST));
+    let url = Url::parse(&format!("{}/fixtures/all", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().get(url.unwrap()).send().await;
     response.unwrap().json().await.unwrap()
 }
@@ -263,7 +263,7 @@ pub async fn fetch_fixtures() -> Vec<FixtureDTO> {
 pub async fn create_fixture(
     fixture_creation: &FixtureCreationDTO,
 ) -> Result<FixtureDTO, reqwest::Error> {
-    let url = Url::parse(&format!("{}/fixture", REFEREES_SERVICE_HOST));
+    let url = Url::parse(&format!("{}/fixtures", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new()
         .post(url.unwrap())
         .json(&fixture_creation)
@@ -274,7 +274,7 @@ pub async fn create_fixture(
 
 pub async fn fetch_fixture(fixture_id: FixtureIdDTO) -> Result<FixtureDTO, reqwest::Error> {
     let url = Url::parse(&format!(
-        "{}/fixture/{}",
+        "{}/fixtures/{}",
         REFEREES_SERVICE_HOST, fixture_id.0
     ));
     let response = reqwest::Client::new().get(url.unwrap()).send().await?;
@@ -284,9 +284,9 @@ pub async fn fetch_fixture(fixture_id: FixtureIdDTO) -> Result<FixtureDTO, reqwe
 pub async fn change_fixture_date(
     fixture_id: FixtureIdDTO,
     date: DateTime<Utc>,
-) -> Result<FixtureDTO, reqwest::Error> {
+) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
-        "{}/fixture/{}/date",
+        "{}/fixtures/{}/date",
         REFEREES_SERVICE_HOST, fixture_id.0
     ));
     let response = reqwest::Client::new()
@@ -300,9 +300,9 @@ pub async fn change_fixture_date(
 pub async fn change_fixture_venue(
     fixture_id: FixtureIdDTO,
     venue_id: VenueIdDTO,
-) -> Result<FixtureDTO, reqwest::Error> {
+) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
-        "{}/fixture/{}/venue",
+        "{}/fixtures/{}/venue",
         REFEREES_SERVICE_HOST, fixture_id.0
     ));
     let response = reqwest::Client::new()
@@ -313,9 +313,9 @@ pub async fn change_fixture_venue(
     response.json().await
 }
 
-pub async fn cancel_fixture(fixture_id: FixtureIdDTO) -> Result<FixtureDTO, reqwest::Error> {
+pub async fn cancel_fixture(fixture_id: FixtureIdDTO) -> Result<(), reqwest::Error> {
     let url = Url::parse(&format!(
-        "{}/fixture/{}/cancel",
+        "{}/fixtures/{}/cancel",
         REFEREES_SERVICE_HOST, fixture_id.0
     ));
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
@@ -401,4 +401,45 @@ pub async fn commit_assignments() -> Result<String, reqwest::Error> {
     let url = Url::parse(&format!("{}/assignments/commit", REFEREES_SERVICE_HOST));
     let response = reqwest::Client::new().post(url.unwrap()).send().await?;
     response.text().await
+}
+
+#[allow(dead_code)]
+// NOTE: only used for testing
+pub async fn create_test_fixture() -> (FixtureCreationDTO, FixtureDTO) {
+    let team_home = create_team(&TeamCreationDTO {
+        name: "Team A".to_string(),
+        club: "Club A".to_string(),
+    })
+    .await
+    .unwrap();
+
+    let team_away = create_team(&TeamCreationDTO {
+        name: "Team B".to_string(),
+        club: "Club B".to_string(),
+    })
+    .await
+    .unwrap();
+
+    let venue = create_venue(&VenueCreationDTO {
+        name: "Venue A".to_string(),
+        street: "Street A".to_string(),
+        zip: "12345".to_string(),
+        city: "City A".to_string(),
+        telephone: Some("1234567890".to_string()),
+        email: Some("email@example.com".to_string()),
+    })
+    .await
+    .unwrap();
+
+    let fixture_creation = FixtureCreationDTO {
+        date: Utc::now(),
+        venue_id: venue.id,
+        team_home_id: team_home.id,
+        team_away_id: team_away.id,
+    };
+
+    let fixture_dto = create_fixture(&fixture_creation).await;
+    assert!(fixture_dto.is_ok(), "Fixture should be created");
+
+    (fixture_creation, fixture_dto.unwrap())
 }

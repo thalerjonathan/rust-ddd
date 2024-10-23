@@ -1,9 +1,7 @@
 use log::debug;
+use microservices_shared::domain_ids::RefereeId;
 
-use crate::domain::{
-    aggregates::referee::{Referee, RefereeId},
-    repositories::referee_repo::RefereeRepository,
-};
+use crate::domain::{aggregates::referee::Referee, repositories::referee_repo::RefereeRepository};
 
 pub async fn create_referee<TxCtx>(
     name: &str,

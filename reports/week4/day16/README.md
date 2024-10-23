@@ -1,4 +1,4 @@
-# Day 16 + 17
+# Day 16 + 17: Start refactoring the monolith into microservices
 
 The plan for today was to kick off the refactoring of the monolith into microservices.
 

@@ -1,7 +1,7 @@
 use ev::SubmitEvent;
 use leptos::*;
 use log::error;
-use shared::{create_venue, fetch_venues, VenueCreationDTO, VenueDTO};
+use restinterface::{create_venue, fetch_venues, VenueCreationDTO, VenueDTO};
 
 #[component]
 pub fn VenueList() -> impl IntoView {

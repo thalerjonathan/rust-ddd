@@ -1,4 +1,6 @@
-use crate::domain::aggregates::referee::{Referee, RefereeId};
+use microservices_shared::domain_ids::RefereeId;
+
+use crate::domain::aggregates::referee::Referee;
 
 #[allow(async_fn_in_trait)]
 pub trait RefereeRepository {

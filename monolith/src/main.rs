@@ -62,12 +62,12 @@ async fn main() {
         .route("/teams", post(create_team_handler))
         .route("/teams/:id", get(get_team_by_id_handler))
         .route("/teams/all", get(get_all_teams_handler))
-        .route("/fixture", post(create_fixture_handler))
-        .route("/fixture/:id", get(get_fixture_by_id_handler))
-        .route("/fixtures", get(get_all_fixtures_handler))
-        .route("/fixture/:id/date", post(update_fixture_date_handler))
-        .route("/fixture/:id/venue", post(update_fixture_venue_handler))
-        .route("/fixture/:id/cancel", post(cancel_fixture_handler))
+        .route("/fixtures", post(create_fixture_handler))
+        .route("/fixtures/:id", get(get_fixture_by_id_handler))
+        .route("/fixtures/all", get(get_all_fixtures_handler))
+        .route("/fixtures/:id/date", post(update_fixture_date_handler))
+        .route("/fixtures/:id/venue", post(update_fixture_venue_handler))
+        .route("/fixtures/:id/cancel", post(cancel_fixture_handler))
         .route(
             "/availabilities/declare/fixture/:fixture_id/referee/:referee_id",
             post(declare_availability_handler),

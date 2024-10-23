@@ -2,7 +2,7 @@ use chrono::{NaiveDateTime, Utc};
 use leptos::*;
 use log::{debug, error};
 
-use shared::{
+use restinterface::{
     create_fixture, fetch_fixtures, fetch_teams, fetch_venues, FixtureCreationDTO, FixtureDTO,
     FixtureStatusDTO, TeamDTO, TeamIdDTO, VenueDTO, VenueIdDTO,
 };

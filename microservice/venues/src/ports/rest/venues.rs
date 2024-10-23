@@ -5,29 +5,14 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{app_error::AppError, VenueCreationDTO, VenueDTO, VenueIdDTO};
+use restinterface::{app_error::AppError, VenueCreationDTO, VenueDTO, VenueIdDTO};
 
 use crate::{
     adapters::db::venue_repo_pg::VenueRepositoryPg,
     application,
-    domain::{
-        aggregates::venue::{Venue, VenueId},
-        repositories::venue_repo::VenueRepository,
-    },
+    domain::{aggregates::venue::Venue, repositories::venue_repo::VenueRepository},
     AppState,
 };
-
-impl From<VenueIdDTO> for VenueId {
-    fn from(value: VenueIdDTO) -> Self {
-        Self(value.0)
-    }
-}
-
-impl From<VenueId> for VenueIdDTO {
-    fn from(id: VenueId) -> Self {
-        VenueIdDTO(id.0)
-    }
-}
 
 impl From<Venue> for VenueDTO {
     fn from(venue: Venue) -> Self {
@@ -130,7 +115,7 @@ pub async fn get_all_venues_handler(
 
 #[cfg(test)]
 mod venues_tests {
-    use shared::{create_venue, fetch_venue, fetch_venues, VenueCreationDTO};
+    use restinterface::{create_venue, fetch_venue, fetch_venues, VenueCreationDTO};
     use sqlx::PgPool;
 
     #[tokio::test]

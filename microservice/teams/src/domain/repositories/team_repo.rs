@@ -1,6 +1,7 @@
+use microservices_shared::domain_ids::TeamId;
 use mockall::automock;
 
-use crate::domain::aggregates::team::{Team, TeamId};
+use crate::domain::aggregates::team::Team;
 
 #[allow(async_fn_in_trait)]
 #[automock(type Error = String; type TxCtx = ();)]

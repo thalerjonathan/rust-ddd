@@ -1,6 +1,6 @@
 use leptos::*;
 use log::{debug, error};
-use shared::{create_referee, fetch_referees, RefereeCreationDTO, RefereeDTO};
+use restinterface::{create_referee, fetch_referees, RefereeCreationDTO, RefereeDTO};
 
 #[component]
 pub fn RefereeList() -> impl IntoView {

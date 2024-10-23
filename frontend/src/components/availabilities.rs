@@ -1,20 +1,26 @@
 use leptos::*;
 use log::debug;
-use shared::{declare_availability, fetch_availabilities_for_referee, fetch_fixtures, fetch_referees, withdraw_availability, FixtureDTO, FixtureIdDTO, RefereeDTO, RefereeIdDTO};
+use restinterface::{
+    declare_availability, fetch_availabilities_for_referee, fetch_fixtures, fetch_referees,
+    withdraw_availability, FixtureDTO, FixtureIdDTO, RefereeDTO, RefereeIdDTO,
+};
 
 #[component]
 pub fn Availabilities() -> impl IntoView {
     let (availabilities, set_availabilities) = create_signal(Vec::<FixtureIdDTO>::new());
     let (referees, set_referees) = create_signal(Vec::<RefereeDTO>::new());
     let (fixtures, set_fixtures) = create_signal(Vec::<FixtureDTO>::new());
-    let (selected_referee_id, set_selected_referee_id) = create_signal(Option::<RefereeIdDTO>::None);
+    let (selected_referee_id, set_selected_referee_id) =
+        create_signal(Option::<RefereeIdDTO>::None);
 
     create_effect(move |_| {
         spawn_local(async move {
             let referees = fetch_referees().await;
             let fixtures = fetch_fixtures().await;
             let selected_referee_id: RefereeIdDTO = referees.first().unwrap().id;
-            let availabilities = fetch_availabilities_for_referee(selected_referee_id).await.unwrap();
+            let availabilities = fetch_availabilities_for_referee(selected_referee_id)
+                .await
+                .unwrap();
 
             set_referees(referees);
             set_fixtures(fixtures);
@@ -38,10 +44,15 @@ pub fn Availabilities() -> impl IntoView {
     let on_withdraw_availability = move |fixture_id: FixtureIdDTO| {
         debug!("withdrawing availability for fixture_id: {}", fixture_id.0);
         spawn_local(async move {
-            let result = withdraw_availability(fixture_id, selected_referee_id.get().unwrap()).await;
+            let result =
+                withdraw_availability(fixture_id, selected_referee_id.get().unwrap()).await;
             match result {
                 Ok(_) => {
-                    let updated_availabilities = availabilities.get().into_iter().filter(|a| *a != fixture_id).collect();
+                    let updated_availabilities = availabilities
+                        .get()
+                        .into_iter()
+                        .filter(|a| *a != fixture_id)
+                        .collect();
                     set_availabilities(updated_availabilities);
                 }
                 Err(e) => {
@@ -85,7 +96,7 @@ pub fn Availabilities() -> impl IntoView {
                             <p>Availability: Declared</p>
                             <button on:click= move |_ev: ev::MouseEvent| { on_withdraw_availability(f.id) }>Withdraw Availability</button>
                         </div>
-                    }   
+                    }
                 } else {
                     view! {
                         <div>
@@ -95,7 +106,7 @@ pub fn Availabilities() -> impl IntoView {
                     }
                 };
 
-                view! { 
+                view! {
                     <div>
                         <b>{f.date.to_string()}</b>
                         <p>{f.venue.name}</p>

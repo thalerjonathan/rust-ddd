@@ -5,8 +5,9 @@ edition = "2021"
 members = [
     "monolith",
     "frontend",
-    "shared",
+    "restinterface",
     "microservice/referees",
     "microservice/venues",
     "microservice/teams",
+    "microservice/fixtures",
 ]

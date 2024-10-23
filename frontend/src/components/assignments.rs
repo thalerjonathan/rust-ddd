@@ -1,13 +1,18 @@
 use leptos::*;
 use log::{debug, error};
-use shared::{commit_assignments, fetch_assignments, fetch_fixtures, fetch_referees, remove_committed_assignment, remove_staged_assignment, stage_assignment, AssignmentDTO, AssignmentRefereeRoleDTO, AssignmentStagingDTO, AssignmentStatusDTO, FixtureDTO, FixtureIdDTO, RefereeDTO, RefereeIdDTO};
+use restinterface::{
+    commit_assignments, fetch_assignments, fetch_fixtures, fetch_referees,
+    remove_committed_assignment, remove_staged_assignment, stage_assignment, AssignmentDTO,
+    AssignmentRefereeRoleDTO, AssignmentStagingDTO, AssignmentStatusDTO, FixtureDTO, FixtureIdDTO,
+    RefereeDTO, RefereeIdDTO,
+};
 
 #[component]
 pub fn Assignments() -> impl IntoView {
     let (assignments, set_assignments) = create_signal(Vec::<AssignmentDTO>::new());
     let (referees, set_referees) = create_signal(Vec::<RefereeDTO>::new());
     let (fixtures, set_fixtures) = create_signal(Vec::<FixtureDTO>::new());
-    
+
     create_effect(move |_| {
         spawn_local(async move {
             let assignments = fetch_assignments().await;
@@ -20,10 +25,14 @@ pub fn Assignments() -> impl IntoView {
         });
     });
 
+    let assign_referee = move |fixture_id: FixtureIdDTO,
+                               referee_role: AssignmentRefereeRoleDTO,
+                               referee_id: RefereeIdDTO| {
+        debug!(
+            "Assigning referee to fixture: {:?}, role: {:?}, referee_id: {:?}",
+            fixture_id, referee_role, referee_id
+        );
 
-    let assign_referee = move |fixture_id: FixtureIdDTO, referee_role: AssignmentRefereeRoleDTO, referee_id: RefereeIdDTO| {
-        debug!("Assigning referee to fixture: {:?}, role: {:?}, referee_id: {:?}", fixture_id, referee_role, referee_id);
- 
         spawn_local(async move {
             let assignment_staging = AssignmentStagingDTO {
                 fixture_id,
@@ -44,7 +53,7 @@ pub fn Assignments() -> impl IntoView {
     view! {
         <div>
             <h1>Assignments</h1>
-           
+
             <button on:click=move |_| {
                 spawn_local(async move {
                     let result = commit_assignments().await;
@@ -62,9 +71,9 @@ pub fn Assignments() -> impl IntoView {
         {move || fixtures.get().into_iter().map(|f| {
             let first_referee_assignment = assignments.get().into_iter().find(|a| a.fixture_id == f.id && a.referee_role == AssignmentRefereeRoleDTO::First);
             let second_referee_assignment = assignments.get().into_iter().find(|a| a.fixture_id == f.id && a.referee_role == AssignmentRefereeRoleDTO::Second);
-            
+
             let first_referee_assignment_view = match first_referee_assignment {
-                Some(a) => 
+                Some(a) =>
                     match a.status {
                         AssignmentStatusDTO::Staged => view! {
                         <div>
@@ -78,7 +87,7 @@ pub fn Assignments() -> impl IntoView {
                         </select>
                         <button on:click=move |_| {
                             let a = a.clone();
-                            spawn_local(async move {  
+                            spawn_local(async move {
                                 let result = remove_staged_assignment(&a).await;
                                 if result.is_ok() {
                                     let assignments = fetch_assignments().await;
@@ -88,7 +97,7 @@ pub fn Assignments() -> impl IntoView {
                                 }
                             });
                         }>Unassign First Referee</button>
-                        </div>  
+                        </div>
                         },
                         AssignmentStatusDTO::Committed => view! {
                             <div>
@@ -120,11 +129,11 @@ pub fn Assignments() -> impl IntoView {
                         </select>
                         </p>
                     </div>
-                }   
+                }
             };
 
             let second_referee_assignment_view = match second_referee_assignment {
-                Some(a) => 
+                Some(a) =>
                     match a.status {
                         AssignmentStatusDTO::Staged => view! {
                         <div>
@@ -138,7 +147,7 @@ pub fn Assignments() -> impl IntoView {
                         </select>
                         <button on:click=move |_| {
                             let a = a.clone();
-                            spawn_local(async move {  
+                            spawn_local(async move {
                                 let result = remove_staged_assignment(&a).await;
                                 if result.is_ok() {
                                     let assignments = fetch_assignments().await;
@@ -148,7 +157,7 @@ pub fn Assignments() -> impl IntoView {
                                 }
                             });
                         }>Unassign Second Referee</button>
-                        </div>  
+                        </div>
                         },
                         AssignmentStatusDTO::Committed => view! {
                             <div>
@@ -180,10 +189,10 @@ pub fn Assignments() -> impl IntoView {
                         </select>
                         </p>
                     </div>
-                }   
+                }
             };
 
-            view! { 
+            view! {
                 <div>
                     <b>{f.date.to_string()}</b>
                     <p>{f.venue.name}</p>

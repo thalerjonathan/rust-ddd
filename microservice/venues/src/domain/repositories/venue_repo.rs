@@ -1,6 +1,7 @@
+use microservices_shared::domain_ids::VenueId;
 use mockall::automock;
 
-use crate::domain::aggregates::venue::{Venue, VenueId};
+use crate::domain::aggregates::venue::Venue;
 
 #[automock(type Error = String; type TxCtx = ();)]
 #[allow(async_fn_in_trait)]

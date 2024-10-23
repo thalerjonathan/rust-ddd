@@ -1,10 +1,8 @@
+use microservices_shared::domain_ids::VenueId;
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::domain::{
-    aggregates::venue::{Venue, VenueId},
-    repositories::venue_repo::VenueRepository,
-};
+use crate::domain::{aggregates::venue::Venue, repositories::venue_repo::VenueRepository};
 
 struct VenueDb {
     id: Uuid,
@@ -48,7 +46,7 @@ impl VenueRepository for VenueRepositoryPg {
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Venue>, Self::Error> {
         let venue: Option<VenueDb> = sqlx::query_as!(
-                VenueDb,
+            VenueDb,
             "SELECT venue_id as id, name, street, zip, city, telephone, email
             FROM rustddd.venues 
             WHERE venue_id = $1",

@@ -5,7 +5,7 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{app_error::AppError, VenueCreationDTO, VenueDTO, VenueIdDTO};
+use restinterface::{app_error::AppError, VenueCreationDTO, VenueDTO, VenueIdDTO};
 
 use crate::{
     adapters::db::venue_repo_pg::VenueRepositoryPg, application,
@@ -101,7 +101,7 @@ pub async fn get_all_venues_handler(
 
 #[cfg(test)]
 mod venues_tests {
-    use shared::{create_venue, fetch_venue, fetch_venues, VenueCreationDTO};
+    use restinterface::{create_venue, fetch_venue, fetch_venues, VenueCreationDTO};
     use sqlx::PgPool;
 
     #[tokio::test]

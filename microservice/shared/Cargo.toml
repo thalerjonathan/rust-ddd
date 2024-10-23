@@ -1,0 +1,9 @@
+[package]
+name = "microservices-shared"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+uuid = { version = "1.8.0", features = ["v4", "serde"] }
+restinterface = { path = "../../restinterface" }
+mockall = "0.13.0"

@@ -3,8 +3,8 @@ use std::sync::Arc;
 use axum::extract::{Path, State};
 use axum::Json;
 use log::debug;
-use shared::app_error::AppError;
-use shared::{FixtureIdDTO, RefereeIdDTO};
+use restinterface::app_error::AppError;
+use restinterface::{FixtureIdDTO, RefereeIdDTO};
 
 use crate::adapters::db::availability_repo_pg::AvailabilityRepositoryPg;
 use crate::adapters::db::fixture_repo_pg::FixtureRepositoryPg;
@@ -115,7 +115,7 @@ pub async fn fetch_availabilities_for_referee_handler(
 
 #[cfg(test)]
 mod availabilities_tests {
-    use shared::{
+    use restinterface::{
         declare_availability, fetch_availabilities_for_referee, withdraw_availability,
         RefereeCreationDTO,
     };
@@ -131,7 +131,9 @@ mod availabilities_tests {
             name: "John Doe".to_string(),
             club: "Club A".to_string(),
         };
-        let referee_dto = shared::create_referee(&referee_creation).await.unwrap();
+        let referee_dto = restinterface::create_referee(&referee_creation)
+            .await
+            .unwrap();
 
         let availabilities = fetch_availabilities_for_referee(referee_dto.id)
             .await

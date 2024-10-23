@@ -5,15 +5,12 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{app_error::AppError, TeamCreationDTO, TeamDTO, TeamIdDTO};
+use restinterface::{app_error::AppError, TeamCreationDTO, TeamDTO, TeamIdDTO};
 
 use crate::{
     adapters::db::team_repo_pg::TeamRepositoryPg,
     application::team_services::create_team,
-    domain::{
-        aggregates::team::{Team, TeamId},
-        repositories::team_repo::TeamRepository,
-    },
+    domain::{aggregates::team::Team, repositories::team_repo::TeamRepository},
     AppState,
 };
 
@@ -24,18 +21,6 @@ impl From<Team> for TeamDTO {
             name: team.name().to_string(),
             club: team.club().to_string(),
         }
-    }
-}
-
-impl From<TeamId> for TeamIdDTO {
-    fn from(id: TeamId) -> Self {
-        TeamIdDTO(id.0)
-    }
-}
-
-impl From<TeamIdDTO> for TeamId {
-    fn from(id: TeamIdDTO) -> Self {
-        Self(id.0)
     }
 }
 
@@ -97,7 +82,7 @@ pub async fn get_all_teams_handler(
 
 #[cfg(test)]
 mod team_tests {
-    use shared::{create_team, fetch_team, fetch_teams, TeamCreationDTO};
+    use restinterface::{create_team, fetch_team, fetch_teams, TeamCreationDTO};
     use sqlx::PgPool;
 
     #[tokio::test]

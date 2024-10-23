@@ -5,7 +5,7 @@ use axum::{
     Json,
 };
 use log::debug;
-use shared::{
+use restinterface::{
     app_error::AppError, AssignmentDTO, AssignmentStagingDTO, FixtureIdDTO, RefereeIdDTO,
 };
 
@@ -140,7 +140,7 @@ pub async fn commit_assignments_handler(
 
 #[cfg(test)]
 mod assignments_tests {
-    use shared::{
+    use restinterface::{
         commit_assignments, fetch_assignments, fetch_fixture, remove_committed_assignment,
         remove_staged_assignment, stage_assignment, validate_assignments, AssignmentRefereeRoleDTO,
         AssignmentStagingDTO, AssignmentStatusDTO, RefereeCreationDTO,
@@ -162,13 +162,15 @@ mod assignments_tests {
             name: "John Doe".to_string(),
             club: "Club A".to_string(),
         };
-        let first_referee_dto = shared::create_referee(&referee_creation).await.unwrap();
+        let first_referee_dto = restinterface::create_referee(&referee_creation)
+            .await
+            .unwrap();
 
         let second_referee_creation = RefereeCreationDTO {
             name: "Jane Smith".to_string(),
             club: "Club B".to_string(),
         };
-        let second_referee_dto = shared::create_referee(&second_referee_creation)
+        let second_referee_dto = restinterface::create_referee(&second_referee_creation)
             .await
             .unwrap();
 

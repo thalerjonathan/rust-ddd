@@ -62,3 +62,8 @@ Finishing the *Availabilities* and implementing the *Assignments* UI.
 ## [Day 16 + 17](./week4/day16/README.md)
 
 Started refactoring the monolith into microservices: ADRs, Referees, Venues, Teams services.
+
+## [Day 18](./week4/day18/README.md)
+
+Fixtures Microservice and Caching with Redis.
+    

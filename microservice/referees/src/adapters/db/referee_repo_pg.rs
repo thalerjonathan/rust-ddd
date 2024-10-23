@@ -1,10 +1,8 @@
+use microservices_shared::domain_ids::RefereeId;
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::domain::{
-    aggregates::referee::{Referee, RefereeId},
-    repositories::referee_repo::RefereeRepository,
-};
+use crate::domain::{aggregates::referee::Referee, repositories::referee_repo::RefereeRepository};
 
 pub struct RefereeRepositoryPg();
 

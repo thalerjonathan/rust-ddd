@@ -1,7 +1,7 @@
 use leptos::*;
 use leptos_router::use_params_map;
 use log::{debug, error};
-use shared::{change_referee_club, fetch_referee, RefereeDTO};
+use restinterface::{change_referee_club, fetch_referee, RefereeDTO};
 
 #[component]
 pub fn RefereeDetails() -> impl IntoView {
@@ -51,7 +51,7 @@ pub fn RefereeDetails() -> impl IntoView {
         spawn_local(async move {
             let referee_details = fetch_referee(id.into()).await;
             set_referee_club(Some(String::new()));
-            set_referee(Some(referee_details));
+            set_referee(referee_details.ok());
         });
     });
 
