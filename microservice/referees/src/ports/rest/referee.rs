@@ -179,7 +179,8 @@ mod referee_tests {
 
         let referee_dto = restinterface::fetch_referee(referee_dto.id.into()).await;
         assert_eq!(
-            referee_dto.club, updated_club,
+            referee_dto.unwrap().club,
+            updated_club,
             "Referee club should be updated"
         );
     }

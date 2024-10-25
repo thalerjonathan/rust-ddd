@@ -41,12 +41,11 @@ pub async fn update_referee_club<TxCtx>(
 
 #[cfg(test)]
 mod tests {
+    use microservices_shared::domain_ids::RefereeId;
+
     use crate::{
         application::referee_services::{create_referee, update_referee_club},
-        domain::{
-            aggregates::referee::{Referee, RefereeId},
-            repositories::referee_repo::RefereeRepository,
-        },
+        domain::{aggregates::referee::Referee, repositories::referee_repo::RefereeRepository},
     };
     use std::cell::RefCell;
     use std::collections::HashMap;
