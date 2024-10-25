@@ -29,7 +29,11 @@ async fn main() {
     let args = Args::parse();
 
     let connection_pool = PgPool::connect(&args.db_url).await.unwrap();
-    let app_state = AppState { connection_pool };
+    let redis_client = redis::Client::open("redis://default:rustddd@127.0.0.1:6379/").unwrap();
+    let app_state = AppState {
+        connection_pool,
+        redis_client,
+    };
     let state_arc = Arc::new(app_state);
 
     let cors = tower_http::cors::CorsLayer::new()

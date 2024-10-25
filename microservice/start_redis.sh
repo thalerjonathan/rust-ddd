@@ -1,0 +1,1 @@
+docker compose -f redis/docker-compose.yaml up -d

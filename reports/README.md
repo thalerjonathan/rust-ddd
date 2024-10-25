@@ -67,3 +67,6 @@ Started refactoring the monolith into microservices: ADRs, Referees, Venues, Tea
 
 Fixtures Microservice and Caching with Redis.
     
+## [Day 19](./week4/day19/README.md)
+
+Adding Caching via Redis.

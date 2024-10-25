@@ -9,6 +9,7 @@ pub mod ports;
 
 pub struct AppState {
     pub connection_pool: PgPool,
+    pub redis_client: redis::Client,
 }
 
 // NOTE: This is a temporary solution to convert the FixtureStatus enum to the FixtureStatusDTO enum.

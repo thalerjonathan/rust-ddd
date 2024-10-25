@@ -7,3 +7,5 @@ edition = "2021"
 uuid = { version = "1.8.0", features = ["v4", "serde"] }
 restinterface = { path = "../../restinterface" }
 mockall = "0.13.0"
+redis = "0.27.5"
+serde_json = "1.0.128"
