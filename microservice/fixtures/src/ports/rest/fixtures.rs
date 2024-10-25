@@ -13,9 +13,8 @@ use microservices_shared::resolvers::impls::{
 use microservices_shared::resolvers::traits::{RefereeResolver, TeamResolver, VenueResolver};
 use restinterface::app_error::AppError;
 use restinterface::{FixtureCreationDTO, FixtureDTO, FixtureIdDTO};
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 pub async fn create_fixture_handler(
@@ -34,11 +33,11 @@ pub async fn create_fixture_handler(
         .redis_client
         .get_connection()
         .map_err(|e| AppError::from_error(&e.to_string()))?;
-    let redis_conn_rc_refcell = Rc::new(RefCell::new(redis_conn));
+    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
 
     let fixture_repo = FixtureRepositoryPg::new();
-    let venue_resolver = VenueResolverImpl::new(redis_conn_rc_refcell.clone());
-    let team_resolver = TeamResolverImpl::new(redis_conn_rc_refcell.clone());
+    let venue_resolver = VenueResolverImpl::new(redis_conn_arc_mutex.clone());
+    let team_resolver = TeamResolverImpl::new(redis_conn_arc_mutex.clone());
 
     let fixture = application::fixture_services::create_fixture(
         fixture_creation.date,
@@ -78,7 +77,7 @@ pub async fn get_fixture_by_id_handler(
         .redis_client
         .get_connection()
         .map_err(|e| AppError::from_error(&e.to_string()))?;
-    let redis_conn_rc_refcell = Rc::new(RefCell::new(redis_conn));
+    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
 
     let repo = FixtureRepositoryPg::new();
     let result = repo
@@ -88,9 +87,9 @@ pub async fn get_fixture_by_id_handler(
 
     debug!("Fixture: {:?}", result);
 
-    let venue_resolver = VenueResolverImpl::new(redis_conn_rc_refcell.clone());
-    let team_resolver = TeamResolverImpl::new(redis_conn_rc_refcell.clone());
-    let referee_resolver = RefereeResolverImpl::new(redis_conn_rc_refcell.clone());
+    let venue_resolver = VenueResolverImpl::new(redis_conn_arc_mutex.clone());
+    let team_resolver = TeamResolverImpl::new(redis_conn_arc_mutex.clone());
+    let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
 
     match result {
         Some(fixture) => Ok(Json(Some(
@@ -117,7 +116,7 @@ pub async fn get_all_fixtures_handler(
         .redis_client
         .get_connection()
         .map_err(|e| AppError::from_error(&e.to_string()))?;
-    let redis_conn_rc_refcell = Rc::new(RefCell::new(redis_conn));
+    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
 
     let repo = FixtureRepositoryPg::new();
 
@@ -128,9 +127,9 @@ pub async fn get_all_fixtures_handler(
 
     debug!("Fixtures: {:?}", fixtures);
 
-    let venue_resolver = VenueResolverImpl::new(redis_conn_rc_refcell.clone());
-    let team_resolver = TeamResolverImpl::new(redis_conn_rc_refcell.clone());
-    let referee_resolver = RefereeResolverImpl::new(redis_conn_rc_refcell.clone());
+    let venue_resolver = VenueResolverImpl::new(redis_conn_arc_mutex.clone());
+    let team_resolver = TeamResolverImpl::new(redis_conn_arc_mutex.clone());
+    let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
 
     let mut resolved_fixtures = Vec::new();
     for fixture in fixtures {
@@ -191,10 +190,10 @@ pub async fn update_fixture_venue_handler(
         .redis_client
         .get_connection()
         .map_err(|e| AppError::from_error(&e.to_string()))?;
-    let redis_conn_rc_refcell = Rc::new(RefCell::new(redis_conn));
+    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
 
     let fixture_repo = FixtureRepositoryPg::new();
-    let venue_resolver = VenueResolverImpl::new(redis_conn_rc_refcell.clone());
+    let venue_resolver = VenueResolverImpl::new(redis_conn_arc_mutex.clone());
 
     let _ = application::fixture_services::update_fixture_venue(
         fixture_id.into(),

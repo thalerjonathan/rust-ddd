@@ -20,6 +20,8 @@ struct Args {
     db_url: String,
     #[arg(short, long)]
     server_host: String,
+    #[arg(short, long)]
+    redis_url: String,
 }
 
 #[tokio::main]
@@ -29,7 +31,7 @@ async fn main() {
     let args = Args::parse();
 
     let connection_pool = PgPool::connect(&args.db_url).await.unwrap();
-    let redis_client = redis::Client::open("redis://default:rustddd@127.0.0.1:6379/").unwrap();
+    let redis_client = redis::Client::open(args.redis_url).unwrap();
     let app_state = AppState {
         connection_pool,
         redis_client,
