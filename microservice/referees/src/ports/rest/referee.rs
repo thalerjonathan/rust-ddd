@@ -38,6 +38,7 @@ pub async fn create_referee_handler(
         &ref_creation.name,
         &ref_creation.club,
         &repo,
+        &state.domain_event_publisher,
         &mut tx,
     )
     .await
@@ -108,6 +109,7 @@ pub async fn update_referee_club_handler(
         referee_id.into(),
         &club,
         &repo,
+        &state.domain_event_publisher,
         &mut tx,
     )
     .await
