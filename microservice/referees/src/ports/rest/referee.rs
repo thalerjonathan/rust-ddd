@@ -105,7 +105,7 @@ pub async fn update_referee_club_handler(
 
     let repo = RefereeRepositoryPg::new();
 
-    let result = application::referee_services::update_referee_club(
+    let _ = application::referee_services::update_referee_club(
         referee_id.into(),
         &club,
         &repo,
@@ -118,8 +118,6 @@ pub async fn update_referee_club_handler(
     tx.commit()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    debug!("Referee club changed: {:?}", result);
 
     Ok(Json(club))
 }

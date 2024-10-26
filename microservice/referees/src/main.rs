@@ -6,14 +6,14 @@ use axum::{
 use clap::Parser;
 
 use log::{info, warn};
-use microservices_shared::domain_events::KafkaDomainEventProducer;
+use microservices_shared::domain_events::{DomainEvent, KafkaDomainEventProducer};
 use rdkafka::config::RDKafkaLogLevel;
 use rdkafka::consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, StreamConsumer};
 use rdkafka::error::KafkaResult;
-use rdkafka::message::Headers;
 use rdkafka::producer::FutureProducer;
 use rdkafka::util::get_rdkafka_version;
 use rdkafka::{ClientConfig, ClientContext, Message, TopicPartitionList};
+use redis::Commands;
 use referees::config::AppConfig;
 use referees::ports::rest::referee::{
     create_referee_handler, get_all_referees_handler, get_referee_by_id_handler,
@@ -76,8 +76,6 @@ async fn main() {
         .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
         .set("enable.auto.commit", "false")
-        //.set("statistics.interval.ms", "30000")
-        //.set("auto.offset.reset", "smallest")
         .set_log_level(RDKafkaLogLevel::Debug)
         .create_with_context(context)
         .expect("Kafka consumer creation failed");
@@ -85,18 +83,16 @@ async fn main() {
     kafka_consumer
         .subscribe(&[&config.kafka_domain_events_topic as &str])
         .expect(&format!(
-            "Can't subscribe to topic {}",
+            "Can't subscribe to Domain Events topic {}",
             config.kafka_domain_events_topic
         ));
-
-    // TODO: abstract redis cache same way as domain event producer
 
     let domain_event_producer =
         KafkaDomainEventProducer::new(kafka_producer, &config.kafka_domain_events_topic);
 
     let app_state = AppState {
         connection_pool,
-        redis_client,
+        redis_client: redis_client.clone(),
         domain_event_publisher: Box::new(domain_event_producer),
     };
     let state_arc = Arc::new(app_state);
@@ -125,13 +121,14 @@ async fn main() {
         .unwrap();
 
     tokio::spawn(async move {
-        run_kafka_consumer(kafka_consumer).await;
+        run_kafka_consumer(kafka_consumer, redis_client).await;
     });
 
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn run_kafka_consumer(consumer: DomainEventConsumer) {
+async fn run_kafka_consumer(consumer: DomainEventConsumer, redis_client: redis::Client) {
+    let mut redis_conn = redis_client.get_connection().unwrap();
     loop {
         match consumer.recv().await {
             Err(e) => warn!("Kafka error: {}", e),
@@ -144,19 +141,26 @@ async fn run_kafka_consumer(consumer: DomainEventConsumer) {
                         ""
                     }
                 };
-                info!(
-                    "Received new Domain Event in Referees Service: key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}, timestamp: {:?}",
-                    m.key(),
-                    payload,
-                    m.topic(),
-                    m.partition(),
-                    m.offset(),
-                    m.timestamp()
-                );
-                if let Some(headers) = m.headers() {
-                    for i in 0..headers.count() {
-                        let (key, value) = headers.get(i).unwrap();
-                        info!("  Header {:#?}: {:?}", key, value);
+
+                let domain_event = DomainEvent::deserialize_from_str(&payload).unwrap();
+                match domain_event {
+                    DomainEvent::RefereeCreated { referee_id } => {
+                        info!("Received Domain Event: Referee created: {:?}", referee_id);
+                    }
+                    DomainEvent::RefereeClubChanged {
+                        referee_id,
+                        club_name,
+                    } => {
+                        info!(
+                            "Received Domain Event: Referee club changed: {:?} -> {}",
+                            referee_id, club_name
+                        );
+
+                        info!("Invalidating cache entry for referee: {:?}", referee_id);
+
+                        // NOTE: invalidate the cache entry for the referee
+                        let key = format!("referee_{}", referee_id.0.to_string());
+                        let _result: Result<(), redis::RedisError> = redis_conn.del(key);
                     }
                 }
                 consumer.commit_message(&m, CommitMode::Sync).unwrap();

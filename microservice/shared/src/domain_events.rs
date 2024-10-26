@@ -14,6 +14,12 @@ pub enum DomainEvent {
     },
 }
 
+impl DomainEvent {
+    pub fn deserialize_from_str(s: &str) -> Result<Self, String> {
+        serde_json::from_str(s).map_err(|e| e.to_string())
+    }
+}
+
 #[async_trait]
 pub trait DomainEventPublisher {
     async fn publish_domain_event(&self, event: DomainEvent) -> Result<(), String>;

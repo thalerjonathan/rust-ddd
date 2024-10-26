@@ -54,7 +54,8 @@ pub async fn update_referee_club<TxCtx>(
         .await
         .map_err(|e| e.to_string())?;
 
-    // TODO: invalidate cache entry
+    // NOTE: the cache entry is invalidated by the domain event listener of a Referee service instance
+    // to keep the application layer free from caching logic
 
     debug!("Referee updated: {:?}", referee);
 

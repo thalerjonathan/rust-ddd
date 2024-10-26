@@ -109,6 +109,7 @@ where
 
     debug!("Not found in Redis: {} - fetching from REST", key);
 
+    // TODO: if any error occurs here, we just log them but do not propagate them because fetching the DTO from REST worked
     let dto = fetch_fn().await.map_err(|e| e.to_string())?;
     let serialised_dto = serde_json::to_string(&dto).map_err(|e| e.to_string())?;
     // NOTE: need to handle this result this way due to "in edition 2024, the requirement `!: FromRedisValue` will fail"

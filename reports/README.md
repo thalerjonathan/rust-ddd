@@ -70,3 +70,7 @@ Fixtures Microservice and Caching with Redis.
 ## [Day 19](./week4/day19/README.md)
 
 Adding Caching via Redis.
+
+## [Day 20](./week5/day20/README.md)
+
+Adding Domain Events using Kafka
