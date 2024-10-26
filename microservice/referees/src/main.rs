@@ -1,3 +1,4 @@
+use axum::async_trait;
 use axum::http::Method;
 use axum::{
     routing::{get, post},
@@ -5,14 +6,14 @@ use axum::{
 };
 use clap::Parser;
 
-use log::{info, warn};
-use microservices_shared::domain_events::{DomainEvent, KafkaDomainEventProducer};
-use rdkafka::config::RDKafkaLogLevel;
-use rdkafka::consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, StreamConsumer};
-use rdkafka::error::KafkaResult;
+use log::info;
+use microservices_shared::domain_events::{
+    DomainEventCallbacks, DomainEventConsumer, KafkaDomainEventProducer,
+};
+use microservices_shared::domain_ids::RefereeId;
 use rdkafka::producer::FutureProducer;
 use rdkafka::util::get_rdkafka_version;
-use rdkafka::{ClientConfig, ClientContext, Message, TopicPartitionList};
+use rdkafka::ClientConfig;
 use redis::Commands;
 use referees::config::AppConfig;
 use referees::ports::rest::referee::{
@@ -30,25 +31,9 @@ struct Args {
     server_host: String,
 }
 
-struct CustomContext;
-
-impl ClientContext for CustomContext {}
-
-impl ConsumerContext for CustomContext {
-    fn pre_rebalance(&self, rebalance: &Rebalance) {
-        info!("Pre rebalance {:?}", rebalance);
-    }
-
-    fn post_rebalance(&self, rebalance: &Rebalance) {
-        info!("Post rebalance {:?}", rebalance);
-    }
-
-    fn commit_callback(&self, result: KafkaResult<()>, _offsets: &TopicPartitionList) {
-        info!("Committing offsets: {:?}", result);
-    }
+struct DomainEventCallbacksImpl {
+    redis_conn: redis::Connection,
 }
-
-type DomainEventConsumer = StreamConsumer<CustomContext>;
 
 #[tokio::main]
 async fn main() {
@@ -69,26 +54,17 @@ async fn main() {
         .create()
         .expect("Kafka producer creation error");
 
-    let context = CustomContext;
-    let kafka_consumer: DomainEventConsumer = ClientConfig::new()
-        .set("group.id", config.kafka_consumer_group)
-        .set("bootstrap.servers", config.kafka_url.clone())
-        .set("enable.partition.eof", "false")
-        .set("session.timeout.ms", "6000")
-        .set("enable.auto.commit", "false")
-        .set_log_level(RDKafkaLogLevel::Debug)
-        .create_with_context(context)
-        .expect("Kafka consumer creation failed");
-
-    kafka_consumer
-        .subscribe(&[&config.kafka_domain_events_topic as &str])
-        .expect(&format!(
-            "Can't subscribe to Domain Events topic {}",
-            config.kafka_domain_events_topic
-        ));
-
     let domain_event_producer =
         KafkaDomainEventProducer::new(kafka_producer, &config.kafka_domain_events_topic);
+
+    let redis_conn = redis_client.get_connection().unwrap();
+    let domain_event_callbacks = Box::new(DomainEventCallbacksImpl { redis_conn });
+    let mut domain_event_consumer = DomainEventConsumer::new(
+        &config.kafka_consumer_group,
+        &config.kafka_url,
+        &config.kafka_domain_events_topic,
+        domain_event_callbacks,
+    );
 
     let app_state = AppState {
         connection_pool,
@@ -121,50 +97,28 @@ async fn main() {
         .unwrap();
 
     tokio::spawn(async move {
-        run_kafka_consumer(kafka_consumer, redis_client).await;
+        domain_event_consumer.run().await;
     });
 
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn run_kafka_consumer(consumer: DomainEventConsumer, redis_client: redis::Client) {
-    let mut redis_conn = redis_client.get_connection().unwrap();
-    loop {
-        match consumer.recv().await {
-            Err(e) => warn!("Kafka error: {}", e),
-            Ok(m) => {
-                let payload = match m.payload_view::<str>() {
-                    None => "",
-                    Some(Ok(s)) => s,
-                    Some(Err(e)) => {
-                        warn!("Error while deserializing message payload: {:?}", e);
-                        ""
-                    }
-                };
+#[async_trait]
+impl DomainEventCallbacks for DomainEventCallbacksImpl {
+    async fn on_referee_created(&mut self, referee_id: RefereeId) {
+        info!("Received Domain Event: Referee created: {:?}", referee_id);
+    }
 
-                let domain_event = DomainEvent::deserialize_from_str(&payload).unwrap();
-                match domain_event {
-                    DomainEvent::RefereeCreated { referee_id } => {
-                        info!("Received Domain Event: Referee created: {:?}", referee_id);
-                    }
-                    DomainEvent::RefereeClubChanged {
-                        referee_id,
-                        club_name,
-                    } => {
-                        info!(
-                            "Received Domain Event: Referee club changed: {:?} -> {}",
-                            referee_id, club_name
-                        );
+    async fn on_referee_club_changed(&mut self, referee_id: RefereeId, club_name: String) {
+        info!(
+            "Received Domain Event: Referee club changed: {:?} -> {}",
+            referee_id, club_name
+        );
 
-                        info!("Invalidating cache entry for referee: {:?}", referee_id);
+        info!("Invalidating cache entry for referee: {:?}", referee_id);
 
-                        // NOTE: invalidate the cache entry for the referee
-                        let key = format!("referee_{}", referee_id.0.to_string());
-                        let _result: Result<(), redis::RedisError> = redis_conn.del(key);
-                    }
-                }
-                consumer.commit_message(&m, CommitMode::Sync).unwrap();
-            }
-        };
+        // NOTE: invalidate the cache entry for the referee
+        let key = format!("referee_{}", referee_id.0.to_string());
+        let _result: Result<(), redis::RedisError> = self.redis_conn.del(key);
     }
 }
