@@ -29,6 +29,12 @@ pub async fn create_fixture_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
+    state
+        .domain_event_publisher
+        .begin_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
     let redis_conn = state
         .redis_client
         .get_connection()
@@ -57,7 +63,11 @@ pub async fn create_fixture_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-    debug!("Fixture created: {:?}", fixture);
+    state
+        .domain_event_publisher
+        .commit_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(fixture))
 }
@@ -159,6 +169,12 @@ pub async fn update_fixture_date_handler(
 
     let fixture_repo = FixtureRepositoryPg::new();
 
+    state
+        .domain_event_publisher
+        .begin_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
     let _ = application::fixture_services::update_fixture_date(
         fixture_id.into(),
         date,
@@ -172,6 +188,13 @@ pub async fn update_fixture_date_handler(
     tx.commit()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .commit_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
     Ok(Json(()))
 }
 
@@ -185,6 +208,12 @@ pub async fn update_fixture_venue_handler(
     let mut tx = state
         .connection_pool
         .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .begin_transaction()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
@@ -212,6 +241,12 @@ pub async fn update_fixture_venue_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
+    state
+        .domain_event_publisher
+        .commit_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
     Ok(Json(()))
 }
 
@@ -227,6 +262,12 @@ pub async fn cancel_fixture_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
+    state
+        .domain_event_publisher
+        .begin_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
     let fixture_repo = FixtureRepositoryPg::new();
 
     let _ = application::fixture_services::cancel_fixture(
@@ -239,6 +280,12 @@ pub async fn cancel_fixture_handler(
     .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .commit_transaction()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 

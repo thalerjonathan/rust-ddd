@@ -34,8 +34,17 @@ pub async fn create_venue_handler(
 ) -> Result<Json<VenueDTO>, AppError> {
     debug!("Creating venue: {:?}", venue_creation);
 
-    let mut tx: sqlx::Transaction<'static, sqlx::Postgres> =
-        state.connection_pool.begin().await.unwrap();
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .begin_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let mut repo: VenueRepositoryPg = VenueRepositoryPg::new();
     let venue = application::venue_services::create_venue(
@@ -56,9 +65,13 @@ pub async fn create_venue_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-    let venue = VenueDTO::from(venue);
+    state
+        .domain_event_publisher
+        .commit_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-    debug!("Venue created: {:?}", venue);
+    let venue = VenueDTO::from(venue);
 
     Ok(Json::from(venue))
 }
@@ -69,7 +82,17 @@ pub async fn get_venue_by_id_handler(
 ) -> Result<Json<Option<VenueDTO>>, AppError> {
     debug!("Getting venue by id: {}", venue_id.0);
 
-    let mut tx = state.connection_pool.begin().await.unwrap();
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .begin_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let repo = VenueRepositoryPg::new();
     // NOTE: we are not using an application service here, because the logic is so simple
@@ -82,7 +105,11 @@ pub async fn get_venue_by_id_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-    debug!("Venue found: {:?}", venue);
+    state
+        .domain_event_publisher
+        .commit_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json::from(venue.map(|v| v.into())))
 }
@@ -92,7 +119,17 @@ pub async fn get_all_venues_handler(
 ) -> Result<Json<Vec<VenueDTO>>, AppError> {
     debug!("Getting all venues");
 
-    let mut tx = state.connection_pool.begin().await.unwrap();
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .begin_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let repo = VenueRepositoryPg::new();
 
@@ -103,6 +140,12 @@ pub async fn get_all_venues_handler(
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .commit_transaction()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 

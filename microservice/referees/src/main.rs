@@ -5,11 +5,7 @@ use axum::{
 };
 use clap::Parser;
 
-use log::info;
 use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
-use rdkafka::producer::FutureProducer;
-use rdkafka::util::get_rdkafka_version;
-use rdkafka::ClientConfig;
 use referees::config::AppConfig;
 use referees::ports::kafka::domain_events_handler::DomainEventCallbacksImpl;
 use referees::ports::rest::referee::{
@@ -37,17 +33,11 @@ async fn main() {
     let connection_pool = PgPool::connect(&config.db_url).await.unwrap();
     let redis_client = redis::Client::open(config.redis_url).unwrap();
 
-    let (version_n, version_s) = get_rdkafka_version();
-    info!("rd_kafka_version: 0x{:08x}, {}", version_n, version_s);
-
-    let kafka_producer: FutureProducer = ClientConfig::new()
-        .set("bootstrap.servers", config.kafka_url.clone())
-        .set("message.timeout.ms", "5000")
-        .create()
-        .expect("Kafka producer creation error");
-
-    let domain_event_producer =
-        KafkaDomainEventProducer::new(kafka_producer, &config.kafka_domain_events_topic);
+    let domain_event_producer = KafkaDomainEventProducer::new(
+        &config.kafka_url,
+        &config.kafka_domain_events_topic,
+        "23b3b7ba-39b0-4291-8da2-94f0db2eba0a",
+    );
 
     let redis_conn = redis_client.get_connection().unwrap();
     let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new(redis_conn));

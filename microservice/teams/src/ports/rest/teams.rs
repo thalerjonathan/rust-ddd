@@ -30,7 +30,17 @@ pub async fn create_team_handler(
 ) -> Result<Json<TeamDTO>, AppError> {
     debug!("Creating team: {:?}", team_creation);
 
-    let mut tx = state.connection_pool.begin().await.unwrap();
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .begin_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let repo = TeamRepositoryPg::new();
 
@@ -45,6 +55,12 @@ pub async fn create_team_handler(
     .map_err(|e| AppError::from_error(&e))?;
 
     tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .commit_transaction()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 

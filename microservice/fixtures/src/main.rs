@@ -12,11 +12,7 @@ use fixtures::ports::rest::fixtures::{
     get_fixture_by_id_handler, update_fixture_date_handler, update_fixture_venue_handler,
 };
 use fixtures::AppState;
-use log::info;
 use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
-use rdkafka::producer::FutureProducer;
-use rdkafka::util::get_rdkafka_version;
-use rdkafka::ClientConfig;
 use sqlx::PgPool;
 use std::sync::Arc;
 
@@ -37,15 +33,11 @@ async fn main() {
     let connection_pool = PgPool::connect(&config.db_url).await.unwrap();
     let redis_client = redis::Client::open(config.redis_url).unwrap();
 
-    let (version_n, version_s) = get_rdkafka_version();
-    info!("rd_kafka_version: 0x{:08x}, {}", version_n, version_s);
-    let kafka_producer: FutureProducer = ClientConfig::new()
-        .set("bootstrap.servers", config.kafka_url.clone())
-        .set("message.timeout.ms", "5000")
-        .create()
-        .expect("Kafka producer creation error");
-    let domain_event_producer =
-        KafkaDomainEventProducer::new(kafka_producer, &config.kafka_domain_events_topic);
+    let domain_event_producer = KafkaDomainEventProducer::new(
+        &config.kafka_url,
+        &config.kafka_domain_events_topic,
+        "f62c43e1-c2ab-47e2-b1f1-c8983de0a403",
+    );
     let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new());
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,

@@ -5,11 +5,7 @@ use axum::{
 };
 use clap::Parser;
 
-use log::info;
 use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
-use rdkafka::producer::FutureProducer;
-use rdkafka::util::get_rdkafka_version;
-use rdkafka::ClientConfig;
 use sqlx::PgPool;
 use std::sync::Arc;
 use venues::config::AppConfig;
@@ -35,15 +31,11 @@ async fn main() {
 
     let connection_pool = PgPool::connect(&config.db_url).await.unwrap();
 
-    let (version_n, version_s) = get_rdkafka_version();
-    info!("rd_kafka_version: 0x{:08x}, {}", version_n, version_s);
-    let kafka_producer: FutureProducer = ClientConfig::new()
-        .set("bootstrap.servers", config.kafka_url.clone())
-        .set("message.timeout.ms", "5000")
-        .create()
-        .expect("Kafka producer creation error");
-    let domain_event_producer =
-        KafkaDomainEventProducer::new(kafka_producer, &config.kafka_domain_events_topic);
+    let domain_event_producer = KafkaDomainEventProducer::new(
+        &config.kafka_url,
+        &config.kafka_domain_events_topic,
+        "bc70736b-432a-4083-b8f0-65c341a144b0",
+    );
     let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new());
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,

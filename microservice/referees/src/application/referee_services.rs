@@ -97,6 +97,14 @@ mod tests {
         async fn publish_domain_event(&self, _event: DomainEvent) -> Result<(), String> {
             Ok(())
         }
+
+        async fn begin_transaction(&self) -> Result<(), String> {
+            Ok(())
+        }
+
+        async fn commit_transaction(&self) -> Result<(), String> {
+            Ok(())
+        }
     }
 
     impl RefereeRepository for TestRepo {

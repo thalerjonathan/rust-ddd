@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::domain_ids::{FixtureId, RefereeId, TeamId, VenueId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -7,7 +9,8 @@ use rdkafka::{
     config::RDKafkaLogLevel,
     consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, StreamConsumer},
     error::KafkaResult,
-    producer::FutureProducer,
+    producer::{FutureProducer, Producer},
+    util::get_rdkafka_version,
     ClientConfig, ClientContext, Message, TopicPartitionList,
 };
 use serde::{Deserialize, Serialize};
@@ -52,6 +55,8 @@ impl DomainEvent {
 #[async_trait]
 #[automock]
 pub trait DomainEventPublisher {
+    async fn begin_transaction(&self) -> Result<(), String>;
+    async fn commit_transaction(&self) -> Result<(), String>;
     async fn publish_domain_event(&self, event: DomainEvent) -> Result<(), String>;
 }
 
@@ -61,7 +66,21 @@ pub struct KafkaDomainEventProducer {
 }
 
 impl KafkaDomainEventProducer {
-    pub fn new(kafka_producer: FutureProducer, topic: &str) -> Self {
+    pub fn new(kafka_url: &str, topic: &str, transactional_id: &str) -> Self {
+        let (version_n, version_s) = get_rdkafka_version();
+        info!("rd_kafka_version: 0x{:08x}, {}", version_n, version_s);
+
+        let kafka_producer: FutureProducer = ClientConfig::new()
+            .set("bootstrap.servers", kafka_url)
+            .set("message.timeout.ms", "5000")
+            .set("transactional.id", transactional_id)
+            .create()
+            .expect("Kafka producer creation error");
+
+        kafka_producer
+            .init_transactions(Duration::from_secs(10))
+            .unwrap();
+
         Self {
             kafka_producer,
             topic: topic.to_string(),
@@ -91,6 +110,18 @@ impl DomainEventPublisher for KafkaDomainEventProducer {
             }
             Err((err, _)) => Err(format!("Kafka error: {:?}", err)),
         }
+    }
+
+    async fn begin_transaction(&self) -> Result<(), String> {
+        self.kafka_producer
+            .begin_transaction()
+            .map_err(|e| e.to_string())
+    }
+
+    async fn commit_transaction(&self) -> Result<(), String> {
+        self.kafka_producer
+            .commit_transaction(Duration::from_secs(10))
+            .map_err(|e| e.to_string())
     }
 }
 
@@ -141,8 +172,9 @@ impl DomainEventConsumer {
             .set("group.id", consumer_group)
             .set("bootstrap.servers", broker_url)
             .set("enable.partition.eof", "false")
-            .set("session.timeout.ms", "6000")
+            .set("session.timeout.ms", "10000")
             .set("enable.auto.commit", "false")
+            .set("auto.offset.reset", "latest") // NOTE: if a new service joins the party, it will start consuming from the latest offset, as it wont make sense to replay all events
             .set_log_level(RDKafkaLogLevel::Debug)
             .create_with_context(context)
             .expect("Kafka consumer creation failed");

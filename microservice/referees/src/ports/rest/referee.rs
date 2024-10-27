@@ -30,9 +30,19 @@ pub async fn create_referee_handler(
 ) -> Result<Json<RefereeDTO>, AppError> {
     debug!("Creating referee: {:?}", ref_creation);
 
-    let mut tx = state.connection_pool.begin().await.unwrap();
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let repo = RefereeRepositoryPg::new();
+
+    state
+        .domain_event_publisher
+        .begin_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let referee = application::referee_services::create_referee(
         &ref_creation.name,
@@ -45,6 +55,12 @@ pub async fn create_referee_handler(
     .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .commit_transaction()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
@@ -61,7 +77,11 @@ pub async fn get_referee_by_id_handler(
 ) -> Result<Json<Option<RefereeDTO>>, AppError> {
     debug!("Getting referee by id: {}", referee_id.0);
 
-    let mut tx = state.connection_pool.begin().await.unwrap();
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let repo = RefereeRepositoryPg::new();
 
@@ -81,7 +101,11 @@ pub async fn get_all_referees_handler(
 ) -> Result<Json<Vec<RefereeDTO>>, AppError> {
     debug!("Getting all referees");
 
-    let mut tx = state.connection_pool.begin().await.unwrap();
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let repo = RefereeRepositoryPg::new();
 
@@ -101,7 +125,17 @@ pub async fn update_referee_club_handler(
 ) -> Result<Json<String>, AppError> {
     debug!("Updating referee club: {}", referee_id.0);
 
-    let mut tx = state.connection_pool.begin().await.unwrap();
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .begin_transaction()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let repo = RefereeRepositoryPg::new();
 
@@ -116,6 +150,12 @@ pub async fn update_referee_club_handler(
     .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    state
+        .domain_event_publisher
+        .commit_transaction()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
