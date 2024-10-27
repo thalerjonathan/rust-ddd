@@ -5,8 +5,15 @@ use axum::{
 };
 use clap::Parser;
 
+use log::info;
+use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
+use rdkafka::producer::FutureProducer;
+use rdkafka::util::get_rdkafka_version;
+use rdkafka::ClientConfig;
 use sqlx::PgPool;
 use std::sync::Arc;
+use venues::config::AppConfig;
+use venues::ports::kafka::domain_events_handler::DomainEventCallbacksImpl;
 use venues::ports::rest::venues::{
     create_venue_handler, get_all_venues_handler, get_venue_by_id_handler,
 };
@@ -16,8 +23,6 @@ use venues::AppState;
 #[command(version, about, long_about = None)]
 struct Args {
     #[arg(short, long)]
-    db_url: String,
-    #[arg(short, long)]
     server_host: String,
 }
 
@@ -26,9 +31,33 @@ async fn main() {
     env_logger::init();
 
     let args = Args::parse();
+    let config = AppConfig::new_from_env();
 
-    let connection_pool = PgPool::connect(&args.db_url).await.unwrap();
-    let app_state = AppState { connection_pool };
+    let connection_pool = PgPool::connect(&config.db_url).await.unwrap();
+
+    let (version_n, version_s) = get_rdkafka_version();
+    info!("rd_kafka_version: 0x{:08x}, {}", version_n, version_s);
+
+    let kafka_producer: FutureProducer = ClientConfig::new()
+        .set("bootstrap.servers", config.kafka_url.clone())
+        .set("message.timeout.ms", "5000")
+        .create()
+        .expect("Kafka producer creation error");
+
+    let domain_event_producer =
+        KafkaDomainEventProducer::new(kafka_producer, &config.kafka_domain_events_topic);
+    let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new());
+    let mut domain_event_consumer = DomainEventConsumer::new(
+        &config.kafka_consumer_group,
+        &config.kafka_url,
+        &config.kafka_domain_events_topic,
+        domain_event_callbacks,
+    );
+
+    let app_state = AppState {
+        connection_pool,
+        domain_event_publisher: Box::new(domain_event_producer),
+    };
     let state_arc = Arc::new(app_state);
 
     let cors = tower_http::cors::CorsLayer::new()
@@ -52,6 +81,10 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&args.server_host)
         .await
         .unwrap();
+
+    tokio::spawn(async move {
+        domain_event_consumer.run().await;
+    });
 
     axum::serve(listener, app).await.unwrap();
 }

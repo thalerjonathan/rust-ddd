@@ -1,4 +1,4 @@
-use crate::domain_ids::{RefereeId, TeamId};
+use crate::domain_ids::{RefereeId, TeamId, VenueId};
 use async_trait::async_trait;
 use log::{info, warn};
 use rdkafka::{
@@ -21,6 +21,9 @@ pub enum DomainEvent {
     },
     TeamCreated {
         team_id: TeamId,
+    },
+    VenueCreated {
+        venue_id: VenueId,
     },
 }
 
@@ -97,6 +100,7 @@ pub trait DomainEventCallbacks {
     async fn on_referee_created(&mut self, referee_id: RefereeId);
     async fn on_referee_club_changed(&mut self, referee_id: RefereeId, club_name: String);
     async fn on_team_created(&mut self, team_id: TeamId);
+    async fn on_venue_created(&mut self, venue_id: VenueId);
 }
 
 pub struct DomainEventConsumer {
@@ -164,6 +168,9 @@ impl DomainEventConsumer {
                         }
                         DomainEvent::TeamCreated { team_id } => {
                             self.callbacks.on_team_created(team_id).await;
+                        }
+                        DomainEvent::VenueCreated { venue_id } => {
+                            self.callbacks.on_venue_created(venue_id).await;
                         }
                     }
                     self.kafka_consumer

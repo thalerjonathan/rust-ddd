@@ -85,5 +85,6 @@ async fn main() {
     tokio::spawn(async move {
         domain_event_consumer.run().await;
     });
+
     axum::serve(listener, app).await.unwrap();
 }

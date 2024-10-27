@@ -2,7 +2,7 @@ use axum::async_trait;
 use log::info;
 use microservices_shared::{
     domain_events::DomainEventCallbacks,
-    domain_ids::{RefereeId, TeamId},
+    domain_ids::{RefereeId, TeamId, VenueId},
 };
 use redis::Commands;
 
@@ -37,5 +37,9 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
 
     async fn on_team_created(&mut self, team_id: TeamId) {
         info!("Received Domain Event: Team created: {:?}", team_id);
+    }
+
+    async fn on_venue_created(&mut self, venue_id: VenueId) {
+        info!("Received Domain Event: Venue created: {:?}", venue_id);
     }
 }

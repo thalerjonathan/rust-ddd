@@ -46,6 +46,7 @@ pub async fn create_venue_handler(
         venue_creation.telephone,
         venue_creation.email,
         &mut repo,
+        &state.domain_event_publisher,
         &mut tx,
     )
     .await
