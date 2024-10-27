@@ -5,11 +5,18 @@ use axum::{
 };
 use clap::Parser;
 
+use fixtures::config::AppConfig;
+use fixtures::ports::kafka::domain_events_handler::DomainEventCallbacksImpl;
 use fixtures::ports::rest::fixtures::{
     cancel_fixture_handler, create_fixture_handler, get_all_fixtures_handler,
     get_fixture_by_id_handler, update_fixture_date_handler, update_fixture_venue_handler,
 };
 use fixtures::AppState;
+use log::info;
+use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
+use rdkafka::producer::FutureProducer;
+use rdkafka::util::get_rdkafka_version;
+use rdkafka::ClientConfig;
 use sqlx::PgPool;
 use std::sync::Arc;
 
@@ -17,11 +24,7 @@ use std::sync::Arc;
 #[command(version, about, long_about = None)]
 struct Args {
     #[arg(short, long)]
-    db_url: String,
-    #[arg(short, long)]
     server_host: String,
-    #[arg(short, long)]
-    redis_url: String,
 }
 
 #[tokio::main]
@@ -29,12 +32,32 @@ async fn main() {
     env_logger::init();
 
     let args = Args::parse();
+    let config = AppConfig::new_from_env();
 
-    let connection_pool = PgPool::connect(&args.db_url).await.unwrap();
-    let redis_client = redis::Client::open(args.redis_url).unwrap();
+    let connection_pool = PgPool::connect(&config.db_url).await.unwrap();
+    let redis_client = redis::Client::open(config.redis_url).unwrap();
+
+    let (version_n, version_s) = get_rdkafka_version();
+    info!("rd_kafka_version: 0x{:08x}, {}", version_n, version_s);
+    let kafka_producer: FutureProducer = ClientConfig::new()
+        .set("bootstrap.servers", config.kafka_url.clone())
+        .set("message.timeout.ms", "5000")
+        .create()
+        .expect("Kafka producer creation error");
+    let domain_event_producer =
+        KafkaDomainEventProducer::new(kafka_producer, &config.kafka_domain_events_topic);
+    let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new());
+    let mut domain_event_consumer = DomainEventConsumer::new(
+        &config.kafka_consumer_group,
+        &config.kafka_url,
+        &config.kafka_domain_events_topic,
+        domain_event_callbacks,
+    );
+
     let app_state = AppState {
         connection_pool,
         redis_client,
+        domain_event_publisher: Box::new(domain_event_producer),
     };
     let state_arc = Arc::new(app_state);
 
@@ -62,6 +85,10 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&args.server_host)
         .await
         .unwrap();
+
+    tokio::spawn(async move {
+        domain_event_consumer.run().await;
+    });
 
     axum::serve(listener, app).await.unwrap();
 }

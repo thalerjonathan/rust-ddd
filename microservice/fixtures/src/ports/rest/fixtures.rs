@@ -47,6 +47,7 @@ pub async fn create_fixture_handler(
         &fixture_repo,
         &venue_resolver,
         &team_resolver,
+        &state.domain_event_publisher,
         &mut tx,
     )
     .await
@@ -162,6 +163,7 @@ pub async fn update_fixture_date_handler(
         fixture_id.into(),
         date,
         &fixture_repo,
+        &state.domain_event_publisher,
         &mut tx,
     )
     .await
@@ -200,6 +202,7 @@ pub async fn update_fixture_venue_handler(
         VenueId::from(venue_id),
         &fixture_repo,
         &venue_resolver,
+        &state.domain_event_publisher,
         &mut tx,
     )
     .await
@@ -226,10 +229,14 @@ pub async fn cancel_fixture_handler(
 
     let fixture_repo = FixtureRepositoryPg::new();
 
-    let _ =
-        application::fixture_services::cancel_fixture(fixture_id.into(), &fixture_repo, &mut tx)
-            .await
-            .map_err(|e| AppError::from_error(&e.to_string()))?;
+    let _ = application::fixture_services::cancel_fixture(
+        fixture_id.into(),
+        &fixture_repo,
+        &state.domain_event_publisher,
+        &mut tx,
+    )
+    .await
+    .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     tx.commit()
         .await

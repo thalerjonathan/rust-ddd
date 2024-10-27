@@ -1,10 +1,10 @@
 use axum::async_trait;
+use chrono::{DateTime, Utc};
 use log::info;
 use microservices_shared::{
     domain_events::DomainEventCallbacks,
     domain_ids::{FixtureId, RefereeId, TeamId, VenueId},
 };
-use sqlx::types::chrono::{DateTime, Utc};
 
 pub struct DomainEventCallbacksImpl {}
 

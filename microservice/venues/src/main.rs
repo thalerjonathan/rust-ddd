@@ -37,13 +37,11 @@ async fn main() {
 
     let (version_n, version_s) = get_rdkafka_version();
     info!("rd_kafka_version: 0x{:08x}, {}", version_n, version_s);
-
     let kafka_producer: FutureProducer = ClientConfig::new()
         .set("bootstrap.servers", config.kafka_url.clone())
         .set("message.timeout.ms", "5000")
         .create()
         .expect("Kafka producer creation error");
-
     let domain_event_producer =
         KafkaDomainEventProducer::new(kafka_producer, &config.kafka_domain_events_topic);
     let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new());

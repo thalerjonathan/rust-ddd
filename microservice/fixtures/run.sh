@@ -1,4 +1,4 @@
-export RUST_LOG=debug
+. config/config.sh
 
 cargo run --release -- --server-host localhost:4003 
 

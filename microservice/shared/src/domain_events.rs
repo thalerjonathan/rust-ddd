@@ -1,6 +1,8 @@
-use crate::domain_ids::{RefereeId, TeamId, VenueId};
+use crate::domain_ids::{FixtureId, RefereeId, TeamId, VenueId};
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use log::{info, warn};
+use mockall::automock;
 use rdkafka::{
     config::RDKafkaLogLevel,
     consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, StreamConsumer},
@@ -25,6 +27,20 @@ pub enum DomainEvent {
     VenueCreated {
         venue_id: VenueId,
     },
+    FixtureCreated {
+        fixture_id: FixtureId,
+    },
+    FixtureDateChanged {
+        fixture_id: FixtureId,
+        date: DateTime<Utc>,
+    },
+    FixtureVenueChanged {
+        fixture_id: FixtureId,
+        venue_id: VenueId,
+    },
+    FixtureCancelled {
+        fixture_id: FixtureId,
+    },
 }
 
 impl DomainEvent {
@@ -34,6 +50,7 @@ impl DomainEvent {
 }
 
 #[async_trait]
+#[automock]
 pub trait DomainEventPublisher {
     async fn publish_domain_event(&self, event: DomainEvent) -> Result<(), String>;
 }
@@ -101,6 +118,10 @@ pub trait DomainEventCallbacks {
     async fn on_referee_club_changed(&mut self, referee_id: RefereeId, club_name: String);
     async fn on_team_created(&mut self, team_id: TeamId);
     async fn on_venue_created(&mut self, venue_id: VenueId);
+    async fn on_fixture_created(&mut self, fixture_id: FixtureId);
+    async fn on_fixture_date_changed(&mut self, fixture_id: FixtureId, date: DateTime<Utc>);
+    async fn on_fixture_venue_changed(&mut self, fixture_id: FixtureId, venue_id: VenueId);
+    async fn on_fixture_cancelled(&mut self, fixture_id: FixtureId);
 }
 
 pub struct DomainEventConsumer {
@@ -171,6 +192,25 @@ impl DomainEventConsumer {
                         }
                         DomainEvent::VenueCreated { venue_id } => {
                             self.callbacks.on_venue_created(venue_id).await;
+                        }
+                        DomainEvent::FixtureCreated { fixture_id } => {
+                            self.callbacks.on_fixture_created(fixture_id).await;
+                        }
+                        DomainEvent::FixtureDateChanged { fixture_id, date } => {
+                            self.callbacks
+                                .on_fixture_date_changed(fixture_id, date)
+                                .await;
+                        }
+                        DomainEvent::FixtureVenueChanged {
+                            fixture_id,
+                            venue_id,
+                        } => {
+                            self.callbacks
+                                .on_fixture_venue_changed(fixture_id, venue_id)
+                                .await;
+                        }
+                        DomainEvent::FixtureCancelled { fixture_id } => {
+                            self.callbacks.on_fixture_cancelled(fixture_id).await;
                         }
                     }
                     self.kafka_consumer
