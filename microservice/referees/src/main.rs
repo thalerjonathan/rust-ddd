@@ -1,4 +1,3 @@
-use axum::async_trait;
 use axum::http::Method;
 use axum::{
     routing::{get, post},
@@ -7,15 +6,12 @@ use axum::{
 use clap::Parser;
 
 use log::info;
-use microservices_shared::domain_events::{
-    DomainEventCallbacks, DomainEventConsumer, KafkaDomainEventProducer,
-};
-use microservices_shared::domain_ids::RefereeId;
+use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
 use rdkafka::producer::FutureProducer;
 use rdkafka::util::get_rdkafka_version;
 use rdkafka::ClientConfig;
-use redis::Commands;
 use referees::config::AppConfig;
+use referees::ports::kafka::domain_events_handler::DomainEventCallbacksImpl;
 use referees::ports::rest::referee::{
     create_referee_handler, get_all_referees_handler, get_referee_by_id_handler,
     update_referee_club_handler,
@@ -29,10 +25,6 @@ use std::sync::Arc;
 struct Args {
     #[arg(short, long)]
     server_host: String,
-}
-
-struct DomainEventCallbacksImpl {
-    redis_conn: redis::Connection,
 }
 
 #[tokio::main]
@@ -58,7 +50,7 @@ async fn main() {
         KafkaDomainEventProducer::new(kafka_producer, &config.kafka_domain_events_topic);
 
     let redis_conn = redis_client.get_connection().unwrap();
-    let domain_event_callbacks = Box::new(DomainEventCallbacksImpl { redis_conn });
+    let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new(redis_conn));
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,
         &config.kafka_url,
@@ -101,24 +93,4 @@ async fn main() {
     });
 
     axum::serve(listener, app).await.unwrap();
-}
-
-#[async_trait]
-impl DomainEventCallbacks for DomainEventCallbacksImpl {
-    async fn on_referee_created(&mut self, referee_id: RefereeId) {
-        info!("Received Domain Event: Referee created: {:?}", referee_id);
-    }
-
-    async fn on_referee_club_changed(&mut self, referee_id: RefereeId, club_name: String) {
-        info!(
-            "Received Domain Event: Referee club changed: {:?} -> {}",
-            referee_id, club_name
-        );
-
-        info!("Invalidating cache entry for referee: {:?}", referee_id);
-
-        // NOTE: invalidate the cache entry for the referee
-        let key = format!("referee_{}", referee_id.0.to_string());
-        let _result: Result<(), redis::RedisError> = self.redis_conn.del(key);
-    }
 }

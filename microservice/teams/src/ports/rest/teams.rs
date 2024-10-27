@@ -34,9 +34,15 @@ pub async fn create_team_handler(
 
     let repo = TeamRepositoryPg::new();
 
-    let team = create_team(&team_creation.name, &team_creation.club, &repo, &mut tx)
-        .await
-        .map_err(|e| AppError::from_error(&e))?;
+    let team = create_team(
+        &team_creation.name,
+        &team_creation.club,
+        &repo,
+        &state.domain_event_publisher,
+        &mut tx,
+    )
+    .await
+    .map_err(|e| AppError::from_error(&e))?;
 
     tx.commit()
         .await
