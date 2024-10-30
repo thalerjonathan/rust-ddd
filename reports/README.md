@@ -78,3 +78,7 @@ Adding Domain Events using Kafka.
 ## [Day 21](./week5/day21/README.md)
 
 Making Domain Events Handling Robust and slicing out the `Availabilities` service.
+
+## [Day 22](./week5/day22/README.md)
+
+Slicing Assignments and implementing a simple Saga.

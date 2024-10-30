@@ -51,6 +51,22 @@ pub enum DomainEvent {
         fixture_id: FixtureId,
         referee_id: RefereeId,
     },
+    FirstRefereeAssignmentRemoved {
+        fixture_id: FixtureId,
+        referee_id: RefereeId,
+    },
+    SecondRefereeAssignmentRemoved {
+        fixture_id: FixtureId,
+        referee_id: RefereeId,
+    },
+    FirstRefereeAssigned {
+        fixture_id: FixtureId,
+        referee_id: RefereeId,
+    },
+    SecondRefereeAssigned {
+        fixture_id: FixtureId,
+        referee_id: RefereeId,
+    },
 }
 
 impl DomainEvent {
@@ -202,6 +218,18 @@ pub trait DomainEventCallbacks {
     async fn on_fixture_cancelled(&mut self, fixture_id: FixtureId);
     async fn on_availability_declared(&mut self, fixture_id: FixtureId, referee_id: RefereeId);
     async fn on_availability_withdrawn(&mut self, fixture_id: FixtureId, referee_id: RefereeId);
+    async fn on_first_referee_assignment_removed(
+        &mut self,
+        fixture_id: FixtureId,
+        referee_id: RefereeId,
+    );
+    async fn on_second_referee_assignment_removed(
+        &mut self,
+        fixture_id: FixtureId,
+        referee_id: RefereeId,
+    );
+    async fn on_first_referee_assigned(&mut self, fixture_id: FixtureId, referee_id: RefereeId);
+    async fn on_second_referee_assigned(&mut self, fixture_id: FixtureId, referee_id: RefereeId);
 }
 
 pub struct DomainEventConsumer {
@@ -309,6 +337,38 @@ impl DomainEventConsumer {
                                 .on_availability_withdrawn(fixture_id, referee_id)
                                 .await;
                         }
+                        DomainEvent::FirstRefereeAssignmentRemoved {
+                            fixture_id,
+                            referee_id,
+                        } => {
+                            self.callbacks
+                                .on_first_referee_assignment_removed(fixture_id, referee_id)
+                                .await;
+                        }
+                        DomainEvent::SecondRefereeAssignmentRemoved {
+                            fixture_id,
+                            referee_id,
+                        } => {
+                            self.callbacks
+                                .on_second_referee_assignment_removed(fixture_id, referee_id)
+                                .await;
+                        }
+                        DomainEvent::FirstRefereeAssigned {
+                            fixture_id,
+                            referee_id,
+                        } => {
+                            self.callbacks
+                                .on_first_referee_assigned(fixture_id, referee_id)
+                                .await;
+                        }
+                        DomainEvent::SecondRefereeAssigned {
+                            fixture_id,
+                            referee_id,
+                        } => {
+                            self.callbacks
+                                .on_second_referee_assigned(fixture_id, referee_id)
+                                .await;
+                        }
                     }
                     self.kafka_consumer
                         .commit_message(&m, CommitMode::Sync)
@@ -380,6 +440,42 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
     async fn on_availability_withdrawn(&mut self, fixture_id: FixtureId, referee_id: RefereeId) {
         info!(
             "Received Domain Event: Availability withdrawn: {:?} -> {:?}",
+            fixture_id, referee_id
+        );
+    }
+
+    async fn on_first_referee_assignment_removed(
+        &mut self,
+        fixture_id: FixtureId,
+        referee_id: RefereeId,
+    ) {
+        info!(
+            "Received Domain Event: First referee assignment removed: {:?} -> {:?}",
+            fixture_id, referee_id
+        );
+    }
+
+    async fn on_second_referee_assignment_removed(
+        &mut self,
+        fixture_id: FixtureId,
+        referee_id: RefereeId,
+    ) {
+        info!(
+            "Received Domain Event: Second referee assignment removed: {:?} -> {:?}",
+            fixture_id, referee_id
+        );
+    }
+
+    async fn on_first_referee_assigned(&mut self, fixture_id: FixtureId, referee_id: RefereeId) {
+        info!(
+            "Received Domain Event: First referee assigned: {:?} -> {:?}",
+            fixture_id, referee_id
+        );
+    }
+
+    async fn on_second_referee_assigned(&mut self, fixture_id: FixtureId, referee_id: RefereeId) {
+        info!(
+            "Received Domain Event: Second referee assigned: {:?} -> {:?}",
             fixture_id, referee_id
         );
     }

@@ -1,4 +1,6 @@
+use domain::aggregates::assignment::{Assignment, AssignmentRefereeRole, AssignmentStatus};
 use microservices_shared::domain_events::DomainEventPublisher;
+use restinterface::{AssignmentDTO, AssignmentRefereeRoleDTO, AssignmentStatusDTO};
 use sqlx::PgPool;
 
 pub mod adapters;
@@ -12,6 +14,8 @@ pub struct AppState {
     pub redis_client: redis::Client,
     pub domain_event_publisher: Box<dyn DomainEventPublisher + Send + Sync>,
 }
+
+// NOTE: put here because REST and Application layers need them
 
 impl From<AssignmentRefereeRole> for AssignmentRefereeRoleDTO {
     fn from(role: AssignmentRefereeRole) -> Self {

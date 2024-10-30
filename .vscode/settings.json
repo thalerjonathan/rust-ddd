@@ -59,6 +59,16 @@
             "database": "availabilities",
             "username": "postgres",
             "password": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5438,
+            "driver": "PostgreSQL",
+            "name": "Rust DDD Assignments",
+            "database": "assignments",
+            "username": "postgres",
+            "password": "postgres"
         }
     ]
 }
