@@ -23,38 +23,43 @@ pub async fn declare_availability_handler(
         fixture_id, referee_id
     );
 
-    let mut tx = state.connection_pool.begin().await.map_err(|e| {
-        error!("Error beginning transaction: {:?}", e);
-        AppError::from_error(&e.to_string())
-    })?;
-
-    // TODO: begin kafka transaction
-
-    let redis_conn = state
-        .redis_client
-        .get_connection()
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
-
-    let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
-    let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
-    let availability_repo = AvailabilityRepositoryPg::new();
-
-    declare_availability(
-        fixture_id.into(),
-        referee_id.into(),
-        &fixture_resolver,
-        &referee_resolver,
-        &availability_repo,
+    microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
-        &mut tx,
+        async {
+            let mut tx = state.connection_pool.begin().await.map_err(|e| {
+                error!("Error beginning transaction: {:?}", e);
+                e.to_string()
+            })?;
+
+            let redis_conn = state
+                .redis_client
+                .get_connection()
+                .map_err(|e| e.to_string())?;
+            let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
+
+            let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
+            let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
+            let availability_repo = AvailabilityRepositoryPg::new();
+
+            declare_availability(
+                fixture_id.into(),
+                referee_id.into(),
+                &fixture_resolver,
+                &referee_resolver,
+                &availability_repo,
+                &state.domain_event_publisher,
+                &mut tx,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            tx.commit().await.map_err(|e| e.to_string())?;
+
+            Ok(())
+        },
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(()))
 }
@@ -68,38 +73,43 @@ pub async fn withdraw_availability_handler(
         fixture_id, referee_id
     );
 
-    let mut tx = state.connection_pool.begin().await.map_err(|e| {
-        error!("Error beginning transaction: {:?}", e);
-        AppError::from_error(&e.to_string())
-    })?;
-
-    // TODO: begin kafka transaction
-
-    let redis_conn = state
-        .redis_client
-        .get_connection()
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
-
-    let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
-    let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
-    let availability_repo = AvailabilityRepositoryPg::new();
-
-    withdraw_availability(
-        fixture_id.into(),
-        referee_id.into(),
-        &fixture_resolver,
-        &referee_resolver,
-        &availability_repo,
+    microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
-        &mut tx,
+        async {
+            let mut tx = state.connection_pool.begin().await.map_err(|e| {
+                error!("Error beginning transaction: {:?}", e);
+                e.to_string()
+            })?;
+
+            let redis_conn = state
+                .redis_client
+                .get_connection()
+                .map_err(|e| e.to_string())?;
+            let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
+
+            let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
+            let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
+            let availability_repo = AvailabilityRepositoryPg::new();
+
+            withdraw_availability(
+                fixture_id.into(),
+                referee_id.into(),
+                &fixture_resolver,
+                &referee_resolver,
+                &availability_repo,
+                &state.domain_event_publisher,
+                &mut tx,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            tx.commit().await.map_err(|e| e.to_string())?;
+
+            Ok(())
+        },
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(()))
 }

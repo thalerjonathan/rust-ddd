@@ -5,11 +5,12 @@ use axum::{
 };
 use clap::Parser;
 
-use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
+use microservices_shared::domain_events::{
+    DomainEventCallbacksLoggerImpl, DomainEventConsumer, KafkaDomainEventProducer,
+};
 use sqlx::PgPool;
 use std::sync::Arc;
 use venues::config::AppConfig;
-use venues::ports::kafka::domain_events_handler::DomainEventCallbacksImpl;
 use venues::ports::rest::venues::{
     create_venue_handler, get_all_venues_handler, get_venue_by_id_handler,
 };
@@ -20,6 +21,8 @@ use venues::AppState;
 struct Args {
     #[arg(short, long)]
     server_host: String,
+    #[arg(short, long)]
+    kafka_tx_id: String,
 }
 
 #[tokio::main]
@@ -34,9 +37,9 @@ async fn main() {
     let domain_event_producer = KafkaDomainEventProducer::new(
         &config.kafka_url,
         &config.kafka_domain_events_topic,
-        "bc70736b-432a-4083-b8f0-65c341a144b0",
+        &args.kafka_tx_id,
     );
-    let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new());
+    let domain_event_callbacks = Box::new(DomainEventCallbacksLoggerImpl::new());
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,
         &config.kafka_url,

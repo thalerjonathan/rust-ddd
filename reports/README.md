@@ -73,8 +73,8 @@ Adding Caching via Redis.
 
 ## [Day 20](./week5/day20/README.md)
 
-Adding Domain Events using Kafka
+Adding Domain Events using Kafka.
 
 ## [Day 21](./week5/day21/README.md)
 
-Making Domain Events Handling Robust
+Making Domain Events Handling Robust and slicing out the `Availabilities` service.

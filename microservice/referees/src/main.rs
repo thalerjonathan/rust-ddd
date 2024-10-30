@@ -21,6 +21,8 @@ use std::sync::Arc;
 struct Args {
     #[arg(short, long)]
     server_host: String,
+    #[arg(short, long)]
+    kafka_tx_id: String,
 }
 
 #[tokio::main]
@@ -36,7 +38,7 @@ async fn main() {
     let domain_event_producer = KafkaDomainEventProducer::new(
         &config.kafka_url,
         &config.kafka_domain_events_topic,
-        "23b3b7ba-39b0-4291-8da2-94f0db2eba0a",
+        &args.kafka_tx_id,
     );
 
     let redis_conn = redis_client.get_connection().unwrap();

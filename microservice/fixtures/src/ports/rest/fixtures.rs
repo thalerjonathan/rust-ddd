@@ -23,51 +23,46 @@ pub async fn create_fixture_handler(
 ) -> Result<Json<FixtureDTO>, AppError> {
     debug!("Creating fixture: {:?}", fixture_creation);
 
-    let mut tx = state
-        .connection_pool
-        .begin()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .begin_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    let redis_conn = state
-        .redis_client
-        .get_connection()
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
-
-    let fixture_repo = FixtureRepositoryPg::new();
-    let venue_resolver = VenueResolverImpl::new(redis_conn_arc_mutex.clone());
-    let team_resolver = TeamResolverImpl::new(redis_conn_arc_mutex.clone());
-
-    let fixture = application::fixture_services::create_fixture(
-        fixture_creation.date,
-        fixture_creation.venue_id.into(),
-        fixture_creation.team_home_id.into(),
-        fixture_creation.team_away_id.into(),
-        &fixture_repo,
-        &venue_resolver,
-        &team_resolver,
+    let fixture = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
-        &mut tx,
+        async {
+            let mut tx = state
+                .connection_pool
+                .begin()
+                .await
+                .map_err(|e| e.to_string())?;
+
+            let redis_conn = state
+                .redis_client
+                .get_connection()
+                .map_err(|e| e.to_string())?;
+            let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
+
+            let fixture_repo = FixtureRepositoryPg::new();
+            let venue_resolver = VenueResolverImpl::new(redis_conn_arc_mutex.clone());
+            let team_resolver = TeamResolverImpl::new(redis_conn_arc_mutex.clone());
+
+            let fixture = application::fixture_services::create_fixture(
+                fixture_creation.date,
+                fixture_creation.venue_id.into(),
+                fixture_creation.team_home_id.into(),
+                fixture_creation.team_away_id.into(),
+                &fixture_repo,
+                &venue_resolver,
+                &team_resolver,
+                &state.domain_event_publisher,
+                &mut tx,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            tx.commit().await.map_err(|e| e.to_string())?;
+
+            Ok(fixture)
+        },
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .commit_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(fixture))
 }
@@ -161,39 +156,34 @@ pub async fn update_fixture_date_handler(
 ) -> Result<Json<()>, AppError> {
     debug!("Updating fixture date: {}", fixture_id.0);
 
-    let mut tx = state
-        .connection_pool
-        .begin()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    let fixture_repo = FixtureRepositoryPg::new();
-
-    state
-        .domain_event_publisher
-        .begin_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    let _ = application::fixture_services::update_fixture_date(
-        fixture_id.into(),
-        date,
-        &fixture_repo,
+    microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
-        &mut tx,
+        async {
+            let mut tx = state
+                .connection_pool
+                .begin()
+                .await
+                .map_err(|e| e.to_string())?;
+
+            let fixture_repo = FixtureRepositoryPg::new();
+
+            let _ = application::fixture_services::update_fixture_date(
+                fixture_id.into(),
+                date,
+                &fixture_repo,
+                &state.domain_event_publisher,
+                &mut tx,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            tx.commit().await.map_err(|e| e.to_string())?;
+
+            Ok(())
+        },
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .commit_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(()))
 }
@@ -205,47 +195,42 @@ pub async fn update_fixture_venue_handler(
 ) -> Result<Json<()>, AppError> {
     debug!("Updating fixture venue: {}", fixture_id.0);
 
-    let mut tx = state
-        .connection_pool
-        .begin()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .begin_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    let redis_conn = state
-        .redis_client
-        .get_connection()
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
-
-    let fixture_repo = FixtureRepositoryPg::new();
-    let venue_resolver = VenueResolverImpl::new(redis_conn_arc_mutex.clone());
-
-    let _ = application::fixture_services::update_fixture_venue(
-        fixture_id.into(),
-        VenueId::from(venue_id),
-        &fixture_repo,
-        &venue_resolver,
+    microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
-        &mut tx,
+        async {
+            let mut tx = state
+                .connection_pool
+                .begin()
+                .await
+                .map_err(|e| e.to_string())?;
+
+            let redis_conn = state
+                .redis_client
+                .get_connection()
+                .map_err(|e| e.to_string())?;
+            let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
+
+            let fixture_repo = FixtureRepositoryPg::new();
+            let venue_resolver = VenueResolverImpl::new(redis_conn_arc_mutex.clone());
+
+            let _ = application::fixture_services::update_fixture_venue(
+                fixture_id.into(),
+                VenueId::from(venue_id),
+                &fixture_repo,
+                &venue_resolver,
+                &state.domain_event_publisher,
+                &mut tx,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            tx.commit().await.map_err(|e| e.to_string())?;
+
+            Ok(())
+        },
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .commit_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(()))
 }
@@ -256,38 +241,33 @@ pub async fn cancel_fixture_handler(
 ) -> Result<Json<()>, AppError> {
     debug!("Cancelling fixture: {}", fixture_id.0);
 
-    let mut tx = state
-        .connection_pool
-        .begin()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .begin_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    let fixture_repo = FixtureRepositoryPg::new();
-
-    let _ = application::fixture_services::cancel_fixture(
-        fixture_id.into(),
-        &fixture_repo,
+    microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
-        &mut tx,
+        async {
+            let mut tx = state
+                .connection_pool
+                .begin()
+                .await
+                .map_err(|e| e.to_string())?;
+
+            let fixture_repo = FixtureRepositoryPg::new();
+
+            let _ = application::fixture_services::cancel_fixture(
+                fixture_id.into(),
+                &fixture_repo,
+                &state.domain_event_publisher,
+                &mut tx,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            tx.commit().await.map_err(|e| e.to_string())?;
+
+            Ok(())
+        },
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .commit_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(()))
 }

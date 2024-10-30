@@ -4,7 +4,6 @@ use crate::domain_ids::{FixtureId, RefereeId, TeamId, VenueId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use log::{info, warn};
-use mockall::automock;
 use rdkafka::{
     config::RDKafkaLogLevel,
     consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, StreamConsumer},
@@ -61,16 +60,11 @@ impl DomainEvent {
 }
 
 #[async_trait]
-#[automock]
 pub trait DomainEventPublisher {
     async fn begin_transaction(&self) -> Result<(), String>;
     async fn commit_transaction(&self) -> Result<(), String>;
     async fn publish_domain_event(&self, event: DomainEvent) -> Result<(), String>;
-
-    async fn run_transactional(
-        &self,
-        f: impl Future<Output = Result<(), String>>,
-    ) -> Result<(), String>;
+    async fn rollback(&self) -> Result<(), String>;
 }
 
 pub struct KafkaDomainEventProducer {
@@ -137,14 +131,44 @@ impl DomainEventPublisher for KafkaDomainEventProducer {
             .map_err(|e| e.to_string())
     }
 
-    async fn run_transactional(
-        &self,
-        f: impl Future<Output = Result<(), String>>,
-    ) -> Result<(), String> {
-        self.begin_transaction().await?;
-        let res = f.await;
-        self.commit_transaction().await?;
-        res
+    async fn rollback(&self) -> Result<(), String> {
+        self.kafka_producer
+            .abort_transaction(Duration::from_secs(10))
+            .map_err(|e| e.to_string())
+    }
+}
+
+// NOTE: need to implement this in a function, not a method as putting this stuff into a trait turned out to be tricky
+pub async fn run_domain_event_publisher_transactional<T, Fut>(
+    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    f: Fut,
+) -> Result<T, String>
+where
+    T: Send,
+    Fut: Future<Output = Result<T, String>> + Send,
+{
+    domain_event_publisher
+        .begin_transaction()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let res = f.await;
+    match res {
+        Ok(ret) => {
+            domain_event_publisher
+                .commit_transaction()
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(ret)
+        }
+        Err(e) => {
+            warn!("Rolling back domain event transaction due to error: {}", e);
+            domain_event_publisher
+                .rollback()
+                .await
+                .map_err(|e| e.to_string())?;
+            Err(e)
+        }
     }
 }
 
@@ -292,5 +316,98 @@ impl DomainEventConsumer {
                 }
             };
         }
+    }
+}
+
+pub struct DomainEventCallbacksLoggerImpl {}
+
+impl DomainEventCallbacksLoggerImpl {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[async_trait]
+impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
+    async fn on_referee_created(&mut self, referee_id: RefereeId) {
+        info!("Received Domain Event: Referee created: {:?}", referee_id);
+    }
+
+    async fn on_referee_club_changed(&mut self, referee_id: RefereeId, club_name: String) {
+        info!(
+            "Received Domain Event: Referee club changed: {:?} -> {}",
+            referee_id, club_name
+        );
+    }
+
+    async fn on_team_created(&mut self, team_id: TeamId) {
+        info!("Received Domain Event: Team created: {:?}", team_id);
+    }
+
+    async fn on_venue_created(&mut self, venue_id: VenueId) {
+        info!("Received Domain Event: Venue created: {:?}", venue_id);
+    }
+
+    async fn on_fixture_created(&mut self, fixture_id: FixtureId) {
+        info!("Received Domain Event: Fixture created: {:?}", fixture_id);
+    }
+
+    async fn on_fixture_date_changed(&mut self, fixture_id: FixtureId, date: DateTime<Utc>) {
+        info!(
+            "Received Domain Event: Fixture date changed: {:?} -> {}",
+            fixture_id, date
+        );
+    }
+
+    async fn on_fixture_venue_changed(&mut self, fixture_id: FixtureId, venue_id: VenueId) {
+        info!(
+            "Received Domain Event: Fixture venue changed: {:?} -> {:?}",
+            fixture_id, venue_id
+        );
+    }
+
+    async fn on_fixture_cancelled(&mut self, fixture_id: FixtureId) {
+        info!("Received Domain Event: Fixture cancelled: {:?}", fixture_id);
+    }
+
+    async fn on_availability_declared(&mut self, fixture_id: FixtureId, referee_id: RefereeId) {
+        info!(
+            "Received Domain Event: Availability declared: {:?} -> {:?}",
+            fixture_id, referee_id
+        );
+    }
+
+    async fn on_availability_withdrawn(&mut self, fixture_id: FixtureId, referee_id: RefereeId) {
+        info!(
+            "Received Domain Event: Availability withdrawn: {:?} -> {:?}",
+            fixture_id, referee_id
+        );
+    }
+}
+
+pub struct MockDomainEventPublisher {}
+
+impl MockDomainEventPublisher {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[async_trait]
+impl DomainEventPublisher for MockDomainEventPublisher {
+    async fn begin_transaction(&self) -> Result<(), String> {
+        Ok(())
+    }
+
+    async fn publish_domain_event(&self, _event: DomainEvent) -> Result<(), String> {
+        Ok(())
+    }
+
+    async fn commit_transaction(&self) -> Result<(), String> {
+        Ok(())
+    }
+
+    async fn rollback(&self) -> Result<(), String> {
+        Ok(())
     }
 }

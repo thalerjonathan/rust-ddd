@@ -105,6 +105,10 @@ mod tests {
         async fn commit_transaction(&self) -> Result<(), String> {
             Ok(())
         }
+
+        async fn rollback(&self) -> Result<(), String> {
+            Ok(())
+        }
     }
 
     impl RefereeRepository for TestRepo {

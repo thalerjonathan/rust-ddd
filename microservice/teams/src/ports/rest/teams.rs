@@ -30,39 +30,34 @@ pub async fn create_team_handler(
 ) -> Result<Json<TeamDTO>, AppError> {
     debug!("Creating team: {:?}", team_creation);
 
-    let mut tx = state
-        .connection_pool
-        .begin()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .begin_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    let repo = TeamRepositoryPg::new();
-
-    let team = create_team(
-        &team_creation.name,
-        &team_creation.club,
-        &repo,
+    let team = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
-        &mut tx,
+        async {
+            let mut tx = state
+                .connection_pool
+                .begin()
+                .await
+                .map_err(|e| e.to_string())?;
+
+            let repo = TeamRepositoryPg::new();
+
+            let team = create_team(
+                &team_creation.name,
+                &team_creation.club,
+                &repo,
+                &state.domain_event_publisher,
+                &mut tx,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            tx.commit().await.map_err(|e| e.to_string())?;
+
+            Ok(team)
+        },
     )
     .await
-    .map_err(|e| AppError::from_error(&e))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .commit_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
+    .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(team.into()))
 }

@@ -1,5 +1,4 @@
 use availabilities::config::AppConfig;
-use availabilities::ports::kafka::domain_events_handler::DomainEventCallbacksImpl;
 use availabilities::ports::rest::availabilities::{
     declare_availability_handler, fetch_availabilities_for_referee_handler,
     withdraw_availability_handler,
@@ -11,7 +10,9 @@ use axum::{
 };
 use clap::Parser;
 
-use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
+use microservices_shared::domain_events::{
+    DomainEventCallbacksLoggerImpl, DomainEventConsumer, KafkaDomainEventProducer,
+};
 use sqlx::PgPool;
 use std::sync::Arc;
 
@@ -41,7 +42,7 @@ async fn main() {
         &config.kafka_domain_events_topic,
         &args.kafka_tx_id,
     );
-    let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new());
+    let domain_event_callbacks = Box::new(DomainEventCallbacksLoggerImpl::new());
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,
         &config.kafka_url,

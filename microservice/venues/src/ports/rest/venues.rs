@@ -34,42 +34,37 @@ pub async fn create_venue_handler(
 ) -> Result<Json<VenueDTO>, AppError> {
     debug!("Creating venue: {:?}", venue_creation);
 
-    let mut tx = state
-        .connection_pool
-        .begin()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .begin_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    let mut repo: VenueRepositoryPg = VenueRepositoryPg::new();
-    let venue = application::venue_services::create_venue(
-        &venue_creation.name,
-        &venue_creation.street,
-        &venue_creation.zip,
-        &venue_creation.city,
-        venue_creation.telephone,
-        venue_creation.email,
-        &mut repo,
+    let venue = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
-        &mut tx,
+        async {
+            let mut tx = state
+                .connection_pool
+                .begin()
+                .await
+                .map_err(|e| e.to_string())?;
+
+            let mut repo: VenueRepositoryPg = VenueRepositoryPg::new();
+            let venue = application::venue_services::create_venue(
+                &venue_creation.name,
+                &venue_creation.street,
+                &venue_creation.zip,
+                &venue_creation.city,
+                venue_creation.telephone,
+                venue_creation.email,
+                &mut repo,
+                &state.domain_event_publisher,
+                &mut tx,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            tx.commit().await.map_err(|e| e.to_string())?;
+
+            Ok(venue)
+        },
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .commit_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let venue = VenueDTO::from(venue);
 
@@ -88,12 +83,6 @@ pub async fn get_venue_by_id_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-    state
-        .domain_event_publisher
-        .begin_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
     let repo = VenueRepositoryPg::new();
     // NOTE: we are not using an application service here, because the logic is so simple
     let venue = repo
@@ -102,12 +91,6 @@ pub async fn get_venue_by_id_handler(
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .commit_transaction()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
@@ -125,12 +108,6 @@ pub async fn get_all_venues_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-    state
-        .domain_event_publisher
-        .begin_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
     let repo = VenueRepositoryPg::new();
 
     // NOTE: we are not using an application service here, because the logic is so simple
@@ -140,12 +117,6 @@ pub async fn get_all_venues_handler(
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .commit_transaction()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 

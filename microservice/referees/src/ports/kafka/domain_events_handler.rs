@@ -65,4 +65,18 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
     async fn on_fixture_cancelled(&mut self, fixture_id: FixtureId) {
         info!("Received Domain Event: Fixture cancelled: {:?}", fixture_id);
     }
+
+    async fn on_availability_declared(&mut self, fixture_id: FixtureId, referee_id: RefereeId) {
+        info!(
+            "Received Domain Event: Availability declared: {:?} -> {:?}",
+            fixture_id, referee_id
+        );
+    }
+
+    async fn on_availability_withdrawn(&mut self, fixture_id: FixtureId, referee_id: RefereeId) {
+        info!(
+            "Received Domain Event: Availability withdrawn: {:?} -> {:?}",
+            fixture_id, referee_id
+        );
+    }
 }

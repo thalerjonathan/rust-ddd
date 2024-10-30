@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use log::debug;
+use log::{debug, error};
 use restinterface::{app_error::AppError, RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
 
 use crate::{
@@ -30,39 +30,33 @@ pub async fn create_referee_handler(
 ) -> Result<Json<RefereeDTO>, AppError> {
     debug!("Creating referee: {:?}", ref_creation);
 
-    let mut tx = state
-        .connection_pool
-        .begin()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    let repo = RefereeRepositoryPg::new();
-
-    state
-        .domain_event_publisher
-        .begin_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    let referee = application::referee_services::create_referee(
-        &ref_creation.name,
-        &ref_creation.club,
-        &repo,
+    let referee = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
-        &mut tx,
+        async {
+            let mut tx = state.connection_pool.begin().await.map_err(|e| {
+                error!("Error beginning transaction: {:?}", e);
+                e.to_string()
+            })?;
+
+            let repo = RefereeRepositoryPg::new();
+
+            let referee = application::referee_services::create_referee(
+                &ref_creation.name,
+                &ref_creation.club,
+                &repo,
+                &state.domain_event_publisher,
+                &mut tx,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            tx.commit().await.map_err(|e| e.to_string())?;
+
+            Ok(referee)
+        },
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .commit_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let referee = RefereeDTO::from(referee);
 
@@ -125,39 +119,33 @@ pub async fn update_referee_club_handler(
 ) -> Result<Json<String>, AppError> {
     debug!("Updating referee club: {}", referee_id.0);
 
-    let mut tx = state
-        .connection_pool
-        .begin()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .begin_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    let repo = RefereeRepositoryPg::new();
-
-    let _ = application::referee_services::update_referee_club(
-        referee_id.into(),
-        &club,
-        &repo,
+    let club = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
-        &mut tx,
+        async {
+            let mut tx = state.connection_pool.begin().await.map_err(|e| {
+                error!("Error beginning transaction: {:?}", e);
+                e.to_string()
+            })?;
+
+            let repo = RefereeRepositoryPg::new();
+
+            let _ = application::referee_services::update_referee_club(
+                referee_id.into(),
+                &club,
+                &repo,
+                &state.domain_event_publisher,
+                &mut tx,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
+
+            tx.commit().await.map_err(|e| e.to_string())?;
+
+            Ok(club)
+        },
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    tx.commit()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
-
-    state
-        .domain_event_publisher
-        .commit_transaction()
-        .await
-        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(club))
 }
