@@ -10,4 +10,5 @@ members = [
     "microservice/venues",
     "microservice/teams",
     "microservice/fixtures",
+    "microservice/availabilities",
 ]

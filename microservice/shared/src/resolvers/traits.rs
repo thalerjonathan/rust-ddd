@@ -1,7 +1,7 @@
 use mockall::automock;
-use restinterface::{RefereeDTO, TeamDTO, VenueDTO};
+use restinterface::{FixtureDTO, RefereeDTO, TeamDTO, VenueDTO};
 
-use crate::domain_ids::{RefereeId, TeamId, VenueId};
+use crate::domain_ids::{FixtureId, RefereeId, TeamId, VenueId};
 
 #[allow(async_fn_in_trait)]
 #[automock(type Error = String;)]
@@ -22,4 +22,11 @@ pub trait TeamResolver {
 pub trait RefereeResolver {
     type Error;
     async fn resolve(&self, referee_id: &RefereeId) -> Result<RefereeDTO, Self::Error>;
+}
+
+#[allow(async_fn_in_trait)]
+#[automock(type Error = String;)]
+pub trait FixtureResolver {
+    type Error;
+    async fn resolve(&self, fixture_id: &FixtureId) -> Result<FixtureDTO, Self::Error>;
 }

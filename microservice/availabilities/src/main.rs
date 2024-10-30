@@ -1,3 +1,9 @@
+use availabilities::config::AppConfig;
+use availabilities::ports::kafka::domain_events_handler::DomainEventCallbacksImpl;
+use availabilities::ports::rest::availabilities::{
+    declare_availability_handler, fetch_availabilities_for_referee_handler,
+    withdraw_availability_handler,
+};
 use axum::http::Method;
 use axum::{
     routing::{get, post},
@@ -5,16 +11,11 @@ use axum::{
 };
 use clap::Parser;
 
-use fixtures::config::AppConfig;
-use fixtures::ports::kafka::domain_events_handler::DomainEventCallbacksImpl;
-use fixtures::ports::rest::fixtures::{
-    cancel_fixture_handler, create_fixture_handler, get_all_fixtures_handler,
-    get_fixture_by_id_handler, update_fixture_date_handler, update_fixture_venue_handler,
-};
-use fixtures::AppState;
 use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
 use sqlx::PgPool;
 use std::sync::Arc;
+
+use availabilities::AppState;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -67,12 +68,18 @@ async fn main() {
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
-        .route("/fixtures", post(create_fixture_handler))
-        .route("/fixtures/:id", get(get_fixture_by_id_handler))
-        .route("/fixtures/all", get(get_all_fixtures_handler))
-        .route("/fixtures/:id/date", post(update_fixture_date_handler))
-        .route("/fixtures/:id/venue", post(update_fixture_venue_handler))
-        .route("/fixtures/:id/cancel", post(cancel_fixture_handler))
+        .route(
+            "/availabilities/declare/fixture/:fixture_id/referee/:referee_id",
+            post(declare_availability_handler),
+        )
+        .route(
+            "/availabilities/withdraw/fixture/:fixture_id/referee/:referee_id",
+            post(withdraw_availability_handler),
+        )
+        .route(
+            "/availabilities/referee/:referee_id",
+            get(fetch_availabilities_for_referee_handler),
+        )
         .layer(cors)
         .with_state(state_arc);
 

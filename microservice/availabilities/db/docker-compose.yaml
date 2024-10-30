@@ -1,0 +1,34 @@
+version: "3.5"
+
+services:
+  rustddd-availabilities-db:
+    image: postgres:14.4-alpine
+    shm_size: 1g
+    environment:
+      - POSTGRES_LOGGING=true
+      - POSTGRES_DB_FILE=/run/secrets/postgres_db
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+    secrets:
+      - postgres_password
+      - postgres_user
+      - postgres_db
+    ports:
+      - ${POSTGRES_PORT:-5437}:5432
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./data:/var/lib/postgresql/data
+    restart: on-failure
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+secrets:
+  postgres_db:
+    file: ./secrets/postgres_db
+  postgres_password:
+    file: ./secrets/postgres_password
+  postgres_user:
+    file: ./secrets/postgres_user

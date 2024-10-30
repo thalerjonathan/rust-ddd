@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{future::Future, time::Duration};
 
 use crate::domain_ids::{FixtureId, RefereeId, TeamId, VenueId};
 use async_trait::async_trait;
@@ -44,6 +44,14 @@ pub enum DomainEvent {
     FixtureCancelled {
         fixture_id: FixtureId,
     },
+    AvailabilityDeclared {
+        fixture_id: FixtureId,
+        referee_id: RefereeId,
+    },
+    AvailabilityWithdrawn {
+        fixture_id: FixtureId,
+        referee_id: RefereeId,
+    },
 }
 
 impl DomainEvent {
@@ -58,6 +66,11 @@ pub trait DomainEventPublisher {
     async fn begin_transaction(&self) -> Result<(), String>;
     async fn commit_transaction(&self) -> Result<(), String>;
     async fn publish_domain_event(&self, event: DomainEvent) -> Result<(), String>;
+
+    async fn run_transactional(
+        &self,
+        f: impl Future<Output = Result<(), String>>,
+    ) -> Result<(), String>;
 }
 
 pub struct KafkaDomainEventProducer {
@@ -123,6 +136,16 @@ impl DomainEventPublisher for KafkaDomainEventProducer {
             .commit_transaction(Duration::from_secs(10))
             .map_err(|e| e.to_string())
     }
+
+    async fn run_transactional(
+        &self,
+        f: impl Future<Output = Result<(), String>>,
+    ) -> Result<(), String> {
+        self.begin_transaction().await?;
+        let res = f.await;
+        self.commit_transaction().await?;
+        res
+    }
 }
 
 struct CustomContext;
@@ -153,6 +176,8 @@ pub trait DomainEventCallbacks {
     async fn on_fixture_date_changed(&mut self, fixture_id: FixtureId, date: DateTime<Utc>);
     async fn on_fixture_venue_changed(&mut self, fixture_id: FixtureId, venue_id: VenueId);
     async fn on_fixture_cancelled(&mut self, fixture_id: FixtureId);
+    async fn on_availability_declared(&mut self, fixture_id: FixtureId, referee_id: RefereeId);
+    async fn on_availability_withdrawn(&mut self, fixture_id: FixtureId, referee_id: RefereeId);
 }
 
 pub struct DomainEventConsumer {
@@ -243,6 +268,22 @@ impl DomainEventConsumer {
                         }
                         DomainEvent::FixtureCancelled { fixture_id } => {
                             self.callbacks.on_fixture_cancelled(fixture_id).await;
+                        }
+                        DomainEvent::AvailabilityDeclared {
+                            fixture_id,
+                            referee_id,
+                        } => {
+                            self.callbacks
+                                .on_availability_declared(fixture_id, referee_id)
+                                .await;
+                        }
+                        DomainEvent::AvailabilityWithdrawn {
+                            fixture_id,
+                            referee_id,
+                        } => {
+                            self.callbacks
+                                .on_availability_withdrawn(fixture_id, referee_id)
+                                .await;
                         }
                     }
                     self.kafka_consumer

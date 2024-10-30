@@ -49,6 +49,16 @@
             "database": "fixtures",
             "username": "postgres",
             "password": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5437,
+            "driver": "PostgreSQL",
+            "name": "Rust DDD Availabilities",
+            "database": "availabilities",
+            "username": "postgres",
+            "password": "postgres"
         }
     ]
 }

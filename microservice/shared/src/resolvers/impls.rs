@@ -3,15 +3,15 @@ use std::{future::Future, sync::Arc};
 use log::debug;
 use redis::Commands;
 use restinterface::{
-    fetch_referee, fetch_team, fetch_venue, RefereeDTO, RefereeIdDTO, TeamDTO, TeamIdDTO, VenueDTO,
-    VenueIdDTO,
+    fetch_fixture, fetch_referee, fetch_team, fetch_venue, FixtureDTO, FixtureIdDTO, RefereeDTO,
+    RefereeIdDTO, TeamDTO, TeamIdDTO, VenueDTO, VenueIdDTO,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::sync::Mutex;
 
-use crate::domain_ids::{RefereeId, TeamId, VenueId};
+use crate::domain_ids::{FixtureId, RefereeId, TeamId, VenueId};
 
-use super::traits::{RefereeResolver, TeamResolver, VenueResolver};
+use super::traits::{FixtureResolver, RefereeResolver, TeamResolver, VenueResolver};
 
 // NOTE: unfortunately we need to use a tokio Mutex with an Arc due to async code in REST handlers - otherwise axum would complain about "trait bound no longer satisfied"
 // see https://stackoverflow.com/questions/76307624/unexplained-trait-bound-no-longer-satisfied-when-modifying-axum-handler-body
@@ -23,6 +23,10 @@ pub struct TeamResolverImpl {
     redis_conn: Arc<Mutex<redis::Connection>>,
 }
 pub struct RefereeResolverImpl {
+    redis_conn: Arc<Mutex<redis::Connection>>,
+}
+
+pub struct FixtureResolverImpl {
     redis_conn: Arc<Mutex<redis::Connection>>,
 }
 
@@ -81,6 +85,26 @@ impl RefereeResolver for RefereeResolverImpl {
         let key = format!("referee_{}", referee_id.0.to_string());
         run_cached(&key, &mut redis_conn_mut, || {
             fetch_referee(RefereeIdDTO::from(*referee_id))
+        })
+        .await
+    }
+}
+
+impl FixtureResolverImpl {
+    pub fn new(redis_conn: Arc<Mutex<redis::Connection>>) -> Self {
+        Self { redis_conn }
+    }
+}
+
+impl FixtureResolver for FixtureResolverImpl {
+    type Error = String;
+
+    async fn resolve(&self, fixture_id: &FixtureId) -> Result<FixtureDTO, Self::Error> {
+        let mut redis_conn_mut = self.redis_conn.lock().await;
+
+        let key = format!("fixture_{}", fixture_id.0.to_string());
+        run_cached(&key, &mut redis_conn_mut, || {
+            fetch_fixture(FixtureIdDTO::from(*fixture_id))
         })
         .await
     }
