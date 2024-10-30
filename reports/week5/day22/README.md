@@ -6,13 +6,13 @@ The reason why we need a Saga is that when committing an Assignment as a reactio
 
 ## Results
 
-The Saga is non-robust and does not handle errors or retries, which means it can leave the system in an inconsistent state in the event of failure. For example
-
+The Saga is non-robust and does not handle errors or retries, which means it can leave the system in an inconsistent state in the event of failure. For example if the `Fixture` update fails, the `Assignment` is committed, leaving the system in an inconsistent state.
 
 ## Conclusions
 
-The following things are left now
+The following things are left now:
 
+- Get `Fixture` E2E tests working.
 - Get UI working (there are some runtime errors  when running `trunk serve`)
 - Properly implement the Saga pattern.
 - Idempotent Domain Event handling (see [Day 21](../day21/README.md)).
