@@ -5,9 +5,8 @@ use axum::{
     Json,
 };
 use log::debug;
-use restinterface::{
-    app_error::AppError, AssignmentDTO, AssignmentStagingDTO, FixtureIdDTO, RefereeIdDTO,
-};
+use restinterface::{AssignmentDTO, AssignmentStagingDTO, FixtureIdDTO, RefereeIdDTO};
+use shared::app_error::AppError;
 
 use crate::{
     adapters::db::{
@@ -147,8 +146,6 @@ mod assignments_tests {
     };
     use sqlx::PgPool;
 
-    use crate::ports::rest::shared::create_test_fixture;
-
     #[tokio::test]
     async fn assignment_scenario() {
         clear_tables().await;
@@ -157,7 +154,7 @@ mod assignments_tests {
         let assignments = fetch_assignments().await;
         assert!(assignments.is_empty(), "Assignments should be empty");
 
-        let (_fixture_creation, fixture_dto) = create_test_fixture().await;
+        let (_fixture_creation, fixture_dto) = restinterface::create_test_fixture().await;
         let referee_creation = RefereeCreationDTO {
             name: "John Doe".to_string(),
             club: "Club A".to_string(),

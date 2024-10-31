@@ -6,9 +6,8 @@ use axum::{
 };
 use log::debug;
 use microservices_shared::resolvers::impls::{FixtureResolverImpl, RefereeResolverImpl};
-use restinterface::{
-    app_error::AppError, AssignmentDTO, AssignmentStagingDTO, FixtureIdDTO, RefereeIdDTO,
-};
+use restinterface::{AssignmentDTO, AssignmentStagingDTO, FixtureIdDTO, RefereeIdDTO};
+use shared::app_error::AppError;
 use tokio::sync::Mutex;
 
 use crate::{

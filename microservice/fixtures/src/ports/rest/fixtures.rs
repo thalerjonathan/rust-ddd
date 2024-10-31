@@ -11,8 +11,8 @@ use microservices_shared::resolvers::impls::{
     RefereeResolverImpl, TeamResolverImpl, VenueResolverImpl,
 };
 use microservices_shared::resolvers::traits::{RefereeResolver, TeamResolver, VenueResolver};
-use restinterface::app_error::AppError;
 use restinterface::{FixtureCreationDTO, FixtureDTO, FixtureIdDTO};
+use shared::app_error::AppError;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;

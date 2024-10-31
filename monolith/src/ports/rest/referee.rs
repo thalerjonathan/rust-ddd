@@ -5,7 +5,8 @@ use axum::{
     Json,
 };
 use log::debug;
-use restinterface::{app_error::AppError, RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
+use restinterface::{RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
+use shared::app_error::AppError;
 
 use crate::{
     adapters::db::referee_repo_pg::RefereeRepositoryPg, application,
@@ -167,7 +168,9 @@ mod referee_tests {
             "Referee club should be updated"
         );
 
-        let referee_dto = restinterface::fetch_referee(referee_dto.id.into()).await;
+        let referee_dto = restinterface::fetch_referee(referee_dto.id.into())
+            .await
+            .unwrap();
         assert_eq!(
             referee_dto.club, updated_club,
             "Referee club should be updated"

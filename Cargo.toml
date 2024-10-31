@@ -6,6 +6,7 @@ members = [
     "monolith",
     "frontend",
     "restinterface",
+    "shared",
     "microservice/referees",
     "microservice/venues",
     "microservice/teams",

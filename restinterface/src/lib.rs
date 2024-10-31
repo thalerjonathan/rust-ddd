@@ -3,8 +3,6 @@ use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-pub mod app_error;
-
 pub const REFEREES_SERVICE_HOST: &str = "http://localhost:3000";
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -234,7 +232,12 @@ pub async fn fetch_venue(venue_id: VenueIdDTO) -> Result<VenueDTO, reqwest::Erro
 
 pub async fn fetch_teams() -> Vec<TeamDTO> {
     let url = Url::parse(&format!("{}/teams/all", REFEREES_SERVICE_HOST));
-    let response = reqwest::Client::new().get(url.unwrap()).send().await;
+
+    let builder = reqwest::Client::new()
+        .get(url.unwrap())
+        .fetch_mode_no_cors();
+
+    let response = builder.send().await;
     response.unwrap().json().await.unwrap()
 }
 

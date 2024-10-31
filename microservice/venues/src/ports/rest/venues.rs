@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
-use axum::{
-    extract::{Path, State},
-    Json,
-};
-use log::debug;
-use restinterface::{app_error::AppError, VenueCreationDTO, VenueDTO, VenueIdDTO};
-
 use crate::{
     adapters::db::venue_repo_pg::VenueRepositoryPg,
     application,
     domain::{aggregates::venue::Venue, repositories::venue_repo::VenueRepository},
     AppState,
 };
+use axum::{
+    extract::{Path, State},
+    Json,
+};
+use log::debug;
+use restinterface::{VenueCreationDTO, VenueDTO, VenueIdDTO};
+use shared::app_error::AppError;
 
 impl From<Venue> for VenueDTO {
     fn from(venue: Venue) -> Self {

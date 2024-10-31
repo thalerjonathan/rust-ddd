@@ -3,8 +3,8 @@ use std::sync::Arc;
 use axum::extract::{Path, State};
 use axum::Json;
 use log::debug;
-use restinterface::app_error::AppError;
 use restinterface::{FixtureIdDTO, RefereeIdDTO};
+use shared::app_error::AppError;
 
 use crate::adapters::db::availability_repo_pg::AvailabilityRepositoryPg;
 use crate::adapters::db::fixture_repo_pg::FixtureRepositoryPg;
@@ -121,8 +121,6 @@ mod availabilities_tests {
     };
     use sqlx::PgPool;
 
-    use crate::ports::rest::shared::create_test_fixture;
-
     #[tokio::test]
     async fn availability_scenario() {
         clear_tables().await;
@@ -140,7 +138,7 @@ mod availabilities_tests {
             .unwrap();
         assert!(availabilities.is_empty(), "Availabilities should be empty");
 
-        let (_fixture_creation, fixture_dto) = create_test_fixture().await;
+        let (_fixture_creation, fixture_dto) = restinterface::create_test_fixture().await;
 
         let _availability_declaration_result = declare_availability(fixture_dto.id, referee_dto.id)
             .await

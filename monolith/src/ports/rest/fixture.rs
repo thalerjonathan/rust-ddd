@@ -9,8 +9,8 @@ use axum::extract::{Path, State};
 use axum::Json;
 use chrono::{DateTime, Utc};
 use log::debug;
-use restinterface::app_error::AppError;
 use restinterface::{FixtureCreationDTO, FixtureDTO, FixtureIdDTO};
+use shared::app_error::AppError;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -90,7 +90,7 @@ pub async fn update_fixture_date_handler(
     State(state): State<Arc<AppState>>,
     Path(fixture_id): Path<FixtureIdDTO>,
     Json(date): Json<DateTime<Utc>>,
-) -> Result<Json<FixtureDTO>, AppError> {
+) -> Result<Json<()>, AppError> {
     debug!("Updating fixture date: {}", fixture_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
@@ -109,14 +109,17 @@ pub async fn update_fixture_date_handler(
     tx.commit()
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
-    Ok(Json(fixture.into()))
+
+    debug!("Fixture date updated: {:?}", fixture);
+
+    Ok(Json(()))
 }
 
 pub async fn update_fixture_venue_handler(
     State(state): State<Arc<AppState>>,
     Path(fixture_id): Path<FixtureIdDTO>,
     Json(venue_id): Json<Uuid>,
-) -> Result<Json<FixtureDTO>, AppError> {
+) -> Result<Json<()>, AppError> {
     debug!("Updating fixture venue: {}", fixture_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
@@ -138,13 +141,15 @@ pub async fn update_fixture_venue_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-    Ok(Json(fixture.into()))
+    debug!("Fixture venue updated: {:?}", fixture);
+
+    Ok(Json(()))
 }
 
 pub async fn cancel_fixture_handler(
     State(state): State<Arc<AppState>>,
     Path(fixture_id): Path<FixtureIdDTO>,
-) -> Result<Json<FixtureDTO>, AppError> {
+) -> Result<Json<()>, AppError> {
     debug!("Cancelling fixture: {}", fixture_id.0);
 
     let mut tx = state.connection_pool.begin().await.unwrap();
@@ -160,19 +165,19 @@ pub async fn cancel_fixture_handler(
         .await
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-    Ok(Json(fixture.into()))
+    debug!("Fixture cancelled: {:?}", fixture);
+
+    Ok(Json(()))
 }
 
 #[cfg(test)]
 mod fixture_tests {
     use chrono::Utc;
     use restinterface::{
-        cancel_fixture, change_fixture_date, change_fixture_venue, create_venue, fetch_fixture,
-        fetch_fixtures, FixtureStatusDTO, VenueCreationDTO,
+        cancel_fixture, change_fixture_date, change_fixture_venue, create_test_fixture,
+        create_venue, fetch_fixture, fetch_fixtures, FixtureStatusDTO, VenueCreationDTO,
     };
     use sqlx::PgPool;
-
-    use crate::ports::rest::shared::create_test_fixture;
 
     #[tokio::test]
     async fn given_empty_db_when_fetch_fixture_then_empty_list_is_returned() {
@@ -240,9 +245,9 @@ mod fixture_tests {
         let (_fixture_creation, fixture_dto) = create_test_fixture().await;
 
         let new_date = Utc::now();
-        let fixture_dto = change_fixture_date(fixture_dto.id.into(), new_date).await;
-        assert!(fixture_dto.is_ok(), "Fixture should be changed");
-        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into()).await.unwrap();
+        let result = change_fixture_date(fixture_dto.id.into(), new_date).await;
+        assert!(result.is_ok(), "Fixture should be changed");
+        let fixture_dto = fetch_fixture(fixture_dto.id.into()).await.unwrap();
         assert_eq!(
             fixture_dto.date.timestamp_millis(),
             new_date.timestamp_millis(),
@@ -267,9 +272,9 @@ mod fixture_tests {
         .await
         .unwrap();
 
-        let fixture_dto = change_fixture_venue(fixture_dto.id.into(), new_venue.id.into()).await;
-        assert!(fixture_dto.is_ok(), "Fixture venue change should be ok");
-        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into()).await.unwrap();
+        let result = change_fixture_venue(fixture_dto.id.into(), new_venue.id.into()).await;
+        assert!(result.is_ok(), "Fixture venue change should be ok");
+        let fixture_dto = fetch_fixture(fixture_dto.id.into()).await.unwrap();
         assert_eq!(
             fixture_dto.venue.id, new_venue.id,
             "Fixture venue should have changed"
@@ -282,9 +287,9 @@ mod fixture_tests {
 
         let (_fixture_creation, fixture_dto) = create_test_fixture().await;
 
-        let fixture_dto = cancel_fixture(fixture_dto.id.into()).await;
-        assert!(fixture_dto.is_ok(), "Fixture cancellation should be ok");
-        let fixture_dto = fetch_fixture(fixture_dto.unwrap().id.into()).await.unwrap();
+        let result = cancel_fixture(fixture_dto.id.into()).await;
+        assert!(result.is_ok(), "Fixture cancellation should return ok");
+        let fixture_dto = fetch_fixture(fixture_dto.id.into()).await.unwrap();
         assert_eq!(
             fixture_dto.status,
             FixtureStatusDTO::Cancelled,

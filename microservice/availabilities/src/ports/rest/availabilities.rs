@@ -4,8 +4,8 @@ use axum::extract::{Path, State};
 use axum::Json;
 use log::{debug, error};
 use microservices_shared::resolvers::impls::{FixtureResolverImpl, RefereeResolverImpl};
-use restinterface::app_error::AppError;
 use restinterface::{FixtureIdDTO, RefereeIdDTO};
+use shared::app_error::AppError;
 use tokio::sync::Mutex;
 
 use crate::adapters::db::availability_repo_pg::AvailabilityRepositoryPg;

@@ -5,7 +5,8 @@ use axum::{
     Json,
 };
 use log::debug;
-use restinterface::{app_error::AppError, VenueCreationDTO, VenueDTO, VenueIdDTO};
+use restinterface::{VenueCreationDTO, VenueDTO, VenueIdDTO};
+use shared::app_error::AppError;
 
 use crate::{
     adapters::db::venue_repo_pg::VenueRepositoryPg, application,

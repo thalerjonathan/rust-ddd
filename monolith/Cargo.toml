@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 restinterface = { path = "../restinterface" }
+shared = { path = "../shared" }
 axum = "0.7.7"
 tokio = { version = "1.40.0", features = ["full"] }
 serde = { version = "1.0.210", features = ["derive"] }

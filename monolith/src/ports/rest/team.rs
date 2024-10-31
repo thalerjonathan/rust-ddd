@@ -5,7 +5,8 @@ use axum::{
     Json,
 };
 use log::debug;
-use restinterface::{app_error::AppError, TeamCreationDTO, TeamDTO, TeamIdDTO};
+use restinterface::{TeamCreationDTO, TeamDTO, TeamIdDTO};
+use shared::app_error::AppError;
 
 use crate::{
     adapters::db::team_repo_pg::TeamRepositoryPg, application::team_services::create_team,

@@ -5,7 +5,8 @@ use axum::{
     Json,
 };
 use log::{debug, error};
-use restinterface::{app_error::AppError, RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
+use restinterface::{RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
+use shared::app_error::AppError;
 
 use crate::{
     adapters::db::referee_repo_pg::RefereeRepositoryPg,
