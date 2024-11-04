@@ -5,7 +5,7 @@ The plan for Day 23 was to:
 - Get `Fixture` E2E tests working.
 - Get UI working (there are some runtime errors  when running `trunk serve`)
 - Run 2 instances of each microservice in parallel.
-
+- Customise and refine logs: add localhost info to logs to distinguish between the different instances, and refine log levels to avoid spamming the console.
 ## Results
 
 Fixing things was pretty straightforward:

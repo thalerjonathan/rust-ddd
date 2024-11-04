@@ -71,3 +71,22 @@ If you want to run the test suite, make sure you have a backend running and then
 ## Refactoring into Microservices
 
 Currently I am working on refactoring the monolith into microservices, for which I started by writing [Architecture Decision Records](/microservice/ADR) for the overalle approach.
+
+### Running the Microservices
+
+1. Make sure you have Rust installed, see [Rustup](https://rustup.rs/).
+2. Make sure you have Docker with `docker compose` feature installed. 
+3. Install `trunk` via `cargo install trunk` which is required for the Leptos frontend.
+4. Switch to `nightly` Rust via `rustup toolchain install nightly` which is required for the Leptos frontend.
+5. Add the wasm32 compile target via `rustup target add wasm32-unknown-unknown` which is required for the Leptos frontend to compile to WASM.
+6. Start all databases of the microservices by running `sh start_all_db.sh` from within the `./microservice` folder. 
+7. Start Redis by running `sh start_redis.sh` from within the `./microservice` folder.
+8. Start Kafka by running `sh start_kafka.sh` from within the `./microservice` folder.
+9. Create the Kafka topic by running `sh create_domain_events_topic.sh` from within the `./microservice` folder. This will create a topic called `rustddd.events` with 2 partitions so that they will be consumed by 2 instances of each microservice.
+10. Start Nginx by running `sh start_nginx.sh` from within the `./microservice` folder.
+11. Start all microservices by running `sh run_all.sh` from within the `./microservice` folder. Note that this will start 2 instances of each microservice.
+12. Start the Frontend by running `sh run.sh` from within the `./frontend` folder. The first time it compiles the frontend from sourvce, which might take 1-2 minutes. Once finished, it opens a browser for you and displays the starting page.
+
+To stop all running microservices, you can run `sh stop_all.sh` from within the `./microservice` folder.
+
+Each microservice has E2E tests, which can be run by calling `sh tests.sh` from within the respective microservice folder. Note that not each microservice needs all other services up and running but to make sure, simply run all of them (using `sh run_all.sh`). Also, given its an E2E test, you need to have Redis, Kafka and Nginx up and running.
