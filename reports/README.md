@@ -82,3 +82,7 @@ Making Domain Events Handling Robust and slicing out the `Availabilities` servic
 ## [Day 22](./week5/day22/README.md)
 
 Slicing Assignments and implementing a simple Saga.
+
+## [Day 23](./week6/day23/README.md)
+
+Fixing bugs, getting UI working and running microservices in parallel.

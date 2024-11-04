@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use log::info;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -233,11 +234,13 @@ pub async fn fetch_venue(venue_id: VenueIdDTO) -> Result<VenueDTO, reqwest::Erro
 pub async fn fetch_teams() -> Vec<TeamDTO> {
     let url = Url::parse(&format!("{}/teams/all", REFEREES_SERVICE_HOST));
 
-    let builder = reqwest::Client::new()
-        .get(url.unwrap())
-        .fetch_mode_no_cors();
+    info!("Fetching teams from {:?}", url);
+
+    let builder = reqwest::Client::new().get(url.unwrap());
+    //.fetch_mode_no_cors();
 
     let response = builder.send().await;
+    log::info!("Response: {:?}", response);
     response.unwrap().json().await.unwrap()
 }
 

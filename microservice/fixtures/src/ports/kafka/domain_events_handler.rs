@@ -79,7 +79,8 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             "Received Domain Event: Fixture date changed: {:?} -> {}",
             fixture_id, date
         );
-        Ok(())
+
+        invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
 
     async fn on_fixture_venue_changed(
@@ -91,12 +92,12 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             "Received Domain Event: Fixture venue changed: {:?} -> {:?}",
             fixture_id, venue_id
         );
-        Ok(())
+        invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
 
     async fn on_fixture_cancelled(&mut self, fixture_id: FixtureId) -> Result<(), String> {
         info!("Received Domain Event: Fixture cancelled: {:?}", fixture_id);
-        Ok(())
+        invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
 
     async fn on_availability_declared(
@@ -151,7 +152,11 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         fixture_repo
             .save(&fixture, &mut tx)
             .await
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+
+        tx.commit().await.map_err(|e| e.to_string())?;
+
+        invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
 
     async fn on_second_referee_assignment_removed(
@@ -182,7 +187,11 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         fixture_repo
             .save(&fixture, &mut tx)
             .await
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+
+        tx.commit().await.map_err(|e| e.to_string())?;
+
+        invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
 
     async fn on_first_referee_assigned(
@@ -215,7 +224,11 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         fixture_repo
             .save(&fixture, &mut tx)
             .await
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+
+        tx.commit().await.map_err(|e| e.to_string())?;
+
+        invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
 
     async fn on_second_referee_assigned(
@@ -248,6 +261,22 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         fixture_repo
             .save(&fixture, &mut tx)
             .await
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+
+        tx.commit().await.map_err(|e| e.to_string())?;
+
+        invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
+}
+
+fn invalidate_fixture_cache_entry(
+    redis_conn: &mut redis::Connection,
+    fixture_id: FixtureId,
+) -> Result<(), String> {
+    info!("Invalidating cache entry for fixture: {:?}", fixture_id);
+
+    let key = format!("fixture_{}", fixture_id.0.to_string());
+    let _result: Result<(), redis::RedisError> = redis_conn.del(key);
+
+    _result.map_err(|e| e.to_string())
 }

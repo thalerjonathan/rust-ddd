@@ -1,6 +1,17 @@
-sh ./assignments/clean_db.sh
-sh ./availabilities/clean_db.sh
-sh ./fixtures/clean_db.sh
-sh ./referees/clean_db.sh 
-sh ./teams/clean_db.sh
-sh ./venues/clean_db.sh  
+cd ./assignments
+sh ./clean_db.sh 
+
+cd ../availabilities
+sh ./clean_db.sh 
+
+cd ../fixtures
+sh ./clean_db.sh 
+
+cd ../referees
+sh ./clean_db.sh 
+
+cd ../teams
+sh ./clean_db.sh 
+
+cd ../venues
+sh ./clean_db.sh 

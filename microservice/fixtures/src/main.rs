@@ -6,14 +6,13 @@ use axum::{
 use clap::Parser;
 
 use fixtures::config::AppConfig;
+use fixtures::ports::kafka::domain_events_handler::DomainEventCallbacksImpl;
 use fixtures::ports::rest::fixtures::{
     cancel_fixture_handler, create_fixture_handler, get_all_fixtures_handler,
     get_fixture_by_id_handler, update_fixture_date_handler, update_fixture_venue_handler,
 };
 use fixtures::AppState;
-use microservices_shared::domain_events::{
-    DomainEventCallbacksLoggerImpl, DomainEventConsumer, KafkaDomainEventProducer,
-};
+use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
 use sqlx::PgPool;
 use std::sync::Arc;
 
@@ -41,7 +40,10 @@ async fn main() {
         &config.kafka_domain_events_topic,
         &args.kafka_tx_id,
     );
-    let domain_event_callbacks = Box::new(DomainEventCallbacksLoggerImpl::new());
+    let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new(
+        redis_client.get_connection().unwrap(),
+        connection_pool.clone(),
+    ));
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,
         &config.kafka_url,
