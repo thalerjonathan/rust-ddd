@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
 use domain::aggregates::assignment::{Assignment, AssignmentRefereeRole, AssignmentStatus};
 use microservices_shared::domain_events::DomainEventPublisher;
+use opentelemetry::global::BoxedTracer;
 use restinterface::{AssignmentDTO, AssignmentRefereeRoleDTO, AssignmentStatusDTO};
 use sqlx::PgPool;
 
@@ -13,6 +16,7 @@ pub struct AppState {
     pub connection_pool: PgPool,
     pub redis_client: redis::Client,
     pub domain_event_publisher: Box<dyn DomainEventPublisher + Send + Sync>,
+    pub tracer: Arc<BoxedTracer>,
 }
 
 // NOTE: put here because REST and Application layers need them

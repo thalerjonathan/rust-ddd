@@ -16,3 +16,13 @@ log = "0.4.22"
 rdkafka = { version = "0.25", features = ["cmake-build"] }
 async-trait = "0.1.83"
 chrono = { version = "0.4.38", features = ["serde"] }
+tonic = { version = "0.12.3", features = ["transport"] }
+opentelemetry = "0.26.0"
+opentelemetry_sdk = { version = "0.26.0", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.26.0", features = [
+    "metrics",
+    "logs",
+    "serialize",
+] }
+opentelemetry-stdout = "0.26.0"
+opentelemetry-appender-log = "0.26.0"

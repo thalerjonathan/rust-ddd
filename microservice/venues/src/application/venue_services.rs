@@ -1,4 +1,3 @@
-use log::debug;
 use microservices_shared::domain_events::{DomainEvent, DomainEventPublisher};
 
 use crate::domain::{aggregates::venue::Venue, repositories::venue_repo::VenueRepository};
@@ -25,6 +24,5 @@ pub async fn create_venue<TxCtx>(
         .await
         .map_err(|e| e.to_string())?;
 
-    debug!("Venue created: {:?}", venue);
     Ok(venue)
 }

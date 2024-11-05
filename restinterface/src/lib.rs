@@ -18,6 +18,30 @@ pub struct VenueIdDTO(pub Uuid);
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TeamIdDTO(pub Uuid);
 
+impl ToString for RefereeIdDTO {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl ToString for FixtureIdDTO {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl ToString for VenueIdDTO {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl ToString for TeamIdDTO {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct RefereeDTO {
     pub id: RefereeIdDTO,

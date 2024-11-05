@@ -1,4 +1,3 @@
-use log::debug;
 use microservices_shared::domain_events::{DomainEvent, DomainEventPublisher};
 
 use crate::domain::{aggregates::team::Team, repositories::team_repo::TeamRepository};
@@ -20,8 +19,6 @@ pub async fn create_team<TxCtx>(
         })
         .await
         .map_err(|e| e.to_string())?;
-
-    debug!("Team created: {:?}", team);
 
     Ok(team)
 }

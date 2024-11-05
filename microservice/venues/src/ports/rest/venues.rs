@@ -10,7 +10,11 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use log::debug;
+use log::info;
+use opentelemetry::{
+    trace::{Span, Tracer},
+    KeyValue,
+};
 use restinterface::{VenueCreationDTO, VenueDTO, VenueIdDTO};
 use shared::app_error::AppError;
 
@@ -32,7 +36,12 @@ pub async fn create_venue_handler(
     State(state): State<Arc<AppState>>,
     Json(venue_creation): Json<VenueCreationDTO>,
 ) -> Result<Json<VenueDTO>, AppError> {
-    debug!("Creating venue: {:?}", venue_creation);
+    info!("Creating venue: {:?}", venue_creation);
+    let mut span = state.tracer.start("create_venue");
+    span.set_attribute(KeyValue::new("venue_name", venue_creation.name.clone()));
+    span.set_attribute(KeyValue::new("venue_street", venue_creation.street.clone()));
+    span.set_attribute(KeyValue::new("venue_zip", venue_creation.zip.clone()));
+    span.set_attribute(KeyValue::new("venue_city", venue_creation.city.clone()));
 
     let venue = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
@@ -75,7 +84,9 @@ pub async fn get_venue_by_id_handler(
     State(state): State<Arc<AppState>>,
     Path(venue_id): Path<VenueIdDTO>,
 ) -> Result<Json<Option<VenueDTO>>, AppError> {
-    debug!("Getting venue by id: {}", venue_id.0);
+    info!("Getting venue by id: {}", venue_id.0);
+    let mut span = state.tracer.start("get_venue_by_id");
+    span.set_attribute(KeyValue::new("venue_id", venue_id.0.to_string()));
 
     let mut tx = state
         .connection_pool
@@ -100,7 +111,8 @@ pub async fn get_venue_by_id_handler(
 pub async fn get_all_venues_handler(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<VenueDTO>>, AppError> {
-    debug!("Getting all venues");
+    info!("Getting all venues");
+    let _span = state.tracer.start("get_all_venues");
 
     let mut tx = state
         .connection_pool

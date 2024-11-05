@@ -1,4 +1,3 @@
-use log::debug;
 use microservices_shared::{
     domain_events::{DomainEvent, DomainEventPublisher},
     domain_ids::RefereeId,
@@ -25,8 +24,6 @@ pub async fn create_referee<TxCtx>(
         })
         .await
         .map_err(|e| e.to_string())?;
-
-    debug!("Referee created: {:?}", referee);
 
     Ok(referee)
 }
@@ -56,8 +53,6 @@ pub async fn update_referee_club<TxCtx>(
 
     // NOTE: the cache entry is invalidated by the domain event listener of a Referee service instance
     // to keep the application layer free from caching logic
-
-    debug!("Referee updated: {:?}", referee);
 
     Ok(())
 }

@@ -8,6 +8,10 @@ use clap::Parser;
 use microservices_shared::domain_events::{
     DomainEventCallbacksLoggerImpl, DomainEventConsumer, KafkaDomainEventProducer,
 };
+use opentelemetry::{
+    trace::{Span, Tracer},
+    KeyValue,
+};
 use sqlx::PgPool;
 use std::sync::Arc;
 use venues::config::AppConfig;
@@ -32,6 +36,12 @@ async fn main() {
     let args = Args::parse();
     let config = AppConfig::new_from_env();
 
+    let tracer = microservices_shared::init_tracing(&config.otlp_endpoint, "venues");
+    let mut span = tracer.start("application_start");
+    span.set_attribute(KeyValue::new("server_host", args.server_host.clone()));
+
+    let tracer_arc = Arc::new(tracer);
+
     let connection_pool = PgPool::connect(&config.db_url).await.unwrap();
 
     let domain_event_producer = KafkaDomainEventProducer::new(
@@ -39,7 +49,7 @@ async fn main() {
         &config.kafka_domain_events_topic,
         &args.kafka_tx_id,
     );
-    let domain_event_callbacks = Box::new(DomainEventCallbacksLoggerImpl::new());
+    let domain_event_callbacks = Box::new(DomainEventCallbacksLoggerImpl::new(tracer_arc.clone()));
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,
         &config.kafka_url,
@@ -50,6 +60,7 @@ async fn main() {
     let app_state = AppState {
         connection_pool,
         domain_event_publisher: Box::new(domain_event_producer),
+        tracer: tracer_arc,
     };
     let state_arc = Arc::new(app_state);
 
@@ -78,6 +89,8 @@ async fn main() {
     tokio::spawn(async move {
         domain_event_consumer.run().await;
     });
+
+    span.end();
 
     axum::serve(listener, app).await.unwrap();
 }

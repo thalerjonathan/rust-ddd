@@ -4,8 +4,12 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use log::debug;
+use log::info;
 use microservices_shared::resolvers::impls::{FixtureResolverImpl, RefereeResolverImpl};
+use opentelemetry::{
+    trace::{Span, Tracer},
+    KeyValue,
+};
 use restinterface::{AssignmentDTO, AssignmentStagingDTO, FixtureIdDTO, RefereeIdDTO};
 use shared::app_error::AppError;
 use tokio::sync::Mutex;
@@ -23,7 +27,8 @@ use crate::{
 pub async fn fetch_assignments_handler(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<AssignmentDTO>>, AppError> {
-    debug!("Fetching assignments");
+    info!("Fetching assignments");
+    let _span = state.tracer.start("fetch_assignments");
 
     let mut tx = state.connection_pool.begin().await.unwrap();
     let assignment_repo = AssignmentRepositoryPg::new();
@@ -38,7 +43,20 @@ pub async fn stage_assignment_handler(
     State(state): State<Arc<AppState>>,
     Json(assignment_staging): Json<AssignmentStagingDTO>,
 ) -> Result<Json<AssignmentDTO>, AppError> {
-    debug!("Staging assignment: {:?}", assignment_staging);
+    info!("Staging assignment: {:?}", assignment_staging);
+    let mut span = state.tracer.start("stage_assignment");
+    span.set_attribute(KeyValue::new(
+        "assignment_fixture_id",
+        assignment_staging.fixture_id.to_string(),
+    ));
+    span.set_attribute(KeyValue::new(
+        "assignment_referee_id",
+        assignment_staging.referee_id.to_string(),
+    ));
+    span.set_attribute(KeyValue::new(
+        "assignment_referee_role",
+        format!("{:?}", assignment_staging.referee_role),
+    ));
 
     // NOTE: not emitting domain events emitted here
 
@@ -72,7 +90,16 @@ pub async fn remove_staged_assignment_handler(
     State(state): State<Arc<AppState>>,
     Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
-    debug!("Deleting assignment: {:?} {:?}", fixture_id, referee_id);
+    info!("Deleting assignment: {:?} {:?}", fixture_id, referee_id);
+    let mut span = state.tracer.start("remove_staged_assignment");
+    span.set_attribute(KeyValue::new(
+        "assignment_fixture_id",
+        fixture_id.to_string(),
+    ));
+    span.set_attribute(KeyValue::new(
+        "assignment_referee_id",
+        referee_id.to_string(),
+    ));
 
     // NOTE: not emitting domain events emitted here
 
@@ -100,7 +127,16 @@ pub async fn remove_committed_assignment_handler(
     State(state): State<Arc<AppState>>,
     Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
-    debug!("Deleting assignment: {:?} {:?}", fixture_id, referee_id);
+    info!("Deleting assignment: {:?} {:?}", fixture_id, referee_id);
+    let mut span = state.tracer.start("remove_committed_assignment");
+    span.set_attribute(KeyValue::new(
+        "assignment_fixture_id",
+        fixture_id.to_string(),
+    ));
+    span.set_attribute(KeyValue::new(
+        "assignment_referee_id",
+        referee_id.to_string(),
+    ));
 
     let result = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
@@ -143,7 +179,8 @@ pub async fn remove_committed_assignment_handler(
 pub async fn validate_assignments_handler(
     State(state): State<Arc<AppState>>,
 ) -> Result<String, AppError> {
-    debug!("Validating assignments");
+    info!("Validating assignments");
+    let _span = state.tracer.start("validate_assignments");
 
     // NOTE: no domain events emitted here
 
@@ -165,7 +202,8 @@ pub async fn validate_assignments_handler(
 pub async fn commit_assignments_handler(
     State(state): State<Arc<AppState>>,
 ) -> Result<String, AppError> {
-    debug!("Committing assignments");
+    info!("Committing assignments");
+    let _span = state.tracer.start("commit_assignments");
 
     let result = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,

@@ -4,7 +4,11 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use log::{debug, error};
+use log::{debug, error, info};
+use opentelemetry::{
+    trace::{Span, Tracer},
+    KeyValue,
+};
 use restinterface::{RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
 use shared::app_error::AppError;
 
@@ -29,7 +33,10 @@ pub async fn create_referee_handler(
     State(state): State<Arc<AppState>>,
     Json(ref_creation): Json<RefereeCreationDTO>,
 ) -> Result<Json<RefereeDTO>, AppError> {
-    debug!("Creating referee: {:?}", ref_creation);
+    info!("Creating referee: {:?}", ref_creation);
+    let mut span = state.tracer.start("create_referee");
+    span.set_attribute(KeyValue::new("referee_name", ref_creation.name.clone()));
+    span.set_attribute(KeyValue::new("referee_club", ref_creation.club.clone()));
 
     let referee = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
@@ -70,7 +77,9 @@ pub async fn get_referee_by_id_handler(
     State(state): State<Arc<AppState>>,
     Path(referee_id): Path<RefereeIdDTO>,
 ) -> Result<Json<Option<RefereeDTO>>, AppError> {
-    debug!("Getting referee by id: {}", referee_id.0);
+    info!("Getting referee by id: {}", referee_id.0);
+    let mut span = state.tracer.start("get_referee_by_id");
+    span.set_attribute(KeyValue::new("referee_id", referee_id.0.to_string()));
 
     let mut tx = state
         .connection_pool
@@ -94,7 +103,8 @@ pub async fn get_referee_by_id_handler(
 pub async fn get_all_referees_handler(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<RefereeDTO>>, AppError> {
-    debug!("Getting all referees");
+    info!("Getting all referees");
+    let _span = state.tracer.start("get_all_referees");
 
     let mut tx = state
         .connection_pool
@@ -118,7 +128,10 @@ pub async fn update_referee_club_handler(
     Path(referee_id): Path<RefereeIdDTO>,
     Json(club): Json<String>,
 ) -> Result<Json<String>, AppError> {
-    debug!("Updating referee club: {}", referee_id.0);
+    info!("Updating referee club: {}", referee_id.0);
+    let mut span = state.tracer.start("update_referee_club");
+    span.set_attribute(KeyValue::new("referee_id", referee_id.0.to_string()));
+    span.set_attribute(KeyValue::new("referee_club", club.clone()));
 
     let club = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,

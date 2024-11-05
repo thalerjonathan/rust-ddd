@@ -4,7 +4,11 @@ use axum::{
     extract::{Path, State},
     Json,
 };
-use log::debug;
+use log::info;
+use opentelemetry::{
+    trace::{Span, Tracer},
+    KeyValue,
+};
 use restinterface::{TeamCreationDTO, TeamDTO, TeamIdDTO};
 use shared::app_error::AppError;
 
@@ -29,7 +33,10 @@ pub async fn create_team_handler(
     State(state): State<Arc<AppState>>,
     Json(team_creation): Json<TeamCreationDTO>,
 ) -> Result<Json<TeamDTO>, AppError> {
-    debug!("Creating team: {:?}", team_creation);
+    info!("Creating team: {:?}", team_creation);
+    let mut span = state.tracer.start("create_team");
+    span.set_attribute(KeyValue::new("team_name", team_creation.name.clone()));
+    span.set_attribute(KeyValue::new("team_club", team_creation.club.clone()));
 
     let team = microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
@@ -67,7 +74,9 @@ pub async fn get_team_by_id_handler(
     State(state): State<Arc<AppState>>,
     Path(team_id): Path<TeamIdDTO>,
 ) -> Result<Json<Option<TeamDTO>>, AppError> {
-    debug!("Fetching team by id: {:?}", team_id.0);
+    info!("Fetching team by id: {:?}", team_id.0);
+    let mut span = state.tracer.start("get_team_by_id");
+    span.set_attribute(KeyValue::new("team_id", team_id.0.to_string()));
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 
@@ -84,7 +93,8 @@ pub async fn get_team_by_id_handler(
 pub async fn get_all_teams_handler(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<TeamDTO>>, AppError> {
-    debug!("Fetching all teams");
+    info!("Fetching all teams");
+    let _span = state.tracer.start("get_all_teams");
 
     let mut tx = state.connection_pool.begin().await.unwrap();
 

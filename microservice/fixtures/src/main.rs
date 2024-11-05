@@ -13,6 +13,10 @@ use fixtures::ports::rest::fixtures::{
 };
 use fixtures::AppState;
 use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
+use opentelemetry::{
+    trace::{Span, Tracer},
+    KeyValue,
+};
 use sqlx::PgPool;
 use std::sync::Arc;
 
@@ -32,6 +36,12 @@ async fn main() {
     let args = Args::parse();
     let config = AppConfig::new_from_env();
 
+    let tracer = microservices_shared::init_tracing(&config.otlp_endpoint, "fixtures");
+    let mut span = tracer.start("application_start");
+    span.set_attribute(KeyValue::new("server_host", args.server_host.clone()));
+
+    let tracer_arc = Arc::new(tracer);
+
     let connection_pool = PgPool::connect(&config.db_url).await.unwrap();
     let redis_client = redis::Client::open(config.redis_url).unwrap();
 
@@ -43,6 +53,7 @@ async fn main() {
     let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new(
         redis_client.get_connection().unwrap(),
         connection_pool.clone(),
+        tracer_arc.clone(),
     ));
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,
@@ -55,6 +66,7 @@ async fn main() {
         connection_pool,
         redis_client,
         domain_event_publisher: Box::new(domain_event_producer),
+        tracer: tracer_arc,
     };
     let state_arc = Arc::new(app_state);
 
@@ -86,6 +98,8 @@ async fn main() {
     tokio::spawn(async move {
         domain_event_consumer.run().await;
     });
+
+    span.end();
 
     axum::serve(listener, app).await.unwrap();
 }

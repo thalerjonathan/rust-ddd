@@ -1,8 +1,19 @@
+use std::sync::Arc;
+
+use crate::{
+    adapters::db::fixture_repo_pg::FixtureRepositoryPg,
+    domain::repositories::fixture_repo::FixtureRepository,
+};
 use axum::async_trait;
 use log::info;
 use microservices_shared::{
-    domain_events::DomainEventCallbacks,
+    domain_events::{DomainEventCallbacks, DomainEventCallbacksLoggerImpl},
     domain_ids::{FixtureId, RefereeId, TeamId, VenueId},
+};
+use opentelemetry::global::BoxedTracer;
+use opentelemetry::{
+    trace::{Span, Tracer},
+    KeyValue,
 };
 use redis::Commands;
 use sqlx::{
@@ -10,21 +21,24 @@ use sqlx::{
     PgPool,
 };
 
-use crate::{
-    adapters::db::fixture_repo_pg::FixtureRepositoryPg,
-    domain::repositories::fixture_repo::FixtureRepository,
-};
-
 pub struct DomainEventCallbacksImpl {
     redis_conn: redis::Connection,
     connection_pool: PgPool,
+    tracer: Arc<BoxedTracer>,
+    delegate: DomainEventCallbacksLoggerImpl,
 }
 
 impl DomainEventCallbacksImpl {
-    pub fn new(redis_conn: redis::Connection, connection_pool: PgPool) -> Self {
+    pub fn new(
+        redis_conn: redis::Connection,
+        connection_pool: PgPool,
+        tracer: Arc<BoxedTracer>,
+    ) -> Self {
         Self {
             redis_conn,
             connection_pool,
+            delegate: DomainEventCallbacksLoggerImpl::new(tracer.clone()),
+            tracer,
         }
     }
 }
@@ -32,8 +46,7 @@ impl DomainEventCallbacksImpl {
 #[async_trait]
 impl DomainEventCallbacks for DomainEventCallbacksImpl {
     async fn on_referee_created(&mut self, referee_id: RefereeId) -> Result<(), String> {
-        info!("Received Domain Event: Referee created: {:?}", referee_id);
-        Ok(())
+        self.delegate.on_referee_created(referee_id).await
     }
 
     async fn on_referee_club_changed(
@@ -46,6 +59,10 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             referee_id, club_name
         );
 
+        let mut span = self.tracer.start("on_referee_club_changed");
+        span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
+        span.set_attribute(KeyValue::new("club_name", club_name));
+
         info!("Invalidating cache entry for referee: {:?}", referee_id);
 
         // NOTE: invalidate the cache entry for the referee
@@ -56,18 +73,15 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
     }
 
     async fn on_team_created(&mut self, team_id: TeamId) -> Result<(), String> {
-        info!("Received Domain Event: Team created: {:?}", team_id);
-        Ok(())
+        self.delegate.on_team_created(team_id).await
     }
 
     async fn on_venue_created(&mut self, venue_id: VenueId) -> Result<(), String> {
-        info!("Received Domain Event: Venue created: {:?}", venue_id);
-        Ok(())
+        self.delegate.on_venue_created(venue_id).await
     }
 
     async fn on_fixture_created(&mut self, fixture_id: FixtureId) -> Result<(), String> {
-        info!("Received Domain Event: Fixture created: {:?}", fixture_id);
-        Ok(())
+        self.delegate.on_fixture_created(fixture_id).await
     }
 
     async fn on_fixture_date_changed(
@@ -75,10 +89,9 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         fixture_id: FixtureId,
         date: DateTime<Utc>,
     ) -> Result<(), String> {
-        info!(
-            "Received Domain Event: Fixture date changed: {:?} -> {}",
-            fixture_id, date
-        );
+        self.delegate
+            .on_fixture_date_changed(fixture_id, date)
+            .await?;
 
         invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
@@ -88,15 +101,16 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         fixture_id: FixtureId,
         venue_id: VenueId,
     ) -> Result<(), String> {
-        info!(
-            "Received Domain Event: Fixture venue changed: {:?} -> {:?}",
-            fixture_id, venue_id
-        );
+        self.delegate
+            .on_fixture_venue_changed(fixture_id, venue_id)
+            .await?;
+
         invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
 
     async fn on_fixture_cancelled(&mut self, fixture_id: FixtureId) -> Result<(), String> {
-        info!("Received Domain Event: Fixture cancelled: {:?}", fixture_id);
+        self.delegate.on_fixture_cancelled(fixture_id).await?;
+
         invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
 
@@ -105,11 +119,9 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         fixture_id: FixtureId,
         referee_id: RefereeId,
     ) -> Result<(), String> {
-        info!(
-            "Received Domain Event: Availability declared: {:?} -> {:?}",
-            fixture_id, referee_id
-        );
-        Ok(())
+        self.delegate
+            .on_availability_declared(fixture_id, referee_id)
+            .await
     }
 
     async fn on_availability_withdrawn(
@@ -117,11 +129,9 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         fixture_id: FixtureId,
         referee_id: RefereeId,
     ) -> Result<(), String> {
-        info!(
-            "Received Domain Event: Availability withdrawn: {:?} -> {:?}",
-            fixture_id, referee_id
-        );
-        Ok(())
+        self.delegate
+            .on_availability_withdrawn(fixture_id, referee_id)
+            .await
     }
 
     async fn on_first_referee_assignment_removed(
@@ -133,6 +143,10 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             "Received Domain Event: First referee assignment removed: {:?} -> {:?}",
             fixture_id, referee_id
         );
+
+        let mut span = self.tracer.start("on_first_referee_assignment_removed");
+        span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
+        span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
         let mut tx = self
             .connection_pool
@@ -169,6 +183,10 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             fixture_id, referee_id
         );
 
+        let mut span = self.tracer.start("on_second_referee_assignment_removed");
+        span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
+        span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
+
         let mut tx = self
             .connection_pool
             .begin()
@@ -203,6 +221,10 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             "Received Domain Event: First referee assigned: {:?} -> {:?}",
             fixture_id, referee_id
         );
+
+        let mut span = self.tracer.start("on_first_referee_assigned");
+        span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
+        span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
         let mut tx = self
             .connection_pool
@@ -240,6 +262,10 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             "Received Domain Event: Second referee assigned: {:?} -> {:?}",
             fixture_id, referee_id
         );
+
+        let mut span = self.tracer.start("on_second_referee_assigned");
+        span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
+        span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
         let mut tx = self
             .connection_pool

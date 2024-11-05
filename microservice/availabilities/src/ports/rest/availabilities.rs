@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::extract::{Path, State};
 use axum::Json;
-use log::{debug, error};
+use log::{error, info};
 use microservices_shared::resolvers::impls::{FixtureResolverImpl, RefereeResolverImpl};
 use restinterface::{FixtureIdDTO, RefereeIdDTO};
 use shared::app_error::AppError;
@@ -13,15 +13,21 @@ use crate::application::availability_services::{
     declare_availability, get_availabilities_for_referee, withdraw_availability,
 };
 use crate::AppState;
-
+use opentelemetry::{
+    trace::{Span, Tracer},
+    KeyValue,
+};
 pub async fn declare_availability_handler(
     State(state): State<Arc<AppState>>,
     Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
-    debug!(
+    info!(
         "Declaring availability for fixture: {:?} and referee: {:?}",
         fixture_id, referee_id
     );
+    let mut span = state.tracer.start("declare_availability");
+    span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
+    span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
     microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
@@ -68,10 +74,13 @@ pub async fn withdraw_availability_handler(
     State(state): State<Arc<AppState>>,
     Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
-    debug!(
+    info!(
         "Withdrawing availability for fixture: {:?} and referee: {:?}",
         fixture_id, referee_id
     );
+    let mut span = state.tracer.start("withdraw_availability");
+    span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
+    span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
     microservices_shared::domain_events::run_domain_event_publisher_transactional(
         &state.domain_event_publisher,
@@ -118,7 +127,9 @@ pub async fn fetch_availabilities_for_referee_handler(
     State(state): State<Arc<AppState>>,
     Path(referee_id): Path<RefereeIdDTO>,
 ) -> Result<Json<Vec<FixtureIdDTO>>, AppError> {
-    debug!("Fetching availabilities for referee: {:?}", referee_id);
+    info!("Fetching availabilities for referee: {:?}", referee_id);
+    let mut span = state.tracer.start("fetch_availabilities_for_referee");
+    span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
     let mut tx = state.connection_pool.begin().await.map_err(|e| {
         error!("Error beginning transaction: {:?}", e);

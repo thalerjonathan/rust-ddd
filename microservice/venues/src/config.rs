@@ -5,6 +5,7 @@ pub struct AppConfig {
     pub kafka_url: String,
     pub kafka_domain_events_topic: String,
     pub kafka_consumer_group: String,
+    pub otlp_endpoint: String,
 }
 
 impl AppConfig {
@@ -15,6 +16,7 @@ impl AppConfig {
             kafka_url: get_from_env_or_panic("KAFKA_URL"),
             kafka_domain_events_topic: get_from_env_or_panic("KAFKA_DOMAIN_EVENTS_TOPIC"),
             kafka_consumer_group: get_from_env_or_panic("KAFKA_CONSUMER_GROUP"),
+            otlp_endpoint: get_from_env_or_panic("OTLP_ENDPOINT"),
         }
     }
 }

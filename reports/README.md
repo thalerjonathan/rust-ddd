@@ -86,3 +86,7 @@ Slicing Assignments and implementing a simple Saga.
 ## [Day 23](./week6/day23/README.md)
 
 Fixing bugs, getting UI working and running microservices in parallel.
+
+## [Day 24](./week6/day24/README.md)
+
+Observability using Jaeger

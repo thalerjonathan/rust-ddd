@@ -1,0 +1,1 @@
+docker compose -f tracing/docker-compose.yaml up

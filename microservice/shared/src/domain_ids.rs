@@ -16,6 +16,30 @@ pub struct TeamId(pub Uuid);
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, Serialize, Deserialize)]
 pub struct VenueId(pub Uuid);
 
+impl ToString for FixtureId {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl ToString for RefereeId {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl ToString for TeamId {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl ToString for VenueId {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
 impl TryFrom<String> for FixtureId {
     type Error = String;
 
