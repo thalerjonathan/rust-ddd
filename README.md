@@ -84,8 +84,9 @@ Currently I am working on refactoring the monolith into microservices, for which
 8. Start Kafka by running `sh start_kafka.sh` from within the `./microservice` folder.
 9. Create the Kafka topic by running `sh create_domain_events_topic.sh` from within the `./microservice` folder. This will create a topic called `rustddd.events` with 2 partitions so that they will be consumed by 2 instances of each microservice.
 10. Start Nginx by running `sh start_nginx.sh` from within the `./microservice` folder.
-11. Start all microservices by running `sh run_all.sh` from within the `./microservice` folder. Note that this will start 2 instances of each microservice.
-12. Start the Frontend by running `sh run.sh` from within the `./frontend` folder. The first time it compiles the frontend from sourvce, which might take 1-2 minutes. Once finished, it opens a browser for you and displays the starting page.
+11. Start Jaeger by running `sh start_jaeger.sh` from within the `./microservice` folder.
+12. Start all microservices by running `sh run_all.sh` from within the `./microservice` folder. Note that this will start 2 instances of each microservice.
+13. Start the Frontend by running `sh run.sh` from within the `./frontend` folder. The first time it compiles the frontend from sourvce, which might take 1-2 minutes. Once finished, it opens a browser for you and displays the starting page.
 
 To stop all running microservices, you can run `sh stop_all.sh` from within the `./microservice` folder.
 
