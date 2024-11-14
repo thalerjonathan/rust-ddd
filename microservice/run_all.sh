@@ -1,8 +1,8 @@
-cd ./assignments
-sh ./run_instance_1.sh &
-sh ./run_instance_2.sh &
+# cd ./assignments
+# sh ./run_instance_1.sh &
+# sh ./run_instance_2.sh &
 
-cd ../availabilities
+cd availabilities
 sh ./run_instance_1.sh &
 sh ./run_instance_2.sh &
 

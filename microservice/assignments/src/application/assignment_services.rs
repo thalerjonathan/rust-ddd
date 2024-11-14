@@ -1,5 +1,6 @@
 use microservices_shared::{
-    domain_events::{DomainEvent, DomainEventPublisher},
+    domain_event_repo::DomainEventRepository,
+    domain_events::DomainEvent,
     domain_ids::{FixtureId, RefereeId},
     resolvers::traits::{FixtureResolver, RefereeResolver},
 };
@@ -44,7 +45,7 @@ pub async fn remove_committed_assignment<TxCtx>(
     referee_id: RefereeId,
     assignment_repo: &impl AssignmentRepository<TxCtx = TxCtx, Error = String>,
     fixture_resolver: &impl FixtureResolver<Error = String>,
-    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    domain_event_repo: &impl DomainEventRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<(), String> {
     let assignment = assignment_repo
@@ -91,11 +92,13 @@ pub async fn remove_committed_assignment<TxCtx>(
                 ));
             }
 
-            domain_event_publisher
-                .publish_domain_event(DomainEvent::FirstRefereeAssignmentRemoved {
-                    fixture_id: fixture.id.0.into(),
-                    referee_id: assignment.referee_id().into(),
-                })
+            let event = DomainEvent::FirstRefereeAssignmentRemoved {
+                fixture_id: fixture.id.0.into(),
+                referee_id: assignment.referee_id().into(),
+            };
+
+            domain_event_repo
+                .store_in_outbox(event.clone(), tx_ctx)
                 .await?;
         }
         AssignmentRefereeRole::Second => {
@@ -113,11 +116,13 @@ pub async fn remove_committed_assignment<TxCtx>(
                 ));
             }
 
-            domain_event_publisher
-                .publish_domain_event(DomainEvent::SecondRefereeAssignmentRemoved {
-                    fixture_id: fixture.id.0.into(),
-                    referee_id: assignment.referee_id().into(),
-                })
+            let event = DomainEvent::SecondRefereeAssignmentRemoved {
+                fixture_id: fixture.id.0.into(),
+                referee_id: assignment.referee_id().into(),
+            };
+
+            domain_event_repo
+                .store_in_outbox(event.clone(), tx_ctx)
                 .await?;
         }
     }
@@ -173,7 +178,7 @@ pub async fn commit_assignments<TxCtx>(
     assignment_repo: &impl AssignmentRepository<TxCtx = TxCtx, Error = String>,
     fixture_resolver: &impl FixtureResolver<Error = String>,
     referee_resolver: &impl RefereeResolver<Error = String>,
-    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    domain_event_repo: &impl DomainEventRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<String, String> {
     // NOTE: committing assignments also validates them and rejects if any invalid
@@ -201,24 +206,20 @@ pub async fn commit_assignments<TxCtx>(
             ));
         let role = assignment.referee_role();
 
-        match role {
-            AssignmentRefereeRole::First => {
-                domain_event_publisher
-                    .publish_domain_event(DomainEvent::FirstRefereeAssigned {
-                        fixture_id: fixture.id.0.into(),
-                        referee_id: referee.id.0.into(),
-                    })
-                    .await?;
-            }
-            AssignmentRefereeRole::Second => {
-                domain_event_publisher
-                    .publish_domain_event(DomainEvent::SecondRefereeAssigned {
-                        fixture_id: fixture.id.0.into(),
-                        referee_id: referee.id.0.into(),
-                    })
-                    .await?;
-            }
-        }
+        let event = match role {
+            AssignmentRefereeRole::First => DomainEvent::FirstRefereeAssigned {
+                fixture_id: fixture.id.0.into(),
+                referee_id: referee.id.0.into(),
+            },
+            AssignmentRefereeRole::Second => DomainEvent::SecondRefereeAssigned {
+                fixture_id: fixture.id.0.into(),
+                referee_id: referee.id.0.into(),
+            },
+        };
+
+        domain_event_repo
+            .store_in_outbox(event.clone(), tx_ctx)
+            .await?;
 
         assignment.commit();
 

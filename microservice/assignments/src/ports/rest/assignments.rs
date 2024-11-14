@@ -2,10 +2,13 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Path, State},
-    Json,
+    Extension, Json,
 };
 use log::info;
-use microservices_shared::resolvers::impls::{FixtureResolverImpl, RefereeResolverImpl};
+use microservices_shared::{
+    domain_event_repo::DomainEventRepositoryPg,
+    resolvers::impls::{FixtureResolverImpl, RefereeResolverImpl},
+};
 use opentelemetry::{
     trace::{Span, Tracer},
     KeyValue,
@@ -13,6 +16,7 @@ use opentelemetry::{
 use restinterface::{AssignmentDTO, AssignmentStagingDTO, FixtureIdDTO, RefereeIdDTO};
 use shared::app_error::AppError;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 use crate::{
     adapters::db::assignment_repo_pg::AssignmentRepositoryPg,
@@ -125,6 +129,7 @@ pub async fn remove_staged_assignment_handler(
 
 pub async fn remove_committed_assignment_handler(
     State(state): State<Arc<AppState>>,
+    Extension(instance_id): Extension<Uuid>,
     Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
     info!("Deleting assignment: {:?} {:?}", fixture_id, referee_id);
@@ -138,40 +143,33 @@ pub async fn remove_committed_assignment_handler(
         referee_id.to_string(),
     ));
 
-    let result = microservices_shared::domain_events::run_domain_event_publisher_transactional(
-        &state.domain_event_publisher,
-        async {
-            let mut tx = state
-                .connection_pool
-                .begin()
-                .await
-                .map_err(|e| e.to_string())?;
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-            let redis_conn = state
-                .redis_client
-                .get_connection()
-                .map_err(|e| e.to_string())?;
-            let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
+    let redis_conn = state
+        .redis_client
+        .get_connection()
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
 
-            let assignment_repo = AssignmentRepositoryPg::new();
-            let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
-            let result = remove_committed_assignment(
-                fixture_id.into(),
-                referee_id.into(),
-                &assignment_repo,
-                &fixture_resolver,
-                &state.domain_event_publisher,
-                &mut tx,
-            )
-            .await
-            .unwrap();
-            tx.commit().await.unwrap();
+    let assignment_repo = AssignmentRepositoryPg::new();
+    let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
+    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
 
-            Ok(result)
-        },
+    let result = remove_committed_assignment(
+        fixture_id.into(),
+        referee_id.into(),
+        &assignment_repo,
+        &fixture_resolver,
+        &domain_event_repo,
+        &mut tx,
     )
     .await
     .unwrap();
+    tx.commit().await.unwrap();
 
     Ok(Json(result))
 }
@@ -201,45 +199,38 @@ pub async fn validate_assignments_handler(
 
 pub async fn commit_assignments_handler(
     State(state): State<Arc<AppState>>,
+    Extension(instance_id): Extension<Uuid>,
 ) -> Result<String, AppError> {
     info!("Committing assignments");
     let _span = state.tracer.start("commit_assignments");
 
-    let result = microservices_shared::domain_events::run_domain_event_publisher_transactional(
-        &state.domain_event_publisher,
-        async {
-            let mut tx = state
-                .connection_pool
-                .begin()
-                .await
-                .map_err(|e| e.to_string())?;
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-            let redis_conn = state
-                .redis_client
-                .get_connection()
-                .map_err(|e| e.to_string())?;
-            let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
+    let redis_conn = state
+        .redis_client
+        .get_connection()
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
 
-            let assignment_repo = AssignmentRepositoryPg::new();
-            let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
-            let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
+    let assignment_repo = AssignmentRepositoryPg::new();
+    let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
+    let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
+    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
 
-            let result = commit_assignments(
-                &assignment_repo,
-                &fixture_resolver,
-                &referee_resolver,
-                &state.domain_event_publisher,
-                &mut tx,
-            )
-            .await
-            .unwrap();
-            tx.commit().await.unwrap();
-
-            Ok(result)
-        },
+    let result = commit_assignments(
+        &assignment_repo,
+        &fixture_resolver,
+        &referee_resolver,
+        &domain_event_repo,
+        &mut tx,
     )
     .await
     .unwrap();
+    tx.commit().await.unwrap();
 
     Ok(result)
 }

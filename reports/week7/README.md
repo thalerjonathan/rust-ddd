@@ -41,7 +41,6 @@ At the same time we need to have something like a *DomainEvent_inbox* table that
 Let's examine this a bit more closely: when we receive a Domain Event from Kafka, we potentially transform some entity in the DB via a DB TX and then commit the Kafka offset. Again, we have 2 different transactional / side effect contexts: committing the DB context and committing the Kafka offset and either can go wrong. If we commit the DB Tx but the committing of the Kafka offset fails, then we might end up processing the same event twice, therefore we store the Domain Event in the *DomainEvent_inbox* table during the DB TX. If now the Kafka committing fails, we simply retry but we see that we already processed the event and can simply skip it. Dealing with the transactional/side-effect boundaries the other way round would not work: if we commit the Kafka offset and then the DB TX but the latter fails, we have the problem that we would lose the Domain Event, therefore we need to do it the other way round.
 
 Consequences of eventual completion / making things resilient:
-- TODO: read chapter 12 of Sam Newmann's book
 - TODO: read microservices patterns book
 - Apparently we need to have some form of idempotency - why? and how do we implement it?
 - how do we deal with re-ordering? can we map this to business semantics?

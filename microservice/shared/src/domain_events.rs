@@ -3,7 +3,7 @@ use std::{future::Future, sync::Arc, time::Duration};
 use crate::domain_ids::{FixtureId, RefereeId, TeamId, VenueId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use log::{debug, info, warn};
+use log::{info, warn};
 use rdkafka::{
     config::RDKafkaLogLevel,
     consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, StreamConsumer},
@@ -19,7 +19,7 @@ use opentelemetry::{
     KeyValue,
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DomainEvent {
     RefereeCreated {
         referee_id: RefereeId,
@@ -141,18 +141,23 @@ impl DomainEventPublisher for KafkaDomainEventProducer {
     }
 
     async fn begin_transaction(&self) -> Result<(), String> {
+        // TODO: await producer to be ready
         self.kafka_producer
             .begin_transaction()
             .map_err(|e| e.to_string())
     }
 
     async fn commit_transaction(&self) -> Result<(), String> {
+        // TODO: await producer to be ready
+
         self.kafka_producer
             .commit_transaction(Duration::from_secs(10))
             .map_err(|e| e.to_string())
     }
 
     async fn rollback(&self) -> Result<(), String> {
+        // TODO: await producer to be ready
+
         self.kafka_producer
             .abort_transaction(Duration::from_secs(10))
             .map_err(|e| e.to_string())
@@ -199,15 +204,15 @@ impl ClientContext for CustomContext {}
 
 impl ConsumerContext for CustomContext {
     fn pre_rebalance(&self, rebalance: &Rebalance) {
-        debug!("Pre rebalance {:?}", rebalance);
+        info!("Pre rebalance {:?}", rebalance);
     }
 
     fn post_rebalance(&self, rebalance: &Rebalance) {
-        debug!("Post rebalance {:?}", rebalance);
+        info!("Post rebalance {:?}", rebalance);
     }
 
     fn commit_callback(&self, result: KafkaResult<()>, _offsets: &TopicPartitionList) {
-        debug!("Committing offsets: {:?}", result);
+        info!("Committing offsets: {:?}", result);
     }
 }
 

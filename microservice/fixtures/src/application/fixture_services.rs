@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use microservices_shared::{
     domain_events::{DomainEvent, DomainEventPublisher},
-    domain_ids::{FixtureId, TeamId, VenueId},
+    domain_ids::{FixtureId, RefereeId, TeamId, VenueId},
     resolvers::traits::{TeamResolver, VenueResolver},
 };
 use restinterface::FixtureDTO;
@@ -180,6 +180,92 @@ pub async fn cancel_fixture<TxCtx>(
         .map_err(|e| e.to_string())?;
 
     Ok(fixture)
+}
+
+pub async fn assign_first_referee<TxCtx>(
+    fixture_id: FixtureId,
+    referee_id: RefereeId,
+    fixture_repo: &impl FixtureRepository<TxCtx = TxCtx, Error = String>,
+    tx_ctx: &mut TxCtx,
+) -> Result<(), String> {
+    let mut fixture = fixture_repo
+        .find_by_id(fixture_id, tx_ctx)
+        .await?
+        .expect(format!("Fixture not found: {:?}", fixture_id).as_str());
+
+    // TODO: handle if there is already a first referee assigned
+    fixture.assign_first_referee(referee_id);
+
+    fixture_repo
+        .save(&fixture, tx_ctx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub async fn assign_second_referee<TxCtx>(
+    fixture_id: FixtureId,
+    referee_id: RefereeId,
+    fixture_repo: &impl FixtureRepository<TxCtx = TxCtx, Error = String>,
+    tx_ctx: &mut TxCtx,
+) -> Result<(), String> {
+    let mut fixture = fixture_repo
+        .find_by_id(fixture_id, tx_ctx)
+        .await?
+        .expect(format!("Fixture not found: {:?}", fixture_id).as_str());
+
+    // TODO: handle if there is already a second referee assigned
+    fixture.assign_second_referee(referee_id);
+
+    fixture_repo
+        .save(&fixture, tx_ctx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub async fn unassign_first_referee<TxCtx>(
+    fixture_id: FixtureId,
+    fixture_repo: &impl FixtureRepository<TxCtx = TxCtx, Error = String>,
+    tx_ctx: &mut TxCtx,
+) -> Result<(), String> {
+    let mut fixture = fixture_repo
+        .find_by_id(fixture_id, tx_ctx)
+        .await?
+        .expect(format!("Fixture not found: {:?}", fixture_id).as_str());
+
+    // TODO: handle error if there is no first referee assigned
+    fixture.unassign_first_referee();
+
+    fixture_repo
+        .save(&fixture, tx_ctx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub async fn unassign_second_referee<TxCtx>(
+    fixture_id: FixtureId,
+    fixture_repo: &impl FixtureRepository<TxCtx = TxCtx, Error = String>,
+    tx_ctx: &mut TxCtx,
+) -> Result<(), String> {
+    let mut fixture = fixture_repo
+        .find_by_id(fixture_id, tx_ctx)
+        .await?
+        .expect(format!("Fixture not found: {:?}", fixture_id).as_str());
+
+    // TODO: handle error if there is no second referee assigned
+    fixture.unassign_second_referee();
+
+    fixture_repo
+        .save(&fixture, tx_ctx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 #[cfg(test)]

@@ -26,3 +26,9 @@ opentelemetry-otlp = { version = "0.26.0", features = [
 ] }
 opentelemetry-stdout = "0.26.0"
 opentelemetry-appender-log = "0.26.0"
+sqlx = { version = "0.8.2", features = [
+    "postgres",
+    "runtime-tokio",
+    "uuid",
+    "chrono",
+] }

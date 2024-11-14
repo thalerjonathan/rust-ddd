@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use crate::{
     adapters::db::fixture_repo_pg::FixtureRepositoryPg,
-    domain::repositories::fixture_repo::FixtureRepository,
+    application::fixture_services::{
+        assign_first_referee, assign_second_referee, unassign_first_referee,
+        unassign_second_referee,
+    },
 };
 use axum::async_trait;
 use log::info;
@@ -155,18 +158,8 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             .map_err(|e| e.to_string())?;
 
         let fixture_repo = FixtureRepositoryPg::new();
-        let mut fixture = fixture_repo
-            .find_by_id(fixture_id, &mut tx)
-            .await
-            .map_err(|e| e.to_string())?
-            .expect(format!("Fixture not found: {:?}", fixture_id).as_str());
 
-        fixture.unassign_first_referee();
-
-        fixture_repo
-            .save(&fixture, &mut tx)
-            .await
-            .map_err(|e| e.to_string())?;
+        unassign_first_referee(fixture_id, &fixture_repo, &mut tx).await?;
 
         tx.commit().await.map_err(|e| e.to_string())?;
 
@@ -194,18 +187,8 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             .map_err(|e| e.to_string())?;
 
         let fixture_repo = FixtureRepositoryPg::new();
-        let mut fixture = fixture_repo
-            .find_by_id(fixture_id, &mut tx)
-            .await
-            .map_err(|e| e.to_string())?
-            .expect(format!("Fixture not found: {:?}", fixture_id).as_str());
 
-        fixture.unassign_second_referee();
-
-        fixture_repo
-            .save(&fixture, &mut tx)
-            .await
-            .map_err(|e| e.to_string())?;
+        unassign_second_referee(fixture_id, &fixture_repo, &mut tx).await?;
 
         tx.commit().await.map_err(|e| e.to_string())?;
 
@@ -233,20 +216,8 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             .map_err(|e| e.to_string())?;
 
         let fixture_repo = FixtureRepositoryPg::new();
-        let mut fixture = fixture_repo
-            .find_by_id(fixture_id, &mut tx)
-            .await
-            .map_err(|e| e.to_string())?
-            .expect(format!("Fixture not found: {:?}", fixture_id).as_str());
 
-        // NOTE: ideally we would check if the referee is available for the fixture
-
-        fixture.assign_first_referee(referee_id);
-
-        fixture_repo
-            .save(&fixture, &mut tx)
-            .await
-            .map_err(|e| e.to_string())?;
+        assign_first_referee(fixture_id, referee_id, &fixture_repo, &mut tx).await?;
 
         tx.commit().await.map_err(|e| e.to_string())?;
 
@@ -274,20 +245,8 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
             .map_err(|e| e.to_string())?;
 
         let fixture_repo = FixtureRepositoryPg::new();
-        let mut fixture = fixture_repo
-            .find_by_id(fixture_id, &mut tx)
-            .await
-            .map_err(|e| e.to_string())?
-            .expect(format!("Fixture not found: {:?}", fixture_id).as_str());
 
-        // NOTE: ideally we would check if the referee is available for the fixture
-
-        fixture.assign_second_referee(referee_id);
-
-        fixture_repo
-            .save(&fixture, &mut tx)
-            .await
-            .map_err(|e| e.to_string())?;
+        assign_second_referee(fixture_id, referee_id, &fixture_repo, &mut tx).await?;
 
         tx.commit().await.map_err(|e| e.to_string())?;
 
