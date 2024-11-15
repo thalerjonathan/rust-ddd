@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use microservices_shared::{
-    domain_events::{DomainEvent, DomainEventPublisher},
+    domain_event_repo::DomainEventOutboxRepository,
+    domain_events::DomainEvent,
     domain_ids::{FixtureId, RefereeId, TeamId, VenueId},
     resolvers::traits::{TeamResolver, VenueResolver},
 };
@@ -16,7 +17,7 @@ pub async fn create_fixture<TxCtx>(
     fixture_repo: &impl FixtureRepository<TxCtx = TxCtx, Error = String>,
     venue_resolver: &impl VenueResolver<Error = String>,
     team_resolver: &impl TeamResolver<Error = String>,
-    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    domain_event_repo: &impl DomainEventOutboxRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<FixtureDTO, String> {
     if team_home_id == team_away_id {
@@ -65,10 +66,13 @@ pub async fn create_fixture<TxCtx>(
         .await
         .map_err(|e| e.to_string())?;
 
-    domain_event_publisher
-        .publish_domain_event(DomainEvent::FixtureCreated {
-            fixture_id: fixture.id().clone(),
-        })
+    domain_event_repo
+        .store(
+            DomainEvent::FixtureCreated {
+                fixture_id: fixture.id().clone(),
+            },
+            tx_ctx,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -88,7 +92,7 @@ pub async fn update_fixture_date<TxCtx>(
     fixture_id: FixtureId,
     date: DateTime<Utc>,
     fixture_repo: &impl FixtureRepository<TxCtx = TxCtx, Error = String>,
-    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    domain_event_repo: &impl DomainEventOutboxRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<(), String> {
     let mut fixture = fixture_repo
@@ -103,11 +107,14 @@ pub async fn update_fixture_date<TxCtx>(
         .await
         .map_err(|e| e.to_string())?;
 
-    domain_event_publisher
-        .publish_domain_event(DomainEvent::FixtureDateChanged {
-            fixture_id: fixture.id().clone(),
-            date,
-        })
+    domain_event_repo
+        .store(
+            DomainEvent::FixtureDateChanged {
+                fixture_id: fixture.id().clone(),
+                date,
+            },
+            tx_ctx,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -119,7 +126,7 @@ pub async fn update_fixture_venue<TxCtx>(
     venue_id: VenueId,
     fixture_repo: &impl FixtureRepository<TxCtx = TxCtx, Error = String>,
     venue_resolver: &impl VenueResolver<Error = String>,
-    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    domain_event_repo: &impl DomainEventOutboxRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<(), String> {
     let mut fixture = fixture_repo
@@ -139,11 +146,14 @@ pub async fn update_fixture_venue<TxCtx>(
         .await
         .map_err(|e| e.to_string())?;
 
-    domain_event_publisher
-        .publish_domain_event(DomainEvent::FixtureVenueChanged {
-            fixture_id: fixture.id().clone(),
-            venue_id,
-        })
+    domain_event_repo
+        .store(
+            DomainEvent::FixtureVenueChanged {
+                fixture_id: fixture.id().clone(),
+                venue_id,
+            },
+            tx_ctx,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -153,7 +163,7 @@ pub async fn update_fixture_venue<TxCtx>(
 pub async fn cancel_fixture<TxCtx>(
     fixture_id: FixtureId,
     fixture_repo: &impl FixtureRepository<TxCtx = TxCtx, Error = String>,
-    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    domain_event_repo: &impl DomainEventOutboxRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<Fixture, String> {
     let mut fixture = fixture_repo
@@ -172,10 +182,13 @@ pub async fn cancel_fixture<TxCtx>(
         .await
         .map_err(|e| e.to_string())?;
 
-    domain_event_publisher
-        .publish_domain_event(DomainEvent::FixtureCancelled {
-            fixture_id: fixture.id().clone(),
-        })
+    domain_event_repo
+        .store(
+            DomainEvent::FixtureCancelled {
+                fixture_id: fixture.id().clone(),
+            },
+            tx_ctx,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -272,7 +285,7 @@ pub async fn unassign_second_referee<TxCtx>(
 mod tests {
     use chrono::Utc;
     use microservices_shared::{
-        domain_events::{DomainEventPublisher, MockDomainEventPublisher},
+        domain_event_repo::MockDomainEventOutboxRepository,
         domain_ids::{FixtureId, TeamId, VenueId},
         resolvers::traits::{MockTeamResolver, MockVenueResolver},
     };
@@ -296,8 +309,7 @@ mod tests {
         let mut fixture_repo = MockFixtureRepository::new();
         let mut venue_resolver = MockVenueResolver::new();
         let mut team_resolver = MockTeamResolver::new();
-        let domain_event_publisher: Box<dyn DomainEventPublisher + Send + Sync> =
-            Box::new(MockDomainEventPublisher::new());
+        let domain_event_repo = MockDomainEventOutboxRepository::new();
 
         let venue_id = VenueId::from(Uuid::new_v4());
         let team_home_id = TeamId::from(Uuid::new_v4());
@@ -358,7 +370,7 @@ mod tests {
             &fixture_repo,
             &venue_resolver,
             &team_resolver,
-            &domain_event_publisher,
+            &domain_event_repo,
             &mut (),
         )
         .await
@@ -382,8 +394,7 @@ mod tests {
     async fn test_given_scheduled_fixture_when_cancel_then_cancelled() {
         let now = Utc::now();
         let mut fixture_repo = MockFixtureRepository::new();
-        let domain_event_publisher: Box<dyn DomainEventPublisher + Send + Sync> =
-            Box::new(MockDomainEventPublisher::new());
+        let domain_event_repo = MockDomainEventOutboxRepository::new();
 
         let fixture_id = FixtureId::from(Uuid::new_v4());
         let venue_id = VenueId::from(Uuid::new_v4());
@@ -408,7 +419,7 @@ mod tests {
         fixture_repo.expect_save().return_const(Ok(()));
 
         let fixture_cancelled =
-            cancel_fixture(fixture_id, &fixture_repo, &domain_event_publisher, &mut ())
+            cancel_fixture(fixture_id, &fixture_repo, &domain_event_repo, &mut ())
                 .await
                 .unwrap();
 
@@ -420,8 +431,7 @@ mod tests {
     async fn test_given_cancelled_fixture_when_cancel_then_panic() {
         let now = Utc::now();
         let mut fixture_repo = MockFixtureRepository::new();
-        let domain_event_publisher: Box<dyn DomainEventPublisher + Send + Sync> =
-            Box::new(MockDomainEventPublisher::new());
+        let domain_event_repo = MockDomainEventOutboxRepository::new();
 
         let fixture_id = FixtureId::from(Uuid::new_v4());
         let venue_id = VenueId::from(Uuid::new_v4());
@@ -445,7 +455,7 @@ mod tests {
             .return_const(Ok(Some(fixture.clone())));
         fixture_repo.expect_save().return_const(Ok(()));
 
-        cancel_fixture(fixture_id, &fixture_repo, &domain_event_publisher, &mut ())
+        cancel_fixture(fixture_id, &fixture_repo, &domain_event_repo, &mut ())
             .await
             .unwrap();
     }

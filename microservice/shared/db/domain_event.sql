@@ -12,11 +12,12 @@ CREATE TABLE rustddd.domain_events (
 CREATE OR REPLACE FUNCTION domain_event_notification_trigger() RETURNS TRIGGER as $domain_event_notification_trigger$
   BEGIN
     IF (TG_OP = 'INSERT') THEN
-        PERFORM pg_notify('domain_event_inserted', '{"event_id": "' || NEW.id || '", "event_type": "' || NEW.event_type || '", "instance": "' || NEW.instance || '", "payload": ' || NEW.payload || '}');
+        PERFORM pg_notify('domain_event_inserted', '{"event_id": "' || NEW.id || '", "event_type": "' || NEW.event_type || '", "instance": "' || NEW.instance || '", "payload": ' || NEW.payload || '", "created_at": "' || NEW.created_at || '"}');
         RETURN NEW;
     END IF;
 END;
 $domain_event_notification_trigger$ LANGUAGE plpgsql;
+
 
 CREATE TRIGGER domain_events_trigger
 AFTER INSERT ON rustddd.domain_events FOR EACH ROW

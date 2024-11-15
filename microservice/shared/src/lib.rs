@@ -17,6 +17,7 @@ pub mod domain_event_repo;
 pub mod domain_events;
 pub mod domain_ids;
 pub mod resolvers;
+
 pub fn init_tracing(otlp_endpoint: &str, service_name: &str) -> BoxedTracer {
     let tracer_provider = opentelemetry_otlp::new_pipeline()
         .tracing()

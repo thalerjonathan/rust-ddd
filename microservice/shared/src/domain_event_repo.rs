@@ -1,41 +1,15 @@
 use chrono::{DateTime, Utc};
 use log::{error, info};
+use mockall::automock;
 use serde_json::Value;
 use sqlx::{postgres::PgListener, PgPool};
 use uuid::Uuid;
 
 use crate::domain_events::{
-    run_domain_event_publisher_transactional, DomainEvent, DomainEventPublisher,
+    run_domain_event_publisher_transactional, DomainEvent, DomainEventMessage, DomainEventPublisher,
 };
 
-#[allow(async_fn_in_trait)]
-pub trait DomainEventRepository {
-    type TxCtx;
-    type Error;
-
-    async fn store_in_outbox(
-        &self,
-        event: DomainEvent,
-        tx_ctx: &mut Self::TxCtx,
-    ) -> Result<(), Self::Error>;
-
-    async fn get_unprocessed_outbox_events(
-        &self,
-        tx_ctx: &mut Self::TxCtx,
-    ) -> Result<Vec<DomainEventDb>, Self::Error>;
-
-    async fn mark_event_as_processed(
-        &self,
-        event_id: Uuid,
-        tx_ctx: &mut Self::TxCtx,
-    ) -> Result<(), Self::Error>;
-}
-
-pub struct DomainEventRepositoryPg {
-    instance: Uuid,
-}
-
-#[derive(sqlx::Type, Debug, serde::Deserialize)]
+#[derive(sqlx::Type, Debug, Copy, Clone, serde::Deserialize)]
 #[sqlx(type_name = "rustddd.domain_event_type")]
 pub enum DomainEventTypeDb {
     Inbox,
@@ -52,53 +26,39 @@ pub struct DomainEventDb {
     pub created_at: DateTime<Utc>,
 }
 
+#[allow(async_fn_in_trait)]
+#[automock(type Error = String; type TxCtx = ();)]
+pub trait DomainEventOutboxRepository {
+    type TxCtx;
+    type Error;
+
+    async fn store(
+        &self,
+        event: DomainEvent,
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<DomainEventDb, Self::Error>;
+}
+
+pub struct DomainEventRepositoryPg {
+    instance: Uuid,
+}
+
 impl DomainEventRepositoryPg {
     pub fn new(instance: Uuid) -> Self {
         Self { instance }
     }
-}
 
-impl DomainEventRepository for DomainEventRepositoryPg {
-    type TxCtx = sqlx::Transaction<'static, sqlx::Postgres>;
-    type Error = String;
-
-    async fn store_in_outbox(
-        &self,
-        event: DomainEvent,
-        tx_ctx: &mut Self::TxCtx,
-    ) -> Result<(), Self::Error> {
-        let id = Uuid::new_v4();
-        let event_type = DomainEventTypeDb::Outbox;
-        let payload = serde_json::to_value(&event).map_err(|e| e.to_string())?;
-        let created_at = Utc::now();
-
-        sqlx::query!(
-            "INSERT INTO rustddd.domain_events (id, event_type, payload, instance, created_at)
-            VALUES ($1, $2, $3, $4, $5)",
-            id,
-            event_type as DomainEventTypeDb,
-            payload,
-            self.instance,
-            created_at,
-        )
-        .execute(&mut **tx_ctx)
-        .await
-        .map_err(|e| e.to_string())?;
-
-        Ok(())
-    }
-
-    async fn mark_event_as_processed(
+    pub async fn mark_event_as_processed(
         &self,
         event_id: Uuid,
-        tx_ctx: &mut Self::TxCtx,
-    ) -> Result<(), Self::Error> {
+        tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> Result<(), String> {
         sqlx::query!(
             "UPDATE rustddd.domain_events SET processed_at = $1 WHERE id = $2",
             Utc::now(),
             event_id,
         )
-        .execute(&mut **tx_ctx)
+        .execute(&mut **tx)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -107,8 +67,8 @@ impl DomainEventRepository for DomainEventRepositoryPg {
 
     async fn get_unprocessed_outbox_events(
         &self,
-        tx_ctx: &mut Self::TxCtx,
-    ) -> Result<Vec<DomainEventDb>, Self::Error> {
+        tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> Result<Vec<DomainEventDb>, String> {
         let outbox_event_type = DomainEventTypeDb::Outbox;
         let events = sqlx::query_as!(
             DomainEventDb,
@@ -120,11 +80,93 @@ impl DomainEventRepository for DomainEventRepositoryPg {
             outbox_event_type as DomainEventTypeDb,
             self.instance,
         )
-        .fetch_all(&mut **tx_ctx)
+        .fetch_all(&mut **tx)
         .await
         .map_err(|e| e.to_string())?;
 
         Ok(events)
+    }
+
+    pub async fn is_event_processed(
+        &self,
+        event_id: Uuid,
+        tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> Result<Option<DateTime<Utc>>, String> {
+        let ret = sqlx::query_as!(
+            DomainEventDb,
+            "SELECT id, event_type as \"event_type: DomainEventTypeDb\", payload, instance, processed_at, created_at FROM rustddd.domain_events WHERE id = $1",
+            event_id,
+        )
+        .fetch_one(&mut **tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        Ok(ret.processed_at)
+    }
+
+    pub async fn store_as_inbox(
+        &self,
+        event: &DomainEventMessage,
+        tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> Result<DomainEventDb, String> {
+        let domain_event_db = DomainEventDb {
+            id: event.event_id,
+            event_type: DomainEventTypeDb::Inbox,
+            payload: serde_json::to_value(&event).map_err(|e| e.to_string())?,
+            instance: self.instance,
+            processed_at: None,
+            created_at: Utc::now(),
+        };
+
+        sqlx::query!(
+            "INSERT INTO rustddd.domain_events (id, event_type, payload, instance, created_at)
+            VALUES ($1, $2, $3, $4, $5)",
+            domain_event_db.id,
+            domain_event_db.event_type as DomainEventTypeDb,
+            domain_event_db.payload,
+            domain_event_db.instance,
+            domain_event_db.created_at,
+        )
+        .execute(&mut **tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        Ok(domain_event_db)
+    }
+}
+
+impl DomainEventOutboxRepository for DomainEventRepositoryPg {
+    type TxCtx = sqlx::Transaction<'static, sqlx::Postgres>;
+    type Error = String;
+
+    async fn store(
+        &self,
+        event: DomainEvent,
+        tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> Result<DomainEventDb, String> {
+        let domain_event_db = DomainEventDb {
+            id: Uuid::new_v4(),
+            event_type: DomainEventTypeDb::Outbox,
+            payload: serde_json::to_value(&event).map_err(|e| e.to_string())?,
+            instance: self.instance,
+            processed_at: None,
+            created_at: Utc::now(),
+        };
+
+        sqlx::query!(
+            "INSERT INTO rustddd.domain_events (id, event_type, payload, instance, created_at)
+            VALUES ($1, $2, $3, $4, $5)",
+            domain_event_db.id,
+            domain_event_db.event_type as DomainEventTypeDb,
+            domain_event_db.payload,
+            domain_event_db.instance,
+            domain_event_db.created_at,
+        )
+        .execute(&mut **tx)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        Ok(domain_event_db)
     }
 }
 
@@ -134,6 +176,7 @@ struct DomainEventInsertedNotificationPayload {
     event_type: DomainEventTypeDb,
     payload: Value,
     instance: Uuid,
+    created_at: DateTime<Utc>,
 }
 
 pub async fn process_domain_events_outbox(
@@ -154,8 +197,7 @@ pub async fn process_domain_events_outbox(
     for event in unprocessed_events {
         info!("Processing unprocessed outbox event: {event:?}");
         process_domain_event(
-            event.id,
-            event.payload,
+            event,
             &connection_pool,
             &domain_event_repository,
             &domain_event_publisher,
@@ -187,9 +229,17 @@ pub async fn process_domain_events_outbox(
                 if let DomainEventTypeDb::Outbox = payload.event_type {
                     // NOTE: only process events put into the outbox by this instance, that is, every instance should only process its own events
                     if payload.instance == instance {
+                        let domain_event_db = DomainEventDb {
+                            id: payload.event_id,
+                            event_type: payload.event_type,
+                            payload: payload.payload,
+                            instance: payload.instance,
+                            processed_at: None,
+                            created_at: payload.created_at,
+                        };
+
                         process_domain_event(
-                            payload.event_id,
-                            payload.payload,
+                            domain_event_db,
                             &connection_pool,
                             &domain_event_repository,
                             &domain_event_publisher,
@@ -206,21 +256,27 @@ pub async fn process_domain_events_outbox(
 }
 
 async fn process_domain_event(
-    event_id: Uuid,
-    domain_event_serialised: Value,
+    domain_event_db: DomainEventDb,
     connection_pool: &PgPool,
     domain_event_repository: &DomainEventRepositoryPg,
     domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
 ) -> Result<(), String> {
     let domain_event_result: Result<DomainEvent, String> =
-        serde_json::from_value(domain_event_serialised).map_err(|e| e.to_string());
+        serde_json::from_value(domain_event_db.payload).map_err(|e| e.to_string());
 
     match domain_event_result {
         Ok(domain_event) => {
             // NOTE: if this fails, the function exists, and will be retried, so we don't need to handle the failure here
             run_domain_event_publisher_transactional(&domain_event_publisher, async {
+                let domain_event_message = DomainEventMessage {
+                    event: domain_event,
+                    event_id: domain_event_db.id,
+                    instance_id: domain_event_db.instance,
+                    created_at: domain_event_db.created_at,
+                };
+
                 domain_event_publisher
-                    .publish_domain_event(domain_event)
+                    .publish(domain_event_message)
                     .await
                     .map_err(|e| e.to_string())?;
                 Ok(())
@@ -232,7 +288,7 @@ async fn process_domain_event(
             // which has then to be handled by the consuming part via dedup mechanism or idempotency
             let mut tx = connection_pool.begin().await.map_err(|e| e.to_string())?;
             domain_event_repository
-                .mark_event_as_processed(event_id, &mut tx)
+                .mark_event_as_processed(domain_event_db.id, &mut tx)
                 .await
                 .map_err(|e| e.to_string())?;
             tx.commit().await.map_err(|e| e.to_string())?;

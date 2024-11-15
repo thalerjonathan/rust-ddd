@@ -19,27 +19,18 @@ use opentelemetry::{
     KeyValue,
 };
 use redis::Commands;
-use sqlx::{
-    types::chrono::{DateTime, Utc},
-    PgPool,
-};
+use sqlx::types::chrono::{DateTime, Utc};
 
 pub struct DomainEventCallbacksImpl {
     redis_conn: redis::Connection,
-    connection_pool: PgPool,
     tracer: Arc<BoxedTracer>,
     delegate: DomainEventCallbacksLoggerImpl,
 }
 
 impl DomainEventCallbacksImpl {
-    pub fn new(
-        redis_conn: redis::Connection,
-        connection_pool: PgPool,
-        tracer: Arc<BoxedTracer>,
-    ) -> Self {
+    pub fn new(redis_conn: redis::Connection, tracer: Arc<BoxedTracer>) -> Self {
         Self {
             redis_conn,
-            connection_pool,
             delegate: DomainEventCallbacksLoggerImpl::new(tracer.clone()),
             tracer,
         }
@@ -48,14 +39,22 @@ impl DomainEventCallbacksImpl {
 
 #[async_trait]
 impl DomainEventCallbacks for DomainEventCallbacksImpl {
-    async fn on_referee_created(&mut self, referee_id: RefereeId) -> Result<(), String> {
-        self.delegate.on_referee_created(referee_id).await
+    type TxCtx = sqlx::Transaction<'static, sqlx::Postgres>;
+    type Error = String;
+
+    async fn on_referee_created(
+        &mut self,
+        referee_id: RefereeId,
+        _tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), String> {
+        self.delegate.on_referee_created(referee_id, _tx_ctx).await
     }
 
     async fn on_referee_club_changed(
         &mut self,
         referee_id: RefereeId,
         club_name: String,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: Referee club changed: {:?} -> {}",
@@ -75,25 +74,38 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         _result.map_err(|e| e.to_string())
     }
 
-    async fn on_team_created(&mut self, team_id: TeamId) -> Result<(), String> {
-        self.delegate.on_team_created(team_id).await
+    async fn on_team_created(
+        &mut self,
+        team_id: TeamId,
+        _tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), String> {
+        self.delegate.on_team_created(team_id, _tx_ctx).await
     }
 
-    async fn on_venue_created(&mut self, venue_id: VenueId) -> Result<(), String> {
-        self.delegate.on_venue_created(venue_id).await
+    async fn on_venue_created(
+        &mut self,
+        venue_id: VenueId,
+        _tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), String> {
+        self.delegate.on_venue_created(venue_id, _tx_ctx).await
     }
 
-    async fn on_fixture_created(&mut self, fixture_id: FixtureId) -> Result<(), String> {
-        self.delegate.on_fixture_created(fixture_id).await
+    async fn on_fixture_created(
+        &mut self,
+        fixture_id: FixtureId,
+        _tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), String> {
+        self.delegate.on_fixture_created(fixture_id, _tx_ctx).await
     }
 
     async fn on_fixture_date_changed(
         &mut self,
         fixture_id: FixtureId,
         date: DateTime<Utc>,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         self.delegate
-            .on_fixture_date_changed(fixture_id, date)
+            .on_fixture_date_changed(fixture_id, date, _tx_ctx)
             .await?;
 
         invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
@@ -103,16 +115,23 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         &mut self,
         fixture_id: FixtureId,
         venue_id: VenueId,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         self.delegate
-            .on_fixture_venue_changed(fixture_id, venue_id)
+            .on_fixture_venue_changed(fixture_id, venue_id, _tx_ctx)
             .await?;
 
         invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
 
-    async fn on_fixture_cancelled(&mut self, fixture_id: FixtureId) -> Result<(), String> {
-        self.delegate.on_fixture_cancelled(fixture_id).await?;
+    async fn on_fixture_cancelled(
+        &mut self,
+        fixture_id: FixtureId,
+        _tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), String> {
+        self.delegate
+            .on_fixture_cancelled(fixture_id, _tx_ctx)
+            .await?;
 
         invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
@@ -121,9 +140,10 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         self.delegate
-            .on_availability_declared(fixture_id, referee_id)
+            .on_availability_declared(fixture_id, referee_id, _tx_ctx)
             .await
     }
 
@@ -131,9 +151,10 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         self.delegate
-            .on_availability_withdrawn(fixture_id, referee_id)
+            .on_availability_withdrawn(fixture_id, referee_id, _tx_ctx)
             .await
     }
 
@@ -141,6 +162,7 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: First referee assignment removed: {:?} -> {:?}",
@@ -151,17 +173,9 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
         span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
-        let mut tx = self
-            .connection_pool
-            .begin()
-            .await
-            .map_err(|e| e.to_string())?;
-
         let fixture_repo = FixtureRepositoryPg::new();
 
-        unassign_first_referee(fixture_id, &fixture_repo, &mut tx).await?;
-
-        tx.commit().await.map_err(|e| e.to_string())?;
+        unassign_first_referee(fixture_id, &fixture_repo, tx_ctx).await?;
 
         invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
@@ -170,6 +184,7 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: Second referee assignment removed: {:?} -> {:?}",
@@ -180,17 +195,9 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
         span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
-        let mut tx = self
-            .connection_pool
-            .begin()
-            .await
-            .map_err(|e| e.to_string())?;
-
         let fixture_repo = FixtureRepositoryPg::new();
 
-        unassign_second_referee(fixture_id, &fixture_repo, &mut tx).await?;
-
-        tx.commit().await.map_err(|e| e.to_string())?;
+        unassign_second_referee(fixture_id, &fixture_repo, tx_ctx).await?;
 
         invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
@@ -199,6 +206,7 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: First referee assigned: {:?} -> {:?}",
@@ -209,17 +217,9 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
         span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
-        let mut tx = self
-            .connection_pool
-            .begin()
-            .await
-            .map_err(|e| e.to_string())?;
-
         let fixture_repo = FixtureRepositoryPg::new();
 
-        assign_first_referee(fixture_id, referee_id, &fixture_repo, &mut tx).await?;
-
-        tx.commit().await.map_err(|e| e.to_string())?;
+        assign_first_referee(fixture_id, referee_id, &fixture_repo, tx_ctx).await?;
 
         invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }
@@ -228,6 +228,7 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: Second referee assigned: {:?} -> {:?}",
@@ -238,17 +239,9 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
         span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
-        let mut tx = self
-            .connection_pool
-            .begin()
-            .await
-            .map_err(|e| e.to_string())?;
-
         let fixture_repo = FixtureRepositoryPg::new();
 
-        assign_second_referee(fixture_id, referee_id, &fixture_repo, &mut tx).await?;
-
-        tx.commit().await.map_err(|e| e.to_string())?;
+        assign_second_referee(fixture_id, referee_id, &fixture_repo, tx_ctx).await?;
 
         invalidate_fixture_cache_entry(&mut self.redis_conn, fixture_id)
     }

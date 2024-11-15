@@ -1,15 +1,14 @@
+use crate::domain::{aggregates::referee::Referee, repositories::referee_repo::RefereeRepository};
 use microservices_shared::{
-    domain_events::{DomainEvent, DomainEventPublisher},
+    domain_event_repo::DomainEventOutboxRepository, domain_events::DomainEvent,
     domain_ids::RefereeId,
 };
-
-use crate::domain::{aggregates::referee::Referee, repositories::referee_repo::RefereeRepository};
 
 pub async fn create_referee<TxCtx>(
     name: &str,
     club: &str,
     repo: &impl RefereeRepository<TxCtx = TxCtx, Error = String>,
-    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    domain_event_repo: &impl DomainEventOutboxRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<Referee, String> {
     let referee = Referee::new(name, club);
@@ -18,10 +17,13 @@ pub async fn create_referee<TxCtx>(
         .await
         .map_err(|e| e.to_string())?;
 
-    domain_event_publisher
-        .publish_domain_event(DomainEvent::RefereeCreated {
-            referee_id: referee.id().clone(),
-        })
+    domain_event_repo
+        .store(
+            DomainEvent::RefereeCreated {
+                referee_id: referee.id().clone(),
+            },
+            tx_ctx,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -32,7 +34,7 @@ pub async fn update_referee_club<TxCtx>(
     referee_id: RefereeId,
     club: &str,
     repo: &impl RefereeRepository<TxCtx = TxCtx, Error = String>,
-    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    domain_event_repo: &impl DomainEventOutboxRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<(), String> {
     let referee = repo.find_by_id(referee_id, tx_ctx).await?;
@@ -43,11 +45,14 @@ pub async fn update_referee_club<TxCtx>(
         .await
         .map_err(|e| e.to_string())?;
 
-    domain_event_publisher
-        .publish_domain_event(DomainEvent::RefereeClubChanged {
-            referee_id: referee.id().clone(),
-            club_name: club.to_string(),
-        })
+    domain_event_repo
+        .store(
+            DomainEvent::RefereeClubChanged {
+                referee_id: referee.id().clone(),
+                club_name: club.to_string(),
+            },
+            tx_ctx,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -59,11 +64,13 @@ pub async fn update_referee_club<TxCtx>(
 
 #[cfg(test)]
 mod tests {
-    use axum::async_trait;
+    use chrono::Utc;
     use microservices_shared::{
-        domain_events::{DomainEvent, DomainEventPublisher},
+        domain_event_repo::{DomainEventDb, DomainEventOutboxRepository, DomainEventTypeDb},
+        domain_events::DomainEvent,
         domain_ids::RefereeId,
     };
+    use uuid::Uuid;
 
     use crate::{
         application::referee_services::{create_referee, update_referee_club},
@@ -72,7 +79,7 @@ mod tests {
     use std::cell::RefCell;
     use std::collections::HashMap;
 
-    struct TestDomainEventPublisher {}
+    struct TestDomainEventRepository {}
 
     struct TestRepo {
         // NOTE: we use a RefCell to allow for interior mutability because RefereeRepository trait does not pass by mutable reference
@@ -87,21 +94,38 @@ mod tests {
         }
     }
 
-    #[async_trait]
-    impl DomainEventPublisher for TestDomainEventPublisher {
-        async fn publish_domain_event(&self, _event: DomainEvent) -> Result<(), String> {
-            Ok(())
+    impl DomainEventOutboxRepository for TestDomainEventRepository {
+        type TxCtx = ();
+        type Error = String;
+
+        async fn store(
+            &self,
+            _event: DomainEvent,
+            _tx_ctx: &mut Self::TxCtx,
+        ) -> Result<DomainEventDb, Self::Error> {
+            let event_db = DomainEventDb {
+                id: Uuid::new_v4(),
+                event_type: DomainEventTypeDb::Outbox,
+                payload: serde_json::to_value(&_event).unwrap(),
+                instance: Uuid::new_v4(),
+                created_at: Utc::now(),
+                processed_at: None,
+            };
+            Ok(event_db)
         }
 
-        async fn begin_transaction(&self) -> Result<(), String> {
-            Ok(())
+        async fn get_unprocessed_outbox_events(
+            &self,
+            _tx_ctx: &mut Self::TxCtx,
+        ) -> Result<Vec<DomainEventDb>, Self::Error> {
+            Ok(vec![])
         }
 
-        async fn commit_transaction(&self) -> Result<(), String> {
-            Ok(())
-        }
-
-        async fn rollback(&self) -> Result<(), String> {
+        async fn mark_event_as_processed(
+            &self,
+            _event_id: Uuid,
+            _tx_ctx: &mut Self::TxCtx,
+        ) -> Result<(), Self::Error> {
             Ok(())
         }
     }
@@ -136,18 +160,11 @@ mod tests {
     #[tokio::test]
     async fn test_create_referee() {
         let repo = TestRepo::new();
-        let domain_event_publisher: Box<dyn DomainEventPublisher + Send + Sync> =
-            Box::new(TestDomainEventPublisher {});
+        let domain_event_repo = TestDomainEventRepository {};
 
-        let referee = create_referee(
-            "John Doe",
-            "Club A",
-            &repo,
-            &domain_event_publisher,
-            &mut (),
-        )
-        .await
-        .unwrap();
+        let referee = create_referee("John Doe", "Club A", &repo, &domain_event_repo, &mut ())
+            .await
+            .unwrap();
         assert_eq!(referee.club(), "Club A");
         assert_eq!(referee.name(), "John Doe");
 
@@ -160,18 +177,11 @@ mod tests {
     #[tokio::test]
     async fn test_update_referee_club() {
         let repo = TestRepo::new();
-        let domain_event_publisher: Box<dyn DomainEventPublisher + Send + Sync> =
-            Box::new(TestDomainEventPublisher {});
+        let domain_event_repo = TestDomainEventRepository {};
 
-        let referee = create_referee(
-            "John Doe",
-            "Club A",
-            &repo,
-            &domain_event_publisher,
-            &mut (),
-        )
-        .await
-        .unwrap();
+        let referee = create_referee("John Doe", "Club A", &repo, &domain_event_repo, &mut ())
+            .await
+            .unwrap();
         assert_eq!(referee.club(), "Club A");
         assert_eq!(referee.name(), "John Doe");
 
@@ -179,7 +189,7 @@ mod tests {
             referee.id().into(),
             "Club B",
             &repo,
-            &domain_event_publisher,
+            &domain_event_repo,
             &mut (),
         )
         .await

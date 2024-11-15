@@ -63,6 +63,8 @@ async fn main() {
         &config.kafka_consumer_group,
         &config.kafka_url,
         &config.kafka_domain_events_topic,
+        connection_pool.clone(),
+        instance_id.clone(),
         domain_event_callbacks,
     );
 

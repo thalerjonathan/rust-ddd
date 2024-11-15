@@ -2,15 +2,17 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Path, State},
-    Json,
+    Extension, Json,
 };
 use log::info;
+use microservices_shared::domain_event_repo::DomainEventRepositoryPg;
 use opentelemetry::{
     trace::{Span, Tracer},
     KeyValue,
 };
 use restinterface::{TeamCreationDTO, TeamDTO, TeamIdDTO};
 use shared::app_error::AppError;
+use uuid::Uuid;
 
 use crate::{
     adapters::db::team_repo_pg::TeamRepositoryPg,
@@ -31,6 +33,7 @@ impl From<Team> for TeamDTO {
 
 pub async fn create_team_handler(
     State(state): State<Arc<AppState>>,
+    Extension(instance_id): Extension<Uuid>,
     Json(team_creation): Json<TeamCreationDTO>,
 ) -> Result<Json<TeamDTO>, AppError> {
     info!("Creating team: {:?}", team_creation);
@@ -38,34 +41,28 @@ pub async fn create_team_handler(
     span.set_attribute(KeyValue::new("team_name", team_creation.name.clone()));
     span.set_attribute(KeyValue::new("team_club", team_creation.club.clone()));
 
-    let team = microservices_shared::domain_events::run_domain_event_publisher_transactional(
-        &state.domain_event_publisher,
-        async {
-            let mut tx = state
-                .connection_pool
-                .begin()
-                .await
-                .map_err(|e| e.to_string())?;
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-            let repo = TeamRepositoryPg::new();
+    let repo = TeamRepositoryPg::new();
+    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
 
-            let team = create_team(
-                &team_creation.name,
-                &team_creation.club,
-                &repo,
-                &state.domain_event_publisher,
-                &mut tx,
-            )
-            .await
-            .map_err(|e| e.to_string())?;
-
-            tx.commit().await.map_err(|e| e.to_string())?;
-
-            Ok(team)
-        },
+    let team = create_team(
+        &team_creation.name,
+        &team_creation.club,
+        &repo,
+        &domain_event_repo,
+        &mut tx,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(team.into()))
 }

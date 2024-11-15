@@ -4,17 +4,21 @@ use availabilities::ports::rest::availabilities::{
     withdraw_availability_handler,
 };
 use axum::http::Method;
+use axum::Extension;
 use axum::{
     routing::{get, post},
     Router,
 };
 use clap::Parser;
 
+use log::error;
+use microservices_shared::domain_event_repo::process_domain_events_outbox;
 use microservices_shared::domain_events::{
     DomainEventCallbacksLoggerImpl, DomainEventConsumer, KafkaDomainEventProducer,
 };
 use sqlx::PgPool;
 use std::sync::Arc;
+use uuid::Uuid;
 
 use availabilities::AppState;
 use opentelemetry::{
@@ -27,7 +31,7 @@ struct Args {
     #[arg(short, long)]
     server_host: String,
     #[arg(short, long)]
-    kafka_tx_id: String,
+    instance_id: String,
 }
 
 #[tokio::main]
@@ -36,6 +40,7 @@ async fn main() {
 
     let args = Args::parse();
     let config = AppConfig::new_from_env();
+    let instance_id = Uuid::parse_str(&args.instance_id).unwrap();
 
     let tracer = microservices_shared::init_tracing(&config.otlp_endpoint, "availabilities");
     let mut span = tracer.start("application_start");
@@ -49,21 +54,22 @@ async fn main() {
     let domain_event_producer = KafkaDomainEventProducer::new(
         &config.kafka_url,
         &config.kafka_domain_events_topic,
-        &args.kafka_tx_id,
+        &args.instance_id,
     );
     let domain_event_callbacks = Box::new(DomainEventCallbacksLoggerImpl::new(tracer_arc.clone()));
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,
         &config.kafka_url,
         &config.kafka_domain_events_topic,
+        connection_pool.clone(),
+        instance_id.clone(),
         domain_event_callbacks,
     );
 
     let app_state = AppState {
         tracer: tracer_arc,
-        connection_pool,
+        connection_pool: connection_pool.clone(),
         redis_client,
-        domain_event_publisher: Box::new(domain_event_producer),
     };
     let state_arc = Arc::new(app_state);
 
@@ -92,6 +98,7 @@ async fn main() {
             get(fetch_availabilities_for_referee_handler),
         )
         .layer(cors)
+        .layer(Extension(instance_id.clone()))
         .with_state(state_arc);
 
     let listener = tokio::net::TcpListener::bind(&args.server_host)
@@ -100,6 +107,20 @@ async fn main() {
 
     tokio::spawn(async move {
         domain_event_consumer.run().await;
+    });
+
+    tokio::spawn({
+        let instance = instance_id.clone();
+        let pool = connection_pool.clone();
+        let domain_event_publisher = Box::new(domain_event_producer);
+        async move {
+            if let Err(e) =
+                process_domain_events_outbox(instance, pool, domain_event_publisher).await
+            {
+                // TODO: retry in case of DB disconnect
+                error!("Error processing domain events: {e}");
+            }
+        }
     });
 
     span.end();

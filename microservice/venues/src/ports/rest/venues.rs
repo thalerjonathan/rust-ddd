@@ -8,15 +8,17 @@ use crate::{
 };
 use axum::{
     extract::{Path, State},
-    Json,
+    Extension, Json,
 };
 use log::info;
+use microservices_shared::domain_event_repo::DomainEventRepositoryPg;
 use opentelemetry::{
     trace::{Span, Tracer},
     KeyValue,
 };
 use restinterface::{VenueCreationDTO, VenueDTO, VenueIdDTO};
 use shared::app_error::AppError;
+use uuid::Uuid;
 
 impl From<Venue> for VenueDTO {
     fn from(venue: Venue) -> Self {
@@ -34,6 +36,7 @@ impl From<Venue> for VenueDTO {
 
 pub async fn create_venue_handler(
     State(state): State<Arc<AppState>>,
+    Extension(instance_id): Extension<Uuid>,
     Json(venue_creation): Json<VenueCreationDTO>,
 ) -> Result<Json<VenueDTO>, AppError> {
     info!("Creating venue: {:?}", venue_creation);
@@ -43,37 +46,32 @@ pub async fn create_venue_handler(
     span.set_attribute(KeyValue::new("venue_zip", venue_creation.zip.clone()));
     span.set_attribute(KeyValue::new("venue_city", venue_creation.city.clone()));
 
-    let venue = microservices_shared::domain_events::run_domain_event_publisher_transactional(
-        &state.domain_event_publisher,
-        async {
-            let mut tx = state
-                .connection_pool
-                .begin()
-                .await
-                .map_err(|e| e.to_string())?;
+    let mut tx = state
+        .connection_pool
+        .begin()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
-            let mut repo: VenueRepositoryPg = VenueRepositoryPg::new();
-            let venue = application::venue_services::create_venue(
-                &venue_creation.name,
-                &venue_creation.street,
-                &venue_creation.zip,
-                &venue_creation.city,
-                venue_creation.telephone,
-                venue_creation.email,
-                &mut repo,
-                &state.domain_event_publisher,
-                &mut tx,
-            )
-            .await
-            .map_err(|e| e.to_string())?;
+    let repo: VenueRepositoryPg = VenueRepositoryPg::new();
+    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
 
-            tx.commit().await.map_err(|e| e.to_string())?;
-
-            Ok(venue)
-        },
+    let venue = application::venue_services::create_venue(
+        &venue_creation.name,
+        &venue_creation.street,
+        &venue_creation.zip,
+        &venue_creation.city,
+        venue_creation.telephone,
+        venue_creation.email,
+        &repo,
+        &domain_event_repo,
+        &mut tx,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let venue = VenueDTO::from(venue);
 

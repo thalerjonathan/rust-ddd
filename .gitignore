@@ -24,3 +24,5 @@ Cargo.lock
 
 /target
 frontend/dist
+
+**/redis/data

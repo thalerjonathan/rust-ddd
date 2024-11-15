@@ -1,5 +1,6 @@
 use microservices_shared::{
-    domain_events::{DomainEvent, DomainEventPublisher},
+    domain_event_repo::DomainEventOutboxRepository,
+    domain_events::DomainEvent,
     domain_ids::{FixtureId, RefereeId},
     resolvers::traits::{FixtureResolver, RefereeResolver},
 };
@@ -12,7 +13,7 @@ pub async fn declare_availability<TxCtx>(
     fixture_resolver: &impl FixtureResolver<Error = String>,
     referee_resolver: &impl RefereeResolver<Error = String>,
     availability_repo: &impl AvailabilityRepository<TxCtx = TxCtx, Error = String>,
-    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    domain_event_repo: &impl DomainEventOutboxRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<(), String> {
     let _fixture = fixture_resolver
@@ -38,11 +39,14 @@ pub async fn declare_availability<TxCtx>(
         .declare_availability(&fixture_id, &referee_id, tx_ctx)
         .await?;
 
-    domain_event_publisher
-        .publish_domain_event(DomainEvent::AvailabilityDeclared {
-            fixture_id,
-            referee_id,
-        })
+    domain_event_repo
+        .store(
+            DomainEvent::AvailabilityDeclared {
+                fixture_id,
+                referee_id,
+            },
+            tx_ctx,
+        )
         .await?;
 
     Ok(())
@@ -54,7 +58,7 @@ pub async fn withdraw_availability<TxCtx>(
     fixture_resolver: &impl FixtureResolver<Error = String>,
     referee_resolver: &impl RefereeResolver<Error = String>,
     availability_repo: &impl AvailabilityRepository<TxCtx = TxCtx, Error = String>,
-    domain_event_publisher: &Box<dyn DomainEventPublisher + Send + Sync>,
+    domain_event_repo: &impl DomainEventOutboxRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<(), String> {
     let _fixture = fixture_resolver
@@ -79,11 +83,14 @@ pub async fn withdraw_availability<TxCtx>(
         .withdraw_availability(&fixture_id, &referee_id, tx_ctx)
         .await?;
 
-    domain_event_publisher
-        .publish_domain_event(DomainEvent::AvailabilityWithdrawn {
-            fixture_id,
-            referee_id,
-        })
+    domain_event_repo
+        .store(
+            DomainEvent::AvailabilityWithdrawn {
+                fixture_id,
+                referee_id,
+            },
+            tx_ctx,
+        )
         .await?;
 
     Ok(())

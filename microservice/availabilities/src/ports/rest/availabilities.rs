@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
 use axum::extract::{Path, State};
-use axum::Json;
+use axum::{Extension, Json};
 use log::{error, info};
+use microservices_shared::domain_event_repo::DomainEventRepositoryPg;
 use microservices_shared::resolvers::impls::{FixtureResolverImpl, RefereeResolverImpl};
 use restinterface::{FixtureIdDTO, RefereeIdDTO};
 use shared::app_error::AppError;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 use crate::adapters::db::availability_repo_pg::AvailabilityRepositoryPg;
 use crate::application::availability_services::{
@@ -19,6 +21,7 @@ use opentelemetry::{
 };
 pub async fn declare_availability_handler(
     State(state): State<Arc<AppState>>,
+    Extension(instance_id): Extension<Uuid>,
     Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
     info!(
@@ -29,49 +32,44 @@ pub async fn declare_availability_handler(
     span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
     span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
-    microservices_shared::domain_events::run_domain_event_publisher_transactional(
-        &state.domain_event_publisher,
-        async {
-            let mut tx = state.connection_pool.begin().await.map_err(|e| {
-                error!("Error beginning transaction: {:?}", e);
-                e.to_string()
-            })?;
+    let mut tx = state.connection_pool.begin().await.map_err(|e| {
+        error!("Error beginning transaction: {:?}", e);
+        AppError::from_error(&e.to_string())
+    })?;
 
-            let redis_conn = state
-                .redis_client
-                .get_connection()
-                .map_err(|e| e.to_string())?;
-            let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
+    let redis_conn = state
+        .redis_client
+        .get_connection()
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
 
-            let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
-            let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
-            let availability_repo = AvailabilityRepositoryPg::new();
+    let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
+    let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
+    let availability_repo = AvailabilityRepositoryPg::new();
+    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
 
-            declare_availability(
-                fixture_id.into(),
-                referee_id.into(),
-                &fixture_resolver,
-                &referee_resolver,
-                &availability_repo,
-                &state.domain_event_publisher,
-                &mut tx,
-            )
-            .await
-            .map_err(|e| e.to_string())?;
-
-            tx.commit().await.map_err(|e| e.to_string())?;
-
-            Ok(())
-        },
+    declare_availability(
+        fixture_id.into(),
+        referee_id.into(),
+        &fixture_resolver,
+        &referee_resolver,
+        &availability_repo,
+        &domain_event_repo,
+        &mut tx,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(()))
 }
 
 pub async fn withdraw_availability_handler(
     State(state): State<Arc<AppState>>,
+    Extension(instance_id): Extension<Uuid>,
     Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
     info!(
@@ -82,43 +80,37 @@ pub async fn withdraw_availability_handler(
     span.set_attribute(KeyValue::new("fixture_id", fixture_id.to_string()));
     span.set_attribute(KeyValue::new("referee_id", referee_id.to_string()));
 
-    microservices_shared::domain_events::run_domain_event_publisher_transactional(
-        &state.domain_event_publisher,
-        async {
-            let mut tx = state.connection_pool.begin().await.map_err(|e| {
-                error!("Error beginning transaction: {:?}", e);
-                e.to_string()
-            })?;
+    let mut tx = state.connection_pool.begin().await.map_err(|e| {
+        error!("Error beginning transaction: {:?}", e);
+        AppError::from_error(&e.to_string())
+    })?;
 
-            let redis_conn = state
-                .redis_client
-                .get_connection()
-                .map_err(|e| e.to_string())?;
-            let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
+    let redis_conn = state
+        .redis_client
+        .get_connection()
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
+    let redis_conn_arc_mutex = Arc::new(Mutex::new(redis_conn));
 
-            let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
-            let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
-            let availability_repo = AvailabilityRepositoryPg::new();
+    let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
+    let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
+    let availability_repo = AvailabilityRepositoryPg::new();
+    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
 
-            withdraw_availability(
-                fixture_id.into(),
-                referee_id.into(),
-                &fixture_resolver,
-                &referee_resolver,
-                &availability_repo,
-                &state.domain_event_publisher,
-                &mut tx,
-            )
-            .await
-            .map_err(|e| e.to_string())?;
-
-            tx.commit().await.map_err(|e| e.to_string())?;
-
-            Ok(())
-        },
+    withdraw_availability(
+        fixture_id.into(),
+        referee_id.into(),
+        &fixture_resolver,
+        &referee_resolver,
+        &availability_repo,
+        &domain_event_repo,
+        &mut tx,
     )
     .await
     .map_err(|e| AppError::from_error(&e.to_string()))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     Ok(Json(()))
 }

@@ -1,5 +1,5 @@
 use microservices_shared::{
-    domain_event_repo::DomainEventRepository,
+    domain_event_repo::DomainEventOutboxRepository,
     domain_events::DomainEvent,
     domain_ids::{FixtureId, RefereeId},
     resolvers::traits::{FixtureResolver, RefereeResolver},
@@ -45,7 +45,7 @@ pub async fn remove_committed_assignment<TxCtx>(
     referee_id: RefereeId,
     assignment_repo: &impl AssignmentRepository<TxCtx = TxCtx, Error = String>,
     fixture_resolver: &impl FixtureResolver<Error = String>,
-    domain_event_repo: &impl DomainEventRepository<TxCtx = TxCtx, Error = String>,
+    domain_event_repo: &impl DomainEventOutboxRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<(), String> {
     let assignment = assignment_repo
@@ -97,9 +97,7 @@ pub async fn remove_committed_assignment<TxCtx>(
                 referee_id: assignment.referee_id().into(),
             };
 
-            domain_event_repo
-                .store_in_outbox(event.clone(), tx_ctx)
-                .await?;
+            domain_event_repo.store(event.clone(), tx_ctx).await?;
         }
         AssignmentRefereeRole::Second => {
             if fixture.second_referee.is_none() {
@@ -121,9 +119,7 @@ pub async fn remove_committed_assignment<TxCtx>(
                 referee_id: assignment.referee_id().into(),
             };
 
-            domain_event_repo
-                .store_in_outbox(event.clone(), tx_ctx)
-                .await?;
+            domain_event_repo.store(event.clone(), tx_ctx).await?;
         }
     }
 
@@ -178,7 +174,7 @@ pub async fn commit_assignments<TxCtx>(
     assignment_repo: &impl AssignmentRepository<TxCtx = TxCtx, Error = String>,
     fixture_resolver: &impl FixtureResolver<Error = String>,
     referee_resolver: &impl RefereeResolver<Error = String>,
-    domain_event_repo: &impl DomainEventRepository<TxCtx = TxCtx, Error = String>,
+    domain_event_repo: &impl DomainEventOutboxRepository<TxCtx = TxCtx, Error = String>,
     tx_ctx: &mut TxCtx,
 ) -> Result<String, String> {
     // NOTE: committing assignments also validates them and rejects if any invalid
@@ -217,9 +213,7 @@ pub async fn commit_assignments<TxCtx>(
             },
         };
 
-        domain_event_repo
-            .store_in_outbox(event.clone(), tx_ctx)
-            .await?;
+        domain_event_repo.store(event.clone(), tx_ctx).await?;
 
         assignment.commit();
 

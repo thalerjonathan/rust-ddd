@@ -1,6 +1,9 @@
 use std::{future::Future, sync::Arc, time::Duration};
 
-use crate::domain_ids::{FixtureId, RefereeId, TeamId, VenueId};
+use crate::{
+    domain_event_repo::DomainEventRepositoryPg,
+    domain_ids::{FixtureId, RefereeId, TeamId, VenueId},
+};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use log::{info, warn};
@@ -18,6 +21,16 @@ use opentelemetry::{
     trace::{Span, Tracer},
     KeyValue,
 };
+use sqlx::PgPool;
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DomainEventMessage {
+    pub event: DomainEvent,
+    pub event_id: Uuid,
+    pub instance_id: Uuid,
+    pub created_at: DateTime<Utc>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DomainEvent {
@@ -74,7 +87,7 @@ pub enum DomainEvent {
     },
 }
 
-impl DomainEvent {
+impl DomainEventMessage {
     pub fn deserialize_from_str(s: &str) -> Result<Self, String> {
         serde_json::from_str(s).map_err(|e| e.to_string())
     }
@@ -84,7 +97,7 @@ impl DomainEvent {
 pub trait DomainEventPublisher {
     async fn begin_transaction(&self) -> Result<(), String>;
     async fn commit_transaction(&self) -> Result<(), String>;
-    async fn publish_domain_event(&self, event: DomainEvent) -> Result<(), String>;
+    async fn publish(&self, event: DomainEventMessage) -> Result<(), String>;
     async fn rollback(&self) -> Result<(), String>;
 }
 
@@ -118,7 +131,7 @@ impl KafkaDomainEventProducer {
 
 #[async_trait]
 impl DomainEventPublisher for KafkaDomainEventProducer {
-    async fn publish_domain_event(&self, event: DomainEvent) -> Result<(), String> {
+    async fn publish(&self, event: DomainEventMessage) -> Result<(), String> {
         let msg = serde_json::to_string(&event).unwrap();
 
         let sr = self.kafka_producer.send_result(
@@ -218,61 +231,99 @@ impl ConsumerContext for CustomContext {
 
 #[async_trait]
 pub trait DomainEventCallbacks {
-    async fn on_referee_created(&mut self, referee_id: RefereeId) -> Result<(), String>;
+    type TxCtx;
+    type Error;
+
+    async fn on_referee_created(
+        &mut self,
+        referee_id: RefereeId,
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
     async fn on_referee_club_changed(
         &mut self,
         referee_id: RefereeId,
         club_name: String,
-    ) -> Result<(), String>;
-    async fn on_team_created(&mut self, team_id: TeamId) -> Result<(), String>;
-    async fn on_venue_created(&mut self, venue_id: VenueId) -> Result<(), String>;
-    async fn on_fixture_created(&mut self, fixture_id: FixtureId) -> Result<(), String>;
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
+    async fn on_team_created(
+        &mut self,
+        team_id: TeamId,
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
+    async fn on_venue_created(
+        &mut self,
+        venue_id: VenueId,
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
+    async fn on_fixture_created(
+        &mut self,
+        fixture_id: FixtureId,
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
     async fn on_fixture_date_changed(
         &mut self,
         fixture_id: FixtureId,
         date: DateTime<Utc>,
-    ) -> Result<(), String>;
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
     async fn on_fixture_venue_changed(
         &mut self,
         fixture_id: FixtureId,
         venue_id: VenueId,
-    ) -> Result<(), String>;
-    async fn on_fixture_cancelled(&mut self, fixture_id: FixtureId) -> Result<(), String>;
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
+    async fn on_fixture_cancelled(
+        &mut self,
+        fixture_id: FixtureId,
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
     async fn on_availability_declared(
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
-    ) -> Result<(), String>;
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
     async fn on_availability_withdrawn(
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
-    ) -> Result<(), String>;
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
     async fn on_first_referee_assignment_removed(
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
-    ) -> Result<(), String>;
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
     async fn on_second_referee_assignment_removed(
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
-    ) -> Result<(), String>;
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
     async fn on_first_referee_assigned(
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
-    ) -> Result<(), String>;
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
     async fn on_second_referee_assigned(
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
-    ) -> Result<(), String>;
+        tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), Self::Error>;
 }
 
 pub struct DomainEventConsumer {
     kafka_consumer: StreamConsumer<CustomContext>,
-    callbacks: Box<dyn DomainEventCallbacks + Send + Sync>,
+    callbacks: Box<
+        dyn DomainEventCallbacks<TxCtx = sqlx::Transaction<'static, sqlx::Postgres>, Error = String>
+            + Send
+            + Sync,
+    >,
+    connection_pool: PgPool,
+    instance_id: Uuid,
 }
 
 impl DomainEventConsumer {
@@ -280,7 +331,15 @@ impl DomainEventConsumer {
         consumer_group: &str,
         broker_url: &str,
         domain_events_topic: &str,
-        callbacks: Box<dyn DomainEventCallbacks + Send + Sync>,
+        connection_pool: PgPool,
+        instance_id: Uuid,
+        callbacks: Box<
+            dyn DomainEventCallbacks<
+                    TxCtx = sqlx::Transaction<'static, sqlx::Postgres>,
+                    Error = String,
+                > + Send
+                + Sync,
+        >,
     ) -> Self {
         let context = CustomContext;
         let kafka_consumer: StreamConsumer<CustomContext> = ClientConfig::new()
@@ -304,10 +363,14 @@ impl DomainEventConsumer {
         Self {
             kafka_consumer,
             callbacks,
+            connection_pool,
+            instance_id,
         }
     }
 
     pub async fn run(&mut self) {
+        let domain_event_repo = DomainEventRepositoryPg::new(self.instance_id);
+
         loop {
             match self.kafka_consumer.recv().await {
                 Err(e) => warn!("Kafka error: {}", e),
@@ -321,98 +384,136 @@ impl DomainEventConsumer {
                         }
                     };
 
-                    let domain_event = DomainEvent::deserialize_from_str(&payload).unwrap();
-                    let result = match domain_event {
-                        DomainEvent::RefereeCreated { referee_id } => {
-                            self.callbacks.on_referee_created(referee_id).await
+                    match DomainEventMessage::deserialize_from_str(&payload) {
+                        Err(e) => {
+                            warn!("Error while deserializing message payload: {}", e);
+                            continue;
                         }
-                        DomainEvent::RefereeClubChanged {
-                            referee_id,
-                            club_name,
-                        } => {
-                            self.callbacks
-                                .on_referee_club_changed(referee_id, club_name)
-                                .await
-                        }
-                        DomainEvent::TeamCreated { team_id } => {
-                            self.callbacks.on_team_created(team_id).await
-                        }
-                        DomainEvent::VenueCreated { venue_id } => {
-                            self.callbacks.on_venue_created(venue_id).await
-                        }
-                        DomainEvent::FixtureCreated { fixture_id } => {
-                            self.callbacks.on_fixture_created(fixture_id).await
-                        }
-                        DomainEvent::FixtureDateChanged { fixture_id, date } => {
-                            self.callbacks
-                                .on_fixture_date_changed(fixture_id, date)
-                                .await
-                        }
-                        DomainEvent::FixtureVenueChanged {
-                            fixture_id,
-                            venue_id,
-                        } => {
-                            self.callbacks
-                                .on_fixture_venue_changed(fixture_id, venue_id)
-                                .await
-                        }
-                        DomainEvent::FixtureCancelled { fixture_id } => {
-                            self.callbacks.on_fixture_cancelled(fixture_id).await
-                        }
-                        DomainEvent::AvailabilityDeclared {
-                            fixture_id,
-                            referee_id,
-                        } => {
-                            self.callbacks
-                                .on_availability_declared(fixture_id, referee_id)
-                                .await
-                        }
-                        DomainEvent::AvailabilityWithdrawn {
-                            fixture_id,
-                            referee_id,
-                        } => {
-                            self.callbacks
-                                .on_availability_withdrawn(fixture_id, referee_id)
-                                .await
-                        }
-                        DomainEvent::FirstRefereeAssignmentRemoved {
-                            fixture_id,
-                            referee_id,
-                        } => {
-                            self.callbacks
-                                .on_first_referee_assignment_removed(fixture_id, referee_id)
-                                .await
-                        }
-                        DomainEvent::SecondRefereeAssignmentRemoved {
-                            fixture_id,
-                            referee_id,
-                        } => {
-                            self.callbacks
-                                .on_second_referee_assignment_removed(fixture_id, referee_id)
-                                .await
-                        }
-                        DomainEvent::FirstRefereeAssigned {
-                            fixture_id,
-                            referee_id,
-                        } => {
-                            self.callbacks
-                                .on_first_referee_assigned(fixture_id, referee_id)
-                                .await
-                        }
-                        DomainEvent::SecondRefereeAssigned {
-                            fixture_id,
-                            referee_id,
-                        } => {
-                            self.callbacks
-                                .on_second_referee_assigned(fixture_id, referee_id)
-                                .await
-                        }
-                    };
+                        Ok(domain_event_message) => {
+                            let mut tx = self.connection_pool.begin().await.unwrap();
 
-                    if let Err(e) = result {
-                        warn!("Error while processing domain event: {}", e);
+                            let ret = domain_event_repo
+                                .is_event_processed(domain_event_message.event_id, &mut tx)
+                                .await
+                                .unwrap();
+                            if let Some(processed_at) = ret {
+                                info!(
+                                    "Detected duplication of Domain Event that was already processed at {} - ignoring {:?}",
+                                    processed_at, domain_event_message  
+                                );
+                                continue;
+                            }
+
+                            domain_event_repo
+                                .store_as_inbox(&domain_event_message, &mut tx)
+                                .await
+                                .unwrap();
+
+                            let result = match domain_event_message.event {
+                                DomainEvent::RefereeCreated { referee_id } => {
+                                    self.callbacks.on_referee_created(referee_id, &mut tx).await
+                                }
+                                DomainEvent::RefereeClubChanged {
+                                    referee_id,
+                                    club_name,
+                                } => {
+                                    self.callbacks
+                                        .on_referee_club_changed(referee_id, club_name, &mut tx)
+                                        .await
+                                }
+                                DomainEvent::TeamCreated { team_id } => {
+                                    self.callbacks.on_team_created(team_id, &mut tx).await
+                                }
+                                DomainEvent::VenueCreated { venue_id } => {
+                                    self.callbacks.on_venue_created(venue_id, &mut tx).await
+                                }
+                                DomainEvent::FixtureCreated { fixture_id } => {
+                                    self.callbacks.on_fixture_created(fixture_id, &mut tx).await
+                                }
+                                DomainEvent::FixtureDateChanged { fixture_id, date } => {
+                                    self.callbacks
+                                        .on_fixture_date_changed(fixture_id, date, &mut tx)
+                                        .await
+                                }
+                                DomainEvent::FixtureVenueChanged {
+                                    fixture_id,
+                                    venue_id,
+                                } => {
+                                    self.callbacks
+                                        .on_fixture_venue_changed(fixture_id, venue_id, &mut tx)
+                                        .await
+                                }
+                                DomainEvent::FixtureCancelled { fixture_id } => {
+                                    self.callbacks
+                                        .on_fixture_cancelled(fixture_id, &mut tx)
+                                        .await
+                                }
+                                DomainEvent::AvailabilityDeclared {
+                                    fixture_id,
+                                    referee_id,
+                                } => {
+                                    self.callbacks
+                                        .on_availability_declared(fixture_id, referee_id, &mut tx)
+                                        .await
+                                }
+                                DomainEvent::AvailabilityWithdrawn {
+                                    fixture_id,
+                                    referee_id,
+                                } => {
+                                    self.callbacks
+                                        .on_availability_withdrawn(fixture_id, referee_id, &mut tx)
+                                        .await
+                                }
+                                DomainEvent::FirstRefereeAssignmentRemoved {
+                                    fixture_id,
+                                    referee_id,
+                                } => {
+                                    self.callbacks
+                                        .on_first_referee_assignment_removed(
+                                            fixture_id, referee_id, &mut tx,
+                                        )
+                                        .await
+                                }
+                                DomainEvent::SecondRefereeAssignmentRemoved {
+                                    fixture_id,
+                                    referee_id,
+                                } => {
+                                    self.callbacks
+                                        .on_second_referee_assignment_removed(
+                                            fixture_id, referee_id, &mut tx,
+                                        )
+                                        .await
+                                }
+                                DomainEvent::FirstRefereeAssigned {
+                                    fixture_id,
+                                    referee_id,
+                                } => {
+                                    self.callbacks
+                                        .on_first_referee_assigned(fixture_id, referee_id, &mut tx)
+                                        .await
+                                }
+                                DomainEvent::SecondRefereeAssigned {
+                                    fixture_id,
+                                    referee_id,
+                                } => {
+                                    self.callbacks
+                                        .on_second_referee_assigned(fixture_id, referee_id, &mut tx)
+                                        .await
+                                }
+                            };
+
+                            domain_event_repo
+                                .mark_event_as_processed(domain_event_message.event_id, &mut tx)
+                                .await
+                                .unwrap();
+
+                            if let Err(e) = result {
+                                warn!("Error while processing domain event: {}", e);
+                            }
+                        }
                     }
 
+                    // NOTE: if committing fails, we will try again but deduplication will kick in
                     self.kafka_consumer
                         .commit_message(&m, CommitMode::Sync)
                         .unwrap();
@@ -434,7 +535,14 @@ impl DomainEventCallbacksLoggerImpl {
 
 #[async_trait]
 impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
-    async fn on_referee_created(&mut self, referee_id: RefereeId) -> Result<(), String> {
+    type TxCtx = sqlx::Transaction<'static, sqlx::Postgres>;
+    type Error = String;
+
+    async fn on_referee_created(
+        &mut self,
+        referee_id: RefereeId,
+        _tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), String> {
         info!("Received Domain Event: Referee created: {:?}", referee_id);
         let mut span = self.tracer.start("on_referee_created");
         span.set_attribute(KeyValue::new("referee_id", referee_id.0.to_string()));
@@ -445,6 +553,7 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         &mut self,
         referee_id: RefereeId,
         club_name: String,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: Referee club changed: {:?} -> {}",
@@ -456,21 +565,33 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         Ok(())
     }
 
-    async fn on_team_created(&mut self, team_id: TeamId) -> Result<(), String> {
+    async fn on_team_created(
+        &mut self,
+        team_id: TeamId,
+        _tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), String> {
         info!("Received Domain Event: Team created: {:?}", team_id);
         let mut span = self.tracer.start("on_team_created");
         span.set_attribute(KeyValue::new("team_id", team_id.0.to_string()));
         Ok(())
     }
 
-    async fn on_venue_created(&mut self, venue_id: VenueId) -> Result<(), String> {
+    async fn on_venue_created(
+        &mut self,
+        venue_id: VenueId,
+        _tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), String> {
         info!("Received Domain Event: Venue created: {:?}", venue_id);
         let mut span = self.tracer.start("on_venue_created");
         span.set_attribute(KeyValue::new("venue_id", venue_id.0.to_string()));
         Ok(())
     }
 
-    async fn on_fixture_created(&mut self, fixture_id: FixtureId) -> Result<(), String> {
+    async fn on_fixture_created(
+        &mut self,
+        fixture_id: FixtureId,
+        _tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), String> {
         info!("Received Domain Event: Fixture created: {:?}", fixture_id);
         let mut span = self.tracer.start("on_fixture_created");
         span.set_attribute(KeyValue::new("fixture_id", fixture_id.0.to_string()));
@@ -481,6 +602,7 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         &mut self,
         fixture_id: FixtureId,
         date: DateTime<Utc>,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: Fixture date changed: {:?} -> {}",
@@ -496,6 +618,7 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         &mut self,
         fixture_id: FixtureId,
         venue_id: VenueId,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: Fixture venue changed: {:?} -> {:?}",
@@ -507,7 +630,11 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         Ok(())
     }
 
-    async fn on_fixture_cancelled(&mut self, fixture_id: FixtureId) -> Result<(), String> {
+    async fn on_fixture_cancelled(
+        &mut self,
+        fixture_id: FixtureId,
+        _tx_ctx: &mut Self::TxCtx,
+    ) -> Result<(), String> {
         info!("Received Domain Event: Fixture cancelled: {:?}", fixture_id);
         let mut span = self.tracer.start("on_fixture_cancelled");
         span.set_attribute(KeyValue::new("fixture_id", fixture_id.0.to_string()));
@@ -518,6 +645,7 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: Availability declared: {:?} -> {:?}",
@@ -533,6 +661,7 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: Availability withdrawn: {:?} -> {:?}",
@@ -548,6 +677,7 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: First referee assignment removed: {:?} -> {:?}",
@@ -563,6 +693,7 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: Second referee assignment removed: {:?} -> {:?}",
@@ -578,6 +709,7 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: First referee assigned: {:?} -> {:?}",
@@ -593,6 +725,7 @@ impl DomainEventCallbacks for DomainEventCallbacksLoggerImpl {
         &mut self,
         fixture_id: FixtureId,
         referee_id: RefereeId,
+        _tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
             "Received Domain Event: Second referee assigned: {:?} -> {:?}",
@@ -619,7 +752,7 @@ impl DomainEventPublisher for MockDomainEventPublisher {
         Ok(())
     }
 
-    async fn publish_domain_event(&self, _event: DomainEvent) -> Result<(), String> {
+    async fn publish(&self, _event: DomainEventMessage) -> Result<(), String> {
         Ok(())
     }
 
