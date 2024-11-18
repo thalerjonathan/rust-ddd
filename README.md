@@ -70,7 +70,25 @@ If you want to run the test suite, make sure you have a backend running and then
 
 ## Refactoring into Microservices
 
-Currently I am working on refactoring the monolith into microservices, for which I started by writing [Architecture Decision Records](/microservice/ADR) for the overalle approach.
+I started the refactoring of the monolith into microservices by writing [Architecture Decision Records](/microservice/ADR) for the overall approach. This helped me to structure my thoughts and plan the refactoring. 
+
+- I decided to slice every Aggregate and the corresponding DB table into a separate Microservice, which resulted in 6 services. Cne could argue whether the way I sliced them is really ideal, but I simply went for the most straightforward way and it turned out to be fine. Of course, the ultimate test would be a production environment where we could see performance impacts and other metrics, but this is clearly beyond the scope of this project.
+- Each Microservice has its own DB, where I settled on Postgres for all of them.  I thought about using MongoDB for 1 or 2 services but didn't as I decided it was beyond the scope of this project - but it would be easily possible.
+- Due to the fact that each service has now its own DB, there is no way of using JOINS, so the services need to resolve (forgein) IDs by requesting data from other services. I decided to use Redis to cache these requests to avoid excessive round-trips and improve performance.
+- I am using Kafka to broadcast Domain Events to which all Microservices are listening via consumer groups. To really put an emphasis on the point of scaling up, each Microservice has 2 instances running, with the Kafka topic having 2 partitions, therefore the Microservice instances are taking rounds on who processes the next topic in the same consumer group.
+- I added Jaeger for distributed tracing and observability which makes it very easy to follow what happens when and how long it takes.
+- For load-balancing between each of the 2 Microservices instance and as "API Gateway" I used Nginx.
+
+However, there were some challenges that I had to overcome, that were related to resiliency, consistency and the Saga implementation. Uwe Friedrichsens blog post [The Limits of the Saga Pattern](https://lnkd.in/dXF37WEi) clearly states: 
+> The Saga pattern can only be used to logically roll back transactions due to business errors. The Saga pattern cannot be used to respond to technical errors. This leaves the question: How can we deal with technical errors? In general, the only way is to strive for eventual completion. If you face a technical error, you need to retry in some (non-naive) way until you eventually overcome the error and your activity succeeds. This means retrying in combination with waiting, escalation strategies, etc.
+
+The key of how to *strive for eventual completion* while still retaining the scaling benefits of Microservices is found in Pat Hellands fascinating but also arguably rather abstract paper [Life beyond Distributed Transactions](https://lnkd.in/d4EUmiwj) - it is to *Assume a transactional boundary of a single item*. Essentially, the paper is saying that we need to reconcile the side-effect contexts of the DB and the Domain Event, that is, comitting the DB Tx and finalising consuming or producing Domain Events in Kafka - which is done by combining them into the DB Tx context. The main idea is the following💡
+- Assign UUIDs to each emitted Domain Event.
+- When emitting a Domain Event, rather than doing this directly via Kafka, store it in a new outbox table and commit the INSERT in the same DB Tx that makes changes to the Aggregate.
+- A new async processor goes through the unsent Domain Events of the outbox table and emits them via Kafka. Due to the different side-effect contexts we need to mark the Domain Event as sent in a separate DB Tx, but if the committing of this DB Tx fails after committing the Kafa offset, the only thing we can do is to retry. Therefore we end up with duplicate sends resulting in "at-least-once" Domain Event semantics.
+- On the receiving end, introduce an inbox table that INSERTS Domain Events consumed from Kafka in the same DB Tx which makes changes to the Aggregate. In this case, when committing the Kafka offset fails after the DB Tx committed successfully, the only thing to do is to retry the event consumption. However, we would be able to detect that we already processed the Domain Event by looking at the inbox table, and therefore skip re-processing the event, only committing the Kafka offset.
+
+Concluding I can say that I am very happy with Rusts abilities to implement Microservices: all the libraries I am using are of very high quality, have good examples and worked out of the box. Docker plays a fundamental role in implementing such a Microservice project locally, as it makes spinning up 6 Postgres DBs and all other infrastructure extremely easy. I continued to use AI via the Cursor IDE and as already in the weeks before it was a tremendous help.
 
 ### Running the Microservices
 
