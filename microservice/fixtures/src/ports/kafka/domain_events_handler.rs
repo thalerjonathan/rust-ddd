@@ -165,7 +165,7 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
-            "Received Domain Event: First referee assignment removed: {:?} -> {:?}",
+            "Received Domain Event in Fixtures: First referee assignment removed: {:?} -> {:?}",
             fixture_id, referee_id
         );
 
@@ -187,7 +187,7 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
-            "Received Domain Event: Second referee assignment removed: {:?} -> {:?}",
+            "Received Domain Event in Fixtures: Second referee assignment removed: {:?} -> {:?}",
             fixture_id, referee_id
         );
 
@@ -209,7 +209,7 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
-            "Received Domain Event: First referee assigned: {:?} -> {:?}",
+            "Received Domain Event in Fixtures: First referee assigned: {:?} -> {:?}",
             fixture_id, referee_id
         );
 
@@ -231,7 +231,7 @@ impl DomainEventCallbacks for DomainEventCallbacksImpl {
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), String> {
         info!(
-            "Received Domain Event: Second referee assigned: {:?} -> {:?}",
+            "Received Domain Event in Fixtures: Second referee assigned: {:?} -> {:?}",
             fixture_id, referee_id
         );
 

@@ -309,7 +309,7 @@ mod tests {
         let mut fixture_repo = MockFixtureRepository::new();
         let mut venue_resolver = MockVenueResolver::new();
         let mut team_resolver = MockTeamResolver::new();
-        let domain_event_repo = MockDomainEventOutboxRepository::new();
+        let mut domain_event_repo = MockDomainEventOutboxRepository::new();
 
         let venue_id = VenueId::from(Uuid::new_v4());
         let team_home_id = TeamId::from(Uuid::new_v4());
@@ -362,6 +362,8 @@ mod tests {
 
         fixture_repo.expect_save().return_const(Ok(()));
 
+        domain_event_repo.expect_store().return_const(Ok(()));
+
         let fixture_created = create_fixture(
             now,
             venue_id,
@@ -394,7 +396,7 @@ mod tests {
     async fn test_given_scheduled_fixture_when_cancel_then_cancelled() {
         let now = Utc::now();
         let mut fixture_repo = MockFixtureRepository::new();
-        let domain_event_repo = MockDomainEventOutboxRepository::new();
+        let mut domain_event_repo = MockDomainEventOutboxRepository::new();
 
         let fixture_id = FixtureId::from(Uuid::new_v4());
         let venue_id = VenueId::from(Uuid::new_v4());
@@ -417,6 +419,8 @@ mod tests {
             .with(eq(fixture_id), eq(&()))
             .return_const(Ok(Some(fixture.clone())));
         fixture_repo.expect_save().return_const(Ok(()));
+
+        domain_event_repo.expect_store().return_const(Ok(()));
 
         let fixture_cancelled =
             cancel_fixture(fixture_id, &fixture_repo, &domain_event_repo, &mut ())

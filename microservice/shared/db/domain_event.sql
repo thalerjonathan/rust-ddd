@@ -1,7 +1,7 @@
 CREATE TYPE rustddd.domain_event_type AS ENUM ('Inbox', 'Outbox');
 
 CREATE TABLE rustddd.domain_events (
-    id UUID PRIMARY KEY NOT NULL,
+    id UUID NOT NULL,
     event_type rustddd.domain_event_type NOT NULL,
     payload JSONB NOT NULL,
     instance UUID NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE rustddd.domain_events (
 CREATE OR REPLACE FUNCTION domain_event_notification_trigger() RETURNS TRIGGER as $domain_event_notification_trigger$
   BEGIN
     IF (TG_OP = 'INSERT') THEN
-        PERFORM pg_notify('domain_event_inserted', '{"event_id": "' || NEW.id || '", "event_type": "' || NEW.event_type || '", "instance": "' || NEW.instance || '", "payload": ' || NEW.payload || '", "created_at": "' || NEW.created_at || '"}');
+        PERFORM pg_notify('domain_event_inserted', '{"event_id": "' || NEW.id || '", "event_type": "' || NEW.event_type || '", "instance": "' || NEW.instance || '", "payload": ' || NEW.payload || ', "created_at": "' || NEW.created_at || '"}');
         RETURN NEW;
     END IF;
 END;

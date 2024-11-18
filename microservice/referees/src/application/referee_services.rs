@@ -64,13 +64,10 @@ pub async fn update_referee_club<TxCtx>(
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
     use microservices_shared::{
-        domain_event_repo::{DomainEventDb, DomainEventOutboxRepository, DomainEventTypeDb},
-        domain_events::DomainEvent,
+        domain_event_repo::DomainEventOutboxRepository, domain_events::DomainEvent,
         domain_ids::RefereeId,
     };
-    use uuid::Uuid;
 
     use crate::{
         application::referee_services::{create_referee, update_referee_club},
@@ -101,29 +98,6 @@ mod tests {
         async fn store(
             &self,
             _event: DomainEvent,
-            _tx_ctx: &mut Self::TxCtx,
-        ) -> Result<DomainEventDb, Self::Error> {
-            let event_db = DomainEventDb {
-                id: Uuid::new_v4(),
-                event_type: DomainEventTypeDb::Outbox,
-                payload: serde_json::to_value(&_event).unwrap(),
-                instance: Uuid::new_v4(),
-                created_at: Utc::now(),
-                processed_at: None,
-            };
-            Ok(event_db)
-        }
-
-        async fn get_unprocessed_outbox_events(
-            &self,
-            _tx_ctx: &mut Self::TxCtx,
-        ) -> Result<Vec<DomainEventDb>, Self::Error> {
-            Ok(vec![])
-        }
-
-        async fn mark_event_as_processed(
-            &self,
-            _event_id: Uuid,
             _tx_ctx: &mut Self::TxCtx,
         ) -> Result<(), Self::Error> {
             Ok(())

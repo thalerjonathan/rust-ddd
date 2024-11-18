@@ -32,11 +32,7 @@ pub trait DomainEventOutboxRepository {
     type TxCtx;
     type Error;
 
-    async fn store(
-        &self,
-        event: DomainEvent,
-        tx_ctx: &mut Self::TxCtx,
-    ) -> Result<DomainEventDb, Self::Error>;
+    async fn store(&self, event: DomainEvent, tx_ctx: &mut Self::TxCtx) -> Result<(), Self::Error>;
 }
 
 pub struct DomainEventRepositoryPg {
@@ -87,21 +83,25 @@ impl DomainEventRepositoryPg {
         Ok(events)
     }
 
-    pub async fn is_event_processed(
+    pub async fn is_inbox_event_processed(
         &self,
         event_id: Uuid,
         tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
     ) -> Result<Option<DateTime<Utc>>, String> {
-        let ret = sqlx::query_as!(
+        let ret: Option<DomainEventDb> = sqlx::query_as!(
             DomainEventDb,
-            "SELECT id, event_type as \"event_type: DomainEventTypeDb\", payload, instance, processed_at, created_at FROM rustddd.domain_events WHERE id = $1",
+            "SELECT id, event_type as \"event_type: DomainEventTypeDb\", payload, instance, processed_at, created_at 
+            FROM rustddd.domain_events 
+            WHERE id = $1
+            AND event_type = $2",
             event_id,
+            DomainEventTypeDb::Inbox as DomainEventTypeDb,
         )
-        .fetch_one(&mut **tx)
+        .fetch_optional(&mut **tx)
         .await
         .map_err(|e| e.to_string())?;
 
-        Ok(ret.processed_at)
+        Ok(ret.map(|e| e.processed_at).flatten())
     }
 
     pub async fn store_as_inbox(
@@ -143,7 +143,7 @@ impl DomainEventOutboxRepository for DomainEventRepositoryPg {
         &self,
         event: DomainEvent,
         tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
-    ) -> Result<DomainEventDb, String> {
+    ) -> Result<(), String> {
         let domain_event_db = DomainEventDb {
             id: Uuid::new_v4(),
             event_type: DomainEventTypeDb::Outbox,
@@ -166,7 +166,7 @@ impl DomainEventOutboxRepository for DomainEventRepositoryPg {
         .await
         .map_err(|e| e.to_string())?;
 
-        Ok(domain_event_db)
+        Ok(())
     }
 }
 

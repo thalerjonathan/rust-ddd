@@ -214,26 +214,32 @@ mod availabilities_tests {
     }
 
     async fn clear_tables() {
-        let db_url = "postgres://postgres:postgres@localhost:5432/rustddd?application_name=rustddd&options=-c search_path%3Drustddd"; //std::env::var("DB_URL").expect("DB_URL not set");
-        let connection_pool = PgPool::connect(&db_url).await.unwrap();
+        let fixtures_db_url = "postgres://postgres:postgres@localhost:5436/fixtures?application_name=rustddd&options=-c search_path%3Drustddd";
+        let assignments_db_url = "postgres://postgres:postgres@localhost:5438/assignments?application_name=rustddd&options=-c search_path%3Drustddd";
+        let availabilities_db_url = "postgres://postgres:postgres@localhost:5437/availabilities?application_name=rustddd&options=-c search_path%3Drustddd";
+        let referees_db_url = "postgres://postgres:postgres@localhost:5433/referees?application_name=rustddd&options=-c search_path%3Drustddd";
 
+        let availabilities_pool = PgPool::connect(&availabilities_db_url).await.unwrap();
+        let fixtures_pool = PgPool::connect(&fixtures_db_url).await.unwrap();
+        let assignments_pool = PgPool::connect(&assignments_db_url).await.unwrap();
+        let referees_pool = PgPool::connect(&referees_db_url).await.unwrap();
         sqlx::query("DELETE FROM rustddd.assignments")
-            .execute(&connection_pool)
+            .execute(&assignments_pool)
             .await
             .unwrap();
 
         sqlx::query("DELETE FROM rustddd.availabilities")
-            .execute(&connection_pool)
+            .execute(&availabilities_pool)
             .await
             .unwrap();
 
         sqlx::query("DELETE FROM rustddd.fixtures")
-            .execute(&connection_pool)
+            .execute(&fixtures_pool)
             .await
             .unwrap();
 
         sqlx::query("DELETE FROM rustddd.referees")
-            .execute(&connection_pool)
+            .execute(&referees_pool)
             .await
             .unwrap();
     }

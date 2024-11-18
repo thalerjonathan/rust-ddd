@@ -6,7 +6,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use log::{info, warn};
+use log::{debug, info, warn};
 use rdkafka::{
     config::RDKafkaLogLevel,
     consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, StreamConsumer},
@@ -217,15 +217,15 @@ impl ClientContext for CustomContext {}
 
 impl ConsumerContext for CustomContext {
     fn pre_rebalance(&self, rebalance: &Rebalance) {
-        info!("Pre rebalance {:?}", rebalance);
+        debug!("Pre rebalance {:?}", rebalance);
     }
 
     fn post_rebalance(&self, rebalance: &Rebalance) {
-        info!("Post rebalance {:?}", rebalance);
+        debug!("Post rebalance {:?}", rebalance);
     }
 
     fn commit_callback(&self, result: KafkaResult<()>, _offsets: &TopicPartitionList) {
-        info!("Committing offsets: {:?}", result);
+        debug!("Committing offsets: {:?}", result);
     }
 }
 
@@ -386,28 +386,31 @@ impl DomainEventConsumer {
 
                     match DomainEventMessage::deserialize_from_str(&payload) {
                         Err(e) => {
-                            warn!("Error while deserializing message payload: {}", e);
+                            warn!("Error while deserializing incoming DomainEventMessage: {}", e);
                             continue;
                         }
                         Ok(domain_event_message) => {
                             let mut tx = self.connection_pool.begin().await.unwrap();
 
                             let ret = domain_event_repo
-                                .is_event_processed(domain_event_message.event_id, &mut tx)
+                                .is_inbox_event_processed(domain_event_message.event_id, &mut tx)
                                 .await
                                 .unwrap();
                             if let Some(processed_at) = ret {
                                 info!(
-                                    "Detected duplication of Domain Event that was already processed at {} - ignoring {:?}",
+                                    "Detected duplication of inbox Domain Event that was already processed at {} - ignoring {:?}",
                                     processed_at, domain_event_message  
                                 );
                                 continue;
                             }
 
-                            domain_event_repo
+                            let store_result = domain_event_repo
                                 .store_as_inbox(&domain_event_message, &mut tx)
-                                .await
-                                .unwrap();
+                                .await;
+                            if let Err(e) = store_result {
+                                warn!("Error while storing domain event in inbox: {}", e);
+                                continue;
+                            }
 
                             let result = match domain_event_message.event {
                                 DomainEvent::RefereeCreated { referee_id } => {
@@ -509,6 +512,11 @@ impl DomainEventConsumer {
 
                             if let Err(e) = result {
                                 warn!("Error while processing domain event: {}", e);
+                            }
+
+                            let commit_result = tx.commit().await;
+                            if let Err(e) = commit_result {
+                                warn!("Error while committing transaction for domain event {} with error: {}", domain_event_message.event_id, e);
                             }
                         }
                     }

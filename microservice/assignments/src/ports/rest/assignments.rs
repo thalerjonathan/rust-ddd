@@ -365,6 +365,8 @@ mod assignments_tests {
             "Commit assignments should return an empty string"
         );
 
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
         // fetch the assignments again, all should be in status committed
         let assignments = fetch_assignments().await;
         assert_eq!(assignments.len(), 2, "Assignments should have 2 elements");
