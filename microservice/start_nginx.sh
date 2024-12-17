@@ -1,0 +1,1 @@
+docker compose -f apigateway/docker-compose.yaml up 

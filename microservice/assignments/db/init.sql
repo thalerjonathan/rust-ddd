@@ -1,4 +1,5 @@
 CREATE SCHEMA IF NOT EXISTS rustddd;
+ALTER SYSTEM SET wal_level = logical;
 
 CREATE TYPE rustddd.assignment_status AS ENUM ('committed', 'staged');
 CREATE TYPE rustddd.assignment_referee_role AS ENUM ('first', 'second');
@@ -10,6 +11,7 @@ CREATE TABLE IF NOT EXISTS rustddd.assignments (
     referee_id UUID NOT NULL,
     UNIQUE (fixture_id, referee_id)
 );
+ALTER TABLE rustddd.assignments REPLICA IDENTITY FULL;
 
 CREATE TYPE rustddd.domain_event_type AS ENUM ('Inbox', 'Outbox');
 
@@ -21,6 +23,7 @@ CREATE TABLE rustddd.domain_events (
     processed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
+ALTER TABLE rustddd.domain_events REPLICA IDENTITY FULL;
 
 CREATE OR REPLACE FUNCTION domain_event_notification_trigger() RETURNS TRIGGER as $domain_event_notification_trigger$
   BEGIN

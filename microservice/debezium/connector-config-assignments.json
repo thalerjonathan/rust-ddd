@@ -1,0 +1,15 @@
+{
+    "name": "assignments-pg-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "plugin.name": "pgoutput",
+        "database.hostname": "localhost",
+        "database.port": "5438",
+        "database.user": "postgres",
+        "database.password": "postgres",
+        "database.dbname": "assignments",
+        "database.server.name": "assignments",
+        "table.include.list": "rustddd.domain_events",
+        "topic.prefix": "assignments"
+    }
+}

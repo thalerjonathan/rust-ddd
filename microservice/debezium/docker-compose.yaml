@@ -1,0 +1,13 @@
+version: "3.5"
+
+services:
+  rustddd-debezium:
+    image: debezium/connect:2.7.3.Final
+    network_mode: "host"
+    environment:
+      BOOTSTRAP_SERVERS: localhost:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: debezium_connect_configs
+      OFFSET_STORAGE_TOPIC: debezium_connect_offsets
+    ports:
+      - 8083:8083
