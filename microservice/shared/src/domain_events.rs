@@ -24,13 +24,28 @@ use opentelemetry::{
 use sqlx::PgPool;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DomainEventMessage {
-    pub event: DomainEvent,
-    pub event_id: Uuid,
-    pub instance_id: Uuid,
+
+// NOTE: this is deserialised from a Debezium Message
+#[derive(Debug, Clone, Serialize, serde_query::Deserialize)]
+pub struct DomainEventMessageUntyped {
+    #[query(".payload.after.id")]
+    pub id: Uuid,
+    #[query(".payload.after.instance")]
+    pub instance: Uuid,
+    #[query(".payload.after.payload")]
+    pub payload: String,
+    #[query(".payload.after.created_at")]
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DomainEventMessage {
+    pub id: Uuid,
+    pub instance: Uuid,
+    pub payload: DomainEvent,
+    pub created_at: DateTime<Utc>,
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DomainEvent {
@@ -88,9 +103,32 @@ pub enum DomainEvent {
 }
 
 impl DomainEventMessage {
+    pub fn deserialize_from_str(payload: &str) -> Result<Self, String> {
+        let ret: DomainEventMessageUntyped = DomainEventMessageUntyped::deserialize_from_str(payload)?;
+        ret.try_into()
+    }
+}
+
+impl DomainEventMessageUntyped {
     pub fn deserialize_from_str(s: &str) -> Result<Self, String> {
         serde_json::from_str(s).map_err(|e| e.to_string())
     }
+}
+
+impl TryFrom<DomainEventMessageUntyped> for DomainEventMessage {
+    type Error = String;
+    
+    fn try_from(msg: DomainEventMessageUntyped) -> Result<Self, Self::Error> {
+        let evt: DomainEvent = serde_json::from_str(&msg.payload).map_err(|e| e.to_string())?;
+
+        Ok(DomainEventMessage {
+            id: msg.id,
+            instance: msg.instance,
+            payload: evt,
+            created_at: msg.created_at
+        })
+    }
+    
 }
 
 #[async_trait]
@@ -154,23 +192,18 @@ impl DomainEventPublisher for KafkaDomainEventProducer {
     }
 
     async fn begin_transaction(&self) -> Result<(), String> {
-        // TODO: await producer to be ready
         self.kafka_producer
             .begin_transaction()
             .map_err(|e| e.to_string())
     }
 
     async fn commit_transaction(&self) -> Result<(), String> {
-        // TODO: await producer to be ready
-
         self.kafka_producer
             .commit_transaction(Duration::from_secs(10))
             .map_err(|e| e.to_string())
     }
 
     async fn rollback(&self) -> Result<(), String> {
-        // TODO: await producer to be ready
-
         self.kafka_producer
             .abort_transaction(Duration::from_secs(10))
             .map_err(|e| e.to_string())
@@ -330,7 +363,7 @@ impl DomainEventConsumer {
     pub fn new(
         consumer_group: &str,
         broker_url: &str,
-        domain_events_topic: &str,
+        domain_events_topics: &Vec<String>,
         connection_pool: PgPool,
         instance_id: Uuid,
         callbacks: Box<
@@ -353,11 +386,13 @@ impl DomainEventConsumer {
             .create_with_context(context)
             .expect("Kafka consumer creation failed");
 
+        let topics_str: Vec<&str> = domain_events_topics.iter().map(|s| &**s).collect();
+ 
         kafka_consumer
-            .subscribe(&[&domain_events_topic as &str])
+            .subscribe(topics_str.as_slice())
             .expect(&format!(
-                "Can't subscribe to Domain Events topic {}",
-                domain_events_topic
+                "Can't subscribe to Domain Events topics {:?}",
+                domain_events_topics
             ));
 
         Self {
@@ -384,7 +419,7 @@ impl DomainEventConsumer {
                         }
                     };
 
-                    match DomainEventMessage::deserialize_from_str(&payload) {
+                    match DomainEventMessage::deserialize_from_str(payload) {
                         Err(e) => {
                             warn!("Error while deserializing incoming DomainEventMessage: {}", e);
                             continue;
@@ -393,7 +428,7 @@ impl DomainEventConsumer {
                             let mut tx = self.connection_pool.begin().await.unwrap();
 
                             let ret = domain_event_repo
-                                .is_inbox_event_processed(domain_event_message.event_id, &mut tx)
+                                .is_inbox_event_processed(domain_event_message.id, &mut tx)
                                 .await
                                 .unwrap();
                             if let Some(processed_at) = ret {
@@ -412,7 +447,7 @@ impl DomainEventConsumer {
                                 continue;
                             }
 
-                            let result = match domain_event_message.event {
+                            let result = match domain_event_message.payload {
                                 DomainEvent::RefereeCreated { referee_id } => {
                                     self.callbacks.on_referee_created(referee_id, &mut tx).await
                                 }
@@ -506,7 +541,7 @@ impl DomainEventConsumer {
                             };
 
                             domain_event_repo
-                                .mark_event_as_processed(domain_event_message.event_id, &mut tx)
+                                .mark_inbox_event_as_processed(domain_event_message.id, &mut tx)
                                 .await
                                 .unwrap();
 
@@ -516,7 +551,7 @@ impl DomainEventConsumer {
 
                             let commit_result = tx.commit().await;
                             if let Err(e) = commit_result {
-                                warn!("Error while committing transaction for domain event {} with error: {}", domain_event_message.event_id, e);
+                                warn!("Error while committing transaction for domain event {} with error: {}", domain_event_message.id, e);
                             }
                         }
                     }
@@ -770,5 +805,32 @@ impl DomainEventPublisher for MockDomainEventPublisher {
 
     async fn rollback(&self) -> Result<(), String> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use crate::domain_events::{DomainEvent, DomainEventMessage, DomainEventMessageUntyped};
+
+    #[test]
+    fn test_debezium_parsing() {
+        let s = fs::read_to_string("/home/ionathan/Documents/GitHub/rust-ddd/microservice/shared/debezium_test.json")
+            .expect("JSON File not found!");
+
+        println!("{}", s);
+
+        let msg: Result<DomainEventMessageUntyped, String> = serde_json::from_str(&s).map_err(|e| e.to_string());
+        let evt_str = msg.clone().unwrap().payload;
+        let evt: Result<DomainEvent, serde_json::Error> = serde_json::from_str(&evt_str);
+
+        let msg_typed = DomainEventMessage::deserialize_from_str(&s);
+
+        println!("{:?}", evt_str);
+        println!("{:?}", msg);
+        println!("{:?}", evt);
+
+        println!("{:?}", msg_typed);
     }
 }

@@ -1,0 +1,240 @@
+{
+    "schema": {
+        "type": "struct",
+        "fields": [
+            {
+                "type": "struct",
+                "fields": [
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "name": "io.debezium.data.Uuid",
+                        "version": 1,
+                        "field": "id"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "name": "io.debezium.data.Uuid",
+                        "version": 1,
+                        "field": "instance"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "name": "io.debezium.data.Json",
+                        "version": 1,
+                        "field": "payload"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "name": "io.debezium.time.ZonedTimestamp",
+                        "version": 1,
+                        "field": "created_at"
+                    }
+                ],
+                "optional": true,
+                "name": "assignments.rustddd.domain_events_outbox.Value",
+                "field": "before"
+            },
+            {
+                "type": "struct",
+                "fields": [
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "name": "io.debezium.data.Uuid",
+                        "version": 1,
+                        "field": "id"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "name": "io.debezium.data.Uuid",
+                        "version": 1,
+                        "field": "instance"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "name": "io.debezium.data.Json",
+                        "version": 1,
+                        "field": "payload"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "name": "io.debezium.time.ZonedTimestamp",
+                        "version": 1,
+                        "field": "created_at"
+                    }
+                ],
+                "optional": true,
+                "name": "assignments.rustddd.domain_events_outbox.Value",
+                "field": "after"
+            },
+            {
+                "type": "struct",
+                "fields": [
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "version"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "connector"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "name"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": false,
+                        "field": "ts_ms"
+                    },
+                    {
+                        "type": "string",
+                        "optional": true,
+                        "name": "io.debezium.data.Enum",
+                        "version": 1,
+                        "parameters": {
+                            "allowed": "true,last,false,incremental"
+                        },
+                        "default": "false",
+                        "field": "snapshot"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "db"
+                    },
+                    {
+                        "type": "string",
+                        "optional": true,
+                        "field": "sequence"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": true,
+                        "field": "ts_us"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": true,
+                        "field": "ts_ns"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "schema"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "table"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": true,
+                        "field": "txId"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": true,
+                        "field": "lsn"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": true,
+                        "field": "xmin"
+                    }
+                ],
+                "optional": false,
+                "name": "io.debezium.connector.postgresql.Source",
+                "field": "source"
+            },
+            {
+                "type": "struct",
+                "fields": [
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "id"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": false,
+                        "field": "total_order"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": false,
+                        "field": "data_collection_order"
+                    }
+                ],
+                "optional": true,
+                "name": "event.block",
+                "version": 1,
+                "field": "transaction"
+            },
+            {
+                "type": "string",
+                "optional": false,
+                "field": "op"
+            },
+            {
+                "type": "int64",
+                "optional": true,
+                "field": "ts_ms"
+            },
+            {
+                "type": "int64",
+                "optional": true,
+                "field": "ts_us"
+            },
+            {
+                "type": "int64",
+                "optional": true,
+                "field": "ts_ns"
+            }
+        ],
+        "optional": false,
+        "name": "assignments.rustddd.domain_events_outbox.Envelope",
+        "version": 2
+    },
+    "payload": {
+        "before": null,
+        "after": {
+            "id": "347ee4b0-2792-4882-997a-dd9d3fce340b",
+            "instance": "8960a1b6-d790-4653-9cf2-e822c183a233",
+            "payload": "{\"SecondRefereeAssigned\": {\"fixture_id\": \"04b1ac1c-2946-4c43-8536-9cc142a09bfb\", \"referee_id\": \"85ac3061-2fb7-49cf-aafc-83bc29438296\"}}",
+            "created_at": "2024-12-18T10:36:52.429058Z"
+        },
+        "source": {
+            "version": "2.7.3.Final",
+            "connector": "postgresql",
+            "name": "assignments",
+            "ts_ms": 1734518212429,
+            "snapshot": "false",
+            "db": "assignments",
+            "sequence": "[\"24306456\",\"24306456\"]",
+            "ts_us": 1734518212429573,
+            "ts_ns": 1734518212429573000,
+            "schema": "rustddd",
+            "table": "domain_events_outbox",
+            "txId": 754,
+            "lsn": 24306456,
+            "xmin": null
+        },
+        "transaction": null,
+        "op": "c",
+        "ts_ms": 1734518212527,
+        "ts_us": 1734518212527367,
+        "ts_ns": 1734518212527367400
+    }
+}

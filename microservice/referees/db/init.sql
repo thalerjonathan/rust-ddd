@@ -1,34 +1,29 @@
 CREATE SCHEMA IF NOT EXISTS rustddd;
+ALTER SYSTEM SET wal_level = logical;
 
 CREATE TABLE IF NOT EXISTS rustddd.referees (
     referee_id UUID NOT NULL PRIMARY KEY,
     name VARCHAR NOT NULL,
     club VARCHAR NOT NULL
 );
+ALTER TABLE rustddd.referees REPLICA IDENTITY FULL;
 
-CREATE TYPE rustddd.domain_event_type AS ENUM ('Inbox', 'Outbox');
-
-CREATE TABLE rustddd.domain_events (
+CREATE TABLE rustddd.domain_events_outbox (
     id UUID NOT NULL,
-    event_type rustddd.domain_event_type NOT NULL,
-    payload JSONB NOT NULL,
     instance UUID NOT NULL,
+    payload JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+ALTER TABLE rustddd.domain_events_outbox REPLICA IDENTITY FULL;
+
+CREATE TABLE rustddd.domain_events_inbox (
+    id UUID NOT NULL,
+    instance UUID NOT NULL,
+    payload JSONB NOT NULL,
     processed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
-
-CREATE OR REPLACE FUNCTION domain_event_notification_trigger() RETURNS TRIGGER as $domain_event_notification_trigger$
-  BEGIN
-    IF (TG_OP = 'INSERT') THEN
-        PERFORM pg_notify('domain_event_inserted', '{"event_id": "' || NEW.id || '", "event_type": "' || NEW.event_type || '", "instance": "' || NEW.instance || '", "payload": ' || NEW.payload || ', "created_at": "' || to_char(NEW.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') || '"}');
-        RETURN NEW;
-    END IF;
-END;
-$domain_event_notification_trigger$ LANGUAGE plpgsql;
-
-CREATE TRIGGER domain_events_trigger
-AFTER INSERT ON rustddd.domain_events FOR EACH ROW
-EXECUTE PROCEDURE domain_event_notification_trigger();
+ALTER TABLE rustddd.domain_events_inbox REPLICA IDENTITY FULL;
 
 INSERT INTO rustddd.referees (referee_id, name, club) VALUES
 ('2ef28cf5-6471-4051-ae11-0f419aef3234'::UUID, 'John Doe', 'Club A'),

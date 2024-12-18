@@ -100,13 +100,12 @@ Concluding I can say that I am very happy with Rusts abilities to implement Micr
 6. Start all databases of the microservices by running `sh start_all_db.sh` from within the `./microservice` folder. 
 7. Start Redis by running `sh start_redis.sh` from within the `./microservice` folder.
 8. Start Kafka by running `sh start_kafka.sh` from within the `./microservice` folder.
-9. Create the Kafka topic by running `sh create_domain_events_topic.sh` from within the `./microservice` folder. This will create a topic called `rustddd.events` with 2 partitions so that they will be consumed by 2 instances of each microservice.
-10. Start Debezium by running `sh start_debezium.sh` from within the `./microservice` folder.
-11. Create the Debezium Connectors for all services by running `sh create_debezium_connectors` from within the `./microsrvices` folder.
-12. Start Nginx by running `sh start_nginx.sh` from within the `./microservice` folder.
-13. Start Jaeger by running `sh start_jaeger.sh` from within the `./microservice` folder.
-14. Start all microservices by running `sh run_all.sh` from within the `./microservice` folder. Note that this will start 2 instances of each microservice.
-15. Start the Frontend by running `sh run.sh` from within the `./frontend` folder. The first time it compiles the frontend from sourvce, which might take 1-2 minutes. Once finished, it opens a browser for you and displays the starting page.
+9. Start Debezium by running `sh start_debezium.sh` from within the `./microservice` folder.
+10. Create the Domain Event topics and Debezium Connectors for all services by running `sh create_debezium_connectors` from within the `./microsrvices` folder.
+11. Start Nginx by running `sh start_nginx.sh` from within the `./microservice` folder.
+12. Start Jaeger by running `sh start_jaeger.sh` from within the `./microservice` folder.
+13. Start all microservices by running `sh run_all.sh` from within the `./microservice` folder. Note that this will start 2 instances of each microservice.
+14. Start the Frontend by running `sh run.sh` from within the `./frontend` folder. The first time it compiles the frontend from sourvce, which might take 1-2 minutes. Once finished, it opens a browser for you and displays the starting page.
 
 To stop all running microservices, you can run `sh stop_all.sh` from within the `./microservice` folder.
 

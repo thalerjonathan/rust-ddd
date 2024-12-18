@@ -6,11 +6,7 @@ use axum::{
 };
 use clap::Parser;
 
-use log::error;
-use microservices_shared::domain_event_repo::process_domain_events_outbox;
-use microservices_shared::domain_events::{
-    DomainEventCallbacksLoggerImpl, DomainEventConsumer, KafkaDomainEventProducer,
-};
+use microservices_shared::domain_events::{DomainEventCallbacksLoggerImpl, DomainEventConsumer};
 use opentelemetry::{
     trace::{Span, Tracer},
     KeyValue,
@@ -49,16 +45,11 @@ async fn main() {
 
     let connection_pool = PgPool::connect(&config.db_url).await.unwrap();
 
-    let domain_event_producer = KafkaDomainEventProducer::new(
-        &config.kafka_url,
-        &config.kafka_domain_events_topic,
-        &args.instance_id,
-    );
     let domain_event_callbacks = Box::new(DomainEventCallbacksLoggerImpl::new(tracer_arc.clone()));
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,
         &config.kafka_url,
-        &config.kafka_domain_events_topic,
+        &config.kafka_domain_events_topics,
         connection_pool.clone(),
         instance_id.clone(),
         domain_event_callbacks,
@@ -95,20 +86,6 @@ async fn main() {
 
     tokio::spawn(async move {
         domain_event_consumer.run().await;
-    });
-
-    tokio::spawn({
-        let instance = instance_id.clone();
-        let pool = connection_pool.clone();
-        let domain_event_publisher = Box::new(domain_event_producer);
-        async move {
-            if let Err(e) =
-                process_domain_events_outbox(instance, pool, domain_event_publisher).await
-            {
-                // TODO: retry in case of DB disconnect
-                error!("Error processing domain events: {e}");
-            }
-        }
     });
 
     span.end();

@@ -1,6 +1,6 @@
 # Refactoring towards a more robust Outbox Pattern with Debezium
 
-Note: this was conducted from 17th - 20th December.
+Note: this work was done on 17th and 18th December.
 
 So far to deal with the issues of reliable message delivery (see week7 for a detailed discussion of the problem) I have implemented the [outbox pattern](https://microservices.io/patterns/data/transactional-outbox.html). In a nutshell what happens is this:
 1. Domain Event is written into an Outbox table.
@@ -25,3 +25,5 @@ Setting up Debezium and the Connectors was non-trivial. Important details here:
 - You need to manually create topics for the CONFIG_STORAGE_TOPIC and OFFSET_STORAGE_TOPIC where both need `cleanup.policy=compact`.
 - You need to configure the Postgres DB with `ALTER SYSTEM SET wal_level = logical;` so that Debezium can track the logical changes. 
 - You need to add `ALTER TABLE table_name REPLICA IDENTITY FULL` to each table due to the `ALTER SYSTEM SET wal_level = logical` change, otherwise e.g. `DELETE` won't work.
+
+The rest was rather straightforward, thanks to Rusts strong typesystem, the refactoring wasnt too difficult. A major change however was that each service has its own domain events topic: the format of the messages are in all cases the same, however it means that the consumeres now need to subscribe to multiple topics, instead of just one. This is however also a big benefit, as it allows to subscribe only to those topics that are really relevant for the given service, for example the Venues service does not need to register for any Domain Events emitted from the Assignments service because it just doesn't do anything with them.

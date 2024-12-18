@@ -13,30 +13,23 @@ CREATE TABLE IF NOT EXISTS rustddd.assignments (
 );
 ALTER TABLE rustddd.assignments REPLICA IDENTITY FULL;
 
-CREATE TYPE rustddd.domain_event_type AS ENUM ('Inbox', 'Outbox');
-
-CREATE TABLE rustddd.domain_events (
+CREATE TABLE rustddd.domain_events_outbox (
     id UUID NOT NULL,
-    event_type rustddd.domain_event_type NOT NULL,
-    payload JSONB NOT NULL,
     instance UUID NOT NULL,
+    payload JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+ALTER TABLE rustddd.domain_events_outbox REPLICA IDENTITY FULL;
+
+CREATE TABLE rustddd.domain_events_inbox (
+    id UUID NOT NULL,
+    instance UUID NOT NULL,
+    payload JSONB NOT NULL,
     processed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
-ALTER TABLE rustddd.domain_events REPLICA IDENTITY FULL;
+ALTER TABLE rustddd.domain_events_inbox REPLICA IDENTITY FULL;
 
-CREATE OR REPLACE FUNCTION domain_event_notification_trigger() RETURNS TRIGGER as $domain_event_notification_trigger$
-  BEGIN
-    IF (TG_OP = 'INSERT') THEN
-        PERFORM pg_notify('domain_event_inserted', '{"event_id": "' || NEW.id || '", "event_type": "' || NEW.event_type || '", "instance": "' || NEW.instance || '", "payload": ' || NEW.payload || ', "created_at": "' || to_char(NEW.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') || '"}');
-        RETURN NEW;
-    END IF;
-END;
-$domain_event_notification_trigger$ LANGUAGE plpgsql;
-
-CREATE TRIGGER domain_events_trigger
-AFTER INSERT ON rustddd.domain_events FOR EACH ROW
-EXECUTE PROCEDURE domain_event_notification_trigger();
 
 INSERT INTO rustddd.assignments (status, fixture_id, referee_id, referee_role) VALUES
 ('committed', 'ba045e60-1ae2-4902-8293-02b04747a888'::UUID, '2ef28cf5-6471-4051-ae11-0f419aef3234'::UUID, 'first'),

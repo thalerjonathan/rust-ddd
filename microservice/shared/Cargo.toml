@@ -32,3 +32,4 @@ sqlx = { version = "0.8.2", features = [
     "uuid",
     "chrono",
 ] }
+serde-query = "0.2.0"

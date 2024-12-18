@@ -13,9 +13,8 @@ use fixtures::ports::rest::fixtures::{
     get_fixture_by_id_handler, update_fixture_date_handler, update_fixture_venue_handler,
 };
 use fixtures::AppState;
-use log::error;
-use microservices_shared::domain_event_repo::process_domain_events_outbox;
-use microservices_shared::domain_events::{DomainEventConsumer, KafkaDomainEventProducer};
+
+use microservices_shared::domain_events::DomainEventConsumer;
 use opentelemetry::{
     trace::{Span, Tracer},
     KeyValue,
@@ -50,11 +49,6 @@ async fn main() {
     let connection_pool = PgPool::connect(&config.db_url).await.unwrap();
     let redis_client = redis::Client::open(config.redis_url).unwrap();
 
-    let domain_event_producer = KafkaDomainEventProducer::new(
-        &config.kafka_url,
-        &config.kafka_domain_events_topic,
-        &args.instance_id,
-    );
     let domain_event_callbacks = Box::new(DomainEventCallbacksImpl::new(
         redis_client.get_connection().unwrap(),
         tracer_arc.clone(),
@@ -62,7 +56,7 @@ async fn main() {
     let mut domain_event_consumer = DomainEventConsumer::new(
         &config.kafka_consumer_group,
         &config.kafka_url,
-        &config.kafka_domain_events_topic,
+        &config.kafka_domain_events_topics,
         connection_pool.clone(),
         instance_id.clone(),
         domain_event_callbacks,
@@ -103,20 +97,6 @@ async fn main() {
 
     tokio::spawn(async move {
         domain_event_consumer.run().await;
-    });
-
-    tokio::spawn({
-        let instance = instance_id.clone();
-        let pool = connection_pool.clone();
-        let domain_event_publisher = Box::new(domain_event_producer);
-        async move {
-            if let Err(e) =
-                process_domain_events_outbox(instance, pool, domain_event_publisher).await
-            {
-                // TODO: retry in case of DB disconnect
-                error!("Error processing domain events: {e}");
-            }
-        }
     });
 
     span.end();

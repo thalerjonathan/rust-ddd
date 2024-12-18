@@ -1,15 +1,15 @@
 {
-    "name": "assignments-pg-connector",
+    "name": "teams-pg-connector",
     "config": {
         "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
         "plugin.name": "pgoutput",
         "database.hostname": "localhost",
-        "database.port": "5438",
+        "database.port": "5435",
         "database.user": "postgres",
         "database.password": "postgres",
-        "database.dbname": "assignments",
-        "database.server.name": "assignments",
+        "database.dbname": "teams",
+        "database.server.name": "teams",
         "table.include.list": "rustddd.domain_events_outbox",
-        "topic.prefix": "assignments"
+        "topic.prefix": "teams"
     }
 }
