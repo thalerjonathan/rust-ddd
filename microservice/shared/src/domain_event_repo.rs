@@ -12,7 +12,7 @@ pub struct DomainEventOutboxDb {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, sqlx::FromRow, PartialEq, Eq)]
 pub struct DomainEventInboxDb {
     pub id: Uuid,
     pub instance: Uuid,
@@ -44,11 +44,10 @@ impl DomainEventRepositoryPg {
         event_id: Uuid,
         tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
     ) -> Result<(), String> {
-        sqlx::query!(
+        sqlx::query(
             "UPDATE rustddd.domain_events_inbox SET processed_at = $1 WHERE id = $2",
-            Utc::now(),
-            event_id,
-        )
+        ).bind(Utc::now())
+        .bind(event_id)
         .execute(&mut **tx)
         .await
         .map_err(|e| e.to_string())?;
@@ -61,13 +60,11 @@ impl DomainEventRepositoryPg {
         event_id: Uuid,
         tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
     ) -> Result<Option<DateTime<Utc>>, String> {
-        let ret: Option<DomainEventInboxDb> = sqlx::query_as!(
-            DomainEventInboxDb,
+        let ret: Option<DomainEventInboxDb> = sqlx::query_as(
             "SELECT id, instance, payload, processed_at, created_at 
             FROM rustddd.domain_events_inbox 
-            WHERE id = $1",
-            event_id
-        )
+            WHERE id = $1"
+        ).bind(event_id)
         .fetch_optional(&mut **tx)
         .await
         .map_err(|e| e.to_string())?;
@@ -88,14 +85,14 @@ impl DomainEventRepositoryPg {
             created_at: Utc::now(),
         };
 
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO rustddd.domain_events_inbox (id, payload, instance, created_at)
-            VALUES ($1, $2, $3, $4)",
-            domain_event_db.id,
-            domain_event_db.payload,
-            domain_event_db.instance,
-            domain_event_db.created_at,
+            VALUES ($1, $2, $3, $4)"
         )
+        .bind(domain_event_db.id.clone())
+        .bind(domain_event_db.payload.clone())
+        .bind(domain_event_db.instance.clone())
+        .bind(domain_event_db.created_at.clone())
         .execute(&mut **tx)
         .await
         .map_err(|e| e.to_string())?;
@@ -124,14 +121,13 @@ impl DomainEventOutboxRepository for DomainEventRepositoryPg {
             created_at,
         };
 
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO rustddd.domain_events_outbox (id, instance, payload, created_at)
-            VALUES ($1, $2, $3, $4)",
-            domain_event_outbox_db.id,
-            domain_event_outbox_db.instance,
-            domain_event_outbox_db.payload,
-            domain_event_outbox_db.created_at,
-        )
+            VALUES ($1, $2, $3, $4)"
+        ).bind(domain_event_outbox_db.id)
+        .bind(domain_event_outbox_db.instance)
+        .bind(domain_event_outbox_db.payload)
+        .bind(domain_event_outbox_db.created_at)
         .execute(&mut **tx)
         .await
         .map_err(|e| e.to_string())?;
