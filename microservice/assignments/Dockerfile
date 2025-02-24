@@ -29,8 +29,8 @@ WORKDIR /app/microservice/assignments
 # Build the application
 RUN cargo build --release
 
-# Use a minimal base image for the final container
-FROM debian:bullseye-slim
+# Use bookworm-slim because if use bullseye we get missing libssl3
+FROM debian:bookworm-slim
 
 # Install OpenSSL libraries
 RUN apt-get update && apt-get install -y libssl-dev
@@ -44,10 +44,7 @@ COPY --from=builder /app/microservice/assignments/target/release/assignments .
 # Expose the necessary port (if applicable)
 EXPOSE 4005
 
-## TODO: how to pass arguments?
-# cargo run --release -- --server-host localhost:4005 --instance-id a2067d88-547b-4da7-9a71-a0c7976a0bbc
-
-## TODO: externalise config?
+## TODO: externalise config? / put it into k8s?
 
 # Run the application
-CMD ["./assignments"]
+ENTRYPOINT ["./assignments"]
