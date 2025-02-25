@@ -46,5 +46,13 @@ EXPOSE 4005
 
 ## TODO: externalise config? / put it into k8s?
 
+ENV RUST_LOG=info
+ENV DB_URL="postgres://postgres:postgres@localhost:5438/assignments?application_name=rustddd&options=-c search_path%3Drustddd"
+ENV REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+ENV KAFKA_URL='localhost:9092'
+ENV KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+ENV KAFKA_CONSUMER_GROUP='assignments'
+ENV OTLP_ENDPOINT='http://localhost:4317'
+
 # Run the application
 ENTRYPOINT ["./assignments"]

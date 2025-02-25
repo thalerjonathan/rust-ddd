@@ -1,1 +1,2 @@
-clear & docker build --no-cache -t assignments -f microservice/assignments/Dockerfile .
+# --no-cache
+clear & docker build -t assignments -f microservice/assignments/Dockerfile .
