@@ -7,7 +7,6 @@ use crate::domain_events::{DomainEvent, DomainEventMessage};
 #[derive(Debug)]
 pub struct DomainEventOutboxDb {
     pub id: Uuid,
-    pub instance: Uuid,
     pub payload: serde_json::Value,
     pub created_at: DateTime<Utc>,
 }
@@ -15,7 +14,6 @@ pub struct DomainEventOutboxDb {
 #[derive(Clone, Debug, sqlx::FromRow, PartialEq, Eq)]
 pub struct DomainEventInboxDb {
     pub id: Uuid,
-    pub instance: Uuid,
     pub payload: serde_json::Value,
     pub processed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
@@ -31,12 +29,11 @@ pub trait DomainEventOutboxRepository {
 }
 
 pub struct DomainEventRepositoryPg {
-    instance: Uuid,
 }
 
 impl DomainEventRepositoryPg {
-    pub fn new(instance: Uuid) -> Self {
-        Self { instance }
+    pub fn new() -> Self {
+        Self { }
     }
 
     pub async fn mark_inbox_event_as_processed(
@@ -80,18 +77,16 @@ impl DomainEventRepositoryPg {
         let domain_event_db = DomainEventInboxDb {
             id: msg.id,
             payload: serde_json::to_value(&msg.payload).map_err(|e| e.to_string())?,
-            instance: self.instance,
             processed_at: None,
             created_at: Utc::now(),
         };
 
         sqlx::query(
-            "INSERT INTO rustddd.domain_events_inbox (id, payload, instance, created_at)
-            VALUES ($1, $2, $3, $4)"
+            "INSERT INTO rustddd.domain_events_inbox (id, payload, created_at)
+            VALUES ($1, $2, $3)"
         )
         .bind(domain_event_db.id.clone())
         .bind(domain_event_db.payload.clone())
-        .bind(domain_event_db.instance.clone())
         .bind(domain_event_db.created_at.clone())
         .execute(&mut **tx)
         .await
@@ -116,16 +111,15 @@ impl DomainEventOutboxRepository for DomainEventRepositoryPg {
 
         let domain_event_outbox_db = DomainEventOutboxDb {
             id: event_id,
-            instance: self.instance,
             payload,
             created_at,
         };
 
         sqlx::query(
-            "INSERT INTO rustddd.domain_events_outbox (id, instance, payload, created_at)
+            "INSERT INTO rustddd.domain_events_outbox (id, payload, created_at)
             VALUES ($1, $2, $3, $4)"
-        ).bind(domain_event_outbox_db.id)
-        .bind(domain_event_outbox_db.instance)
+        )
+        .bind(domain_event_outbox_db.id)
         .bind(domain_event_outbox_db.payload)
         .bind(domain_event_outbox_db.created_at)
         .execute(&mut **tx)

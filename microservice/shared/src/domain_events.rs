@@ -356,7 +356,6 @@ pub struct DomainEventConsumer {
             + Sync,
     >,
     connection_pool: PgPool,
-    instance_id: Uuid,
 }
 
 impl DomainEventConsumer {
@@ -365,7 +364,6 @@ impl DomainEventConsumer {
         broker_url: &str,
         domain_events_topics: &Vec<String>,
         connection_pool: PgPool,
-        instance_id: Uuid,
         callbacks: Box<
             dyn DomainEventCallbacks<
                     TxCtx = sqlx::Transaction<'static, sqlx::Postgres>,
@@ -399,12 +397,11 @@ impl DomainEventConsumer {
             kafka_consumer,
             callbacks,
             connection_pool,
-            instance_id,
         }
     }
 
     pub async fn run(&mut self) {
-        let domain_event_repo = DomainEventRepositoryPg::new(self.instance_id);
+        let domain_event_repo = DomainEventRepositoryPg::new();
 
         loop {
             match self.kafka_consumer.recv().await {

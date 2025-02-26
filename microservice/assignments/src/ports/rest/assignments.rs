@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Path, State},
-    Extension, Json,
+    Json,
 };
 use log::info;
 use microservices_shared::{
@@ -16,7 +16,6 @@ use opentelemetry::{
 use restinterface::{AssignmentDTO, AssignmentStagingDTO, FixtureIdDTO, RefereeIdDTO};
 use shared::app_error::AppError;
 use tokio::sync::Mutex;
-use uuid::Uuid;
 
 use crate::{
     adapters::db::assignment_repo_pg::AssignmentRepositoryPg,
@@ -129,7 +128,6 @@ pub async fn remove_staged_assignment_handler(
 
 pub async fn remove_committed_assignment_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
     info!("Deleting assignment: {:?} {:?}", fixture_id, referee_id);
@@ -157,7 +155,7 @@ pub async fn remove_committed_assignment_handler(
 
     let assignment_repo = AssignmentRepositoryPg::new();
     let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     let result = remove_committed_assignment(
         fixture_id.into(),
@@ -199,7 +197,6 @@ pub async fn validate_assignments_handler(
 
 pub async fn commit_assignments_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
 ) -> Result<String, AppError> {
     info!("Committing assignments");
     let _span = state.tracer.start("commit_assignments");
@@ -219,7 +216,7 @@ pub async fn commit_assignments_handler(
     let assignment_repo = AssignmentRepositoryPg::new();
     let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
     let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     let result = commit_assignments(
         &assignment_repo,
