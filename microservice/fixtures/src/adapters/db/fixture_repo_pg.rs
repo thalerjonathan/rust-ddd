@@ -87,7 +87,7 @@ impl FixtureRepository for FixtureRepositoryPg {
         .bind( fixture_id.0)
         .fetch_optional(&mut **tx_ctx)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("FixtureRepositoryPg::find_by_id failed with {}", e.to_string()))?;
 
         debug!("FixtureDb: {:?}", fixture);
 
@@ -102,7 +102,7 @@ impl FixtureRepository for FixtureRepositoryPg {
         )
         .fetch_all(&mut **tx_ctx)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("FixtureRepositoryPg::get_all failed with {}", e.to_string()))?;
 
         Ok(fixtures.into_iter().map(Fixture::from).collect())
     }
@@ -134,7 +134,7 @@ impl FixtureRepository for FixtureRepositoryPg {
         .bind(venue_id.0)
         .fetch_all(&mut **tx_ctx)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("FixtureRepositoryPg::find_by_day_and_venue failed with {}", e.to_string()))?;
 
         Ok(fixtures.into_iter().map(Fixture::from).collect())
     }
@@ -166,7 +166,7 @@ impl FixtureRepository for FixtureRepositoryPg {
         .bind(team_id.0)
         .fetch_all(&mut **tx_ctx)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("FixtureRepositoryPg::find_by_day_and_team failed with {}", e.to_string()))?;
 
         Ok(fixtures.into_iter().map(Fixture::from).collect())
     }
@@ -192,7 +192,7 @@ impl FixtureRepository for FixtureRepositoryPg {
         .bind(second_referee_id)
         .execute(&mut **tx_ctx)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("FixtureRepositoryPg::save failed with {}", e.to_string()))?;
 
         Ok(())
     }
