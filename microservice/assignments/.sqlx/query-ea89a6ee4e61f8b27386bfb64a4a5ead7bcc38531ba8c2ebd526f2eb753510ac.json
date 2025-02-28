@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE rustddd.domain_events_inbox SET processed_at = $1 WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ea89a6ee4e61f8b27386bfb64a4a5ead7bcc38531ba8c2ebd526f2eb753510ac"
+}

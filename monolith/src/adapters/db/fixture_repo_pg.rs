@@ -198,7 +198,8 @@ impl FixtureRepository for FixtureRepositoryPg {
         debug!("day_start: {}", day_start);
         debug!("day_end: {}", day_end);
 
-        let fixtures: Vec<FixtureDb> = sqlx::query_as(
+        let fixtures: Vec<FixtureDb> = sqlx::query_as!(
+            FixtureDb,
             "SELECT f.fixture_id as id, f.date, f.status as \"status: FixtureStatusDb\",
                 v.venue_id as venue_id, v.name as venue_name, v.street as venue_street, v.zip as venue_zip, v.city as venue_city, v.telephone as venue_telephone, v.email as venue_email,
                 th.team_id as team_home_id, th.name as team_home_name, th.club as team_home_club,
@@ -212,11 +213,11 @@ impl FixtureRepository for FixtureRepositoryPg {
             LEFT JOIN rustddd.referees r1 ON r1.referee_id = f.first_referee_id
             LEFT JOIN rustddd.referees r2 ON r2.referee_id = f.second_referee_id
             WHERE f.date BETWEEN $1 AND $2 AND f.venue_id = $3
-            ORDER BY f.date ASC"
+            ORDER BY f.date ASC",
+            day_start,
+            day_end,
+            venue_id.0
         )
-        .bind(day_start)
-        .bind(day_end)
-        .bind(venue_id.0)
         .fetch_all(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -240,7 +241,8 @@ impl FixtureRepository for FixtureRepositoryPg {
         debug!("day_start: {}", day_start);
         debug!("day_end: {}", day_end);
 
-        let fixtures: Vec<FixtureDb> = sqlx::query_as(
+        let fixtures: Vec<FixtureDb> = sqlx::query_as!(
+            FixtureDb,
             "SELECT f.fixture_id as id, f.date, f.status as \"status: FixtureStatusDb\",
                 v.venue_id as venue_id, v.name as venue_name, v.street as venue_street, v.zip as venue_zip, v.city as venue_city, v.telephone as venue_telephone, v.email as venue_email,
                 th.team_id as team_home_id, th.name as team_home_name, th.club as team_home_club,
@@ -254,11 +256,11 @@ impl FixtureRepository for FixtureRepositoryPg {
             LEFT JOIN rustddd.referees r1 ON r1.referee_id = f.first_referee_id
             LEFT JOIN rustddd.referees r2 ON r2.referee_id = f.second_referee_id
             WHERE f.date BETWEEN $1 AND $2 AND (f.team_home_id = $3 OR f.team_away_id = $3)
-            ORDER BY f.date ASC"
+            ORDER BY f.date ASC",
+            day_start,
+            day_end,
+            team_id.0,
         )
-        .bind(day_start)
-        .bind(day_end)
-        .bind(team_id.0)
         .fetch_all(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;

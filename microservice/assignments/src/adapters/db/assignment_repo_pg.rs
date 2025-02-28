@@ -92,7 +92,8 @@ impl AssignmentRepository for AssignmentRepositoryPg {
     type TxCtx = Transaction<'static, Postgres>;
 
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Assignment>, Self::Error> {
-        let assignments: Vec<AssignmentDb> = sqlx::query_as(
+        let assignments: Vec<AssignmentDb> = sqlx::query_as!(
+            AssignmentDb,
             "SELECT status as \"status: AssignmentStatusDb\", fixture_id, referee_id, referee_role as \"referee_role: AssignmentRefereeRoleDb\" 
             FROM rustddd.assignments"
         )
@@ -107,7 +108,8 @@ impl AssignmentRepository for AssignmentRepositoryPg {
         &self,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Vec<Assignment>, Self::Error> {
-        let assignments: Vec<AssignmentDb> = sqlx::query_as(
+        let assignments: Vec<AssignmentDb> = sqlx::query_as!(
+            AssignmentDb,
             "SELECT status as \"status: AssignmentStatusDb\", fixture_id, referee_id, referee_role as \"referee_role: AssignmentRefereeRoleDb\" 
             FROM rustddd.assignments WHERE status = 'staged'"
         )
@@ -124,11 +126,13 @@ impl AssignmentRepository for AssignmentRepositoryPg {
         referee_id: RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Assignment>, Self::Error> {
-        let assignment: Option<AssignmentDb> = sqlx::query_as(
+        let assignment: Option<AssignmentDb> = sqlx::query_as!(
+            AssignmentDb,
             "SELECT status as \"status: AssignmentStatusDb\", fixture_id, referee_id, referee_role as \"referee_role: AssignmentRefereeRoleDb\" 
-            FROM rustddd.assignments WHERE fixture_id = $1 AND referee_id = $2"
-        ).bind(fixture_id.0)
-        .bind(referee_id.0)
+            FROM rustddd.assignments WHERE fixture_id = $1 AND referee_id = $2",
+            fixture_id.0,
+            referee_id.0
+        )
         .fetch_optional(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -141,11 +145,11 @@ impl AssignmentRepository for AssignmentRepositoryPg {
         assignment: &Assignment,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), Self::Error> {
-        sqlx::query(
-            "DELETE FROM rustddd.assignments WHERE fixture_id = $1 AND referee_id = $2"
+        sqlx::query!(
+            "DELETE FROM rustddd.assignments WHERE fixture_id = $1 AND referee_id = $2",
+            assignment.fixture_id().0,
+            assignment.referee_id().0
         )
-        .bind(assignment.fixture_id().0)
-        .bind(assignment.referee_id().0)
         .execute(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -160,16 +164,16 @@ impl AssignmentRepository for AssignmentRepositoryPg {
     ) -> Result<(), Self::Error> {
         let referee_role: AssignmentRefereeRoleDb = assignment.referee_role().into();
         let status: AssignmentStatusDb = assignment.status().into();
-        sqlx::query(
+        sqlx::query!(
             "INSERT INTO rustddd.assignments (status, fixture_id, referee_id, referee_role) 
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (fixture_id, referee_id) 
-            DO UPDATE SET referee_role = $4, status = $1"
+            DO UPDATE SET referee_role = $4, status = $1",
+            status as AssignmentStatusDb,
+            assignment.fixture_id().0,
+            assignment.referee_id().0,
+            referee_role as AssignmentRefereeRoleDb
         )
-        .bind(status as AssignmentStatusDb)
-        .bind(assignment.fixture_id().0)
-        .bind(assignment.referee_id().0)
-        .bind(referee_role as AssignmentRefereeRoleDb)
         .execute(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;

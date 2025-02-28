@@ -27,11 +27,11 @@ impl AvailabilityRepository for AvailabilityRepositoryPg {
         referee_id: &RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), Self::Error> {
-        sqlx::query(
+        sqlx::query!(
             "INSERT INTO rustddd.availabilities (fixture_id, referee_id) VALUES ($1, $2)",
+            fixture_id.0,
+            referee_id.0
         )
-        .bind(fixture_id.0)
-        .bind(referee_id.0)
         .execute(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -45,11 +45,11 @@ impl AvailabilityRepository for AvailabilityRepositoryPg {
         referee_id: &RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), Self::Error> {
-        sqlx::query(
+        sqlx::query!(
             "DELETE FROM rustddd.availabilities WHERE fixture_id = $1 AND referee_id = $2",
+            fixture_id.0,
+            referee_id.0
         )
-        .bind(fixture_id.0)
-        .bind(referee_id.0)
         .execute(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -62,10 +62,11 @@ impl AvailabilityRepository for AvailabilityRepositoryPg {
         referee_id: &RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Vec<FixtureId>, Self::Error> {
-        let availabilities: Vec<AvailabilityDb> = sqlx::query_as(
+        let availabilities: Vec<AvailabilityDb> = sqlx::query_as!(
+            AvailabilityDb,
             "SELECT fixture_id FROM rustddd.availabilities WHERE referee_id = $1",
+            referee_id.0
         )
-        .bind(referee_id.0)
         .fetch_all(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;

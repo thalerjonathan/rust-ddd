@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT status as \"status: AssignmentStatusDb\", fixture_id, referee_id, referee_role as \"referee_role: AssignmentRefereeRoleDb\" \n            FROM rustddd.assignments WHERE status = 'staged'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "status: AssignmentStatusDb",
+        "type_info": {
+          "Custom": {
+            "name": "assignment_status",
+            "kind": {
+              "Enum": [
+                "committed",
+                "staged"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "fixture_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "referee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "referee_role: AssignmentRefereeRoleDb",
+        "type_info": {
+          "Custom": {
+            "name": "assignment_referee_role",
+            "kind": {
+              "Enum": [
+                "first",
+                "second"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "533edeac38c1f4051a66794e8bbfa68778a5cb92c3a48b494258bb50ccce6bbc"
+}

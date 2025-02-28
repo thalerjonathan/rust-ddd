@@ -46,12 +46,13 @@ impl VenueRepository for VenueRepositoryPg {
         venue_id: VenueId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Venue>, Self::Error> {
-        let venue: Option<VenueDb> = sqlx::query_as(
+        let venue: Option<VenueDb> = sqlx::query_as!(
+            VenueDb,
             "SELECT venue_id as id, name, street, zip, city, telephone, email
             FROM rustddd.venues 
-            WHERE venue_id = $1"
+            WHERE venue_id = $1",
+            venue_id.0
         )
-        .bind(venue_id.0)
         .fetch_optional(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -60,7 +61,8 @@ impl VenueRepository for VenueRepositoryPg {
     }
 
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Venue>, Self::Error> {
-        let venues: Vec<VenueDb> = sqlx::query_as(
+        let venues: Vec<VenueDb> = sqlx::query_as!(
+            VenueDb,
             "SELECT venue_id as id, name, street, zip, city, telephone, email 
             FROM rustddd.venues
             ORDER BY name ASC"
@@ -74,16 +76,16 @@ impl VenueRepository for VenueRepositoryPg {
 
     async fn save(&self, venue: &Venue, tx_ctx: &mut Self::TxCtx) -> Result<(), Self::Error> {
         // NOTE: no upsert, because Venue is not allowed to change after creation
-        let _result = sqlx::query(
-            "INSERT INTO rustddd.venues (venue_id, name, street, zip, city, telephone, email) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"
+        let _result = sqlx::query!(
+            "INSERT INTO rustddd.venues (venue_id, name, street, zip, city, telephone, email) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+            venue.id().0,
+            venue.name(),
+            venue.street(),
+            venue.zip(),
+            venue.city(),
+            venue.telephone(),
+            venue.email()
         )
-        .bind(venue.id().0)
-        .bind(venue.name())
-        .bind(venue.street())
-        .bind(venue.zip())
-        .bind(venue.city())
-        .bind(venue.telephone())
-        .bind(venue.email())
         .fetch_one(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;

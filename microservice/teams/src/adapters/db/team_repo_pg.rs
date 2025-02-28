@@ -34,12 +34,13 @@ impl TeamRepository for TeamRepositoryPg {
         team_id: TeamId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Team>, Self::Error> {
-        let team: Option<TeamDb> = sqlx::query_as(
+        let team: Option<TeamDb> = sqlx::query_as!(
+            TeamDb,
             "SELECT team_id as id, name, club 
             FROM rustddd.teams 
-            WHERE team_id = $1"
+            WHERE team_id = $1",
+            team_id.0
         )
-        .bind(team_id.0)
         .fetch_optional(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -48,7 +49,8 @@ impl TeamRepository for TeamRepositoryPg {
     }
 
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Team>, Self::Error> {
-        let teams: Vec<TeamDb> = sqlx::query_as(
+        let teams: Vec<TeamDb> = sqlx::query_as!(
+            TeamDb,
             "SELECT team_id as id, name, club 
             FROM rustddd.teams
             ORDER BY name ASC"
@@ -62,13 +64,12 @@ impl TeamRepository for TeamRepositoryPg {
 
     async fn save(&self, team: &Team, tx_ctx: &mut Self::TxCtx) -> Result<(), Self::Error> {
         // NOTE: no upsert, because Team is not allowed to change after creation
-        sqlx::query(
+        sqlx::query!(
             "INSERT INTO rustddd.teams (team_id, name, club) VALUES ($1, $2, $3)",
-
+            team.id().0,
+            team.name().to_string(),
+            team.club().to_string()
         )
-        .bind(team.id().0)
-        .bind(team.name().to_string())
-        .bind(team.club().to_string())
         .execute(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;

@@ -34,12 +34,13 @@ impl RefereeRepository for RefereeRepositoryPg {
         referee_id: RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Referee>, Self::Error> {
-        let referee: Option<RefereeDb> = sqlx::query_as(
+        let referee: Option<RefereeDb> = sqlx::query_as!(
+            RefereeDb,
             "SELECT referee_id as id, name, club 
             FROM rustddd.referees 
             WHERE referee_id = $1",
+            referee_id.0
         )
-        .bind(referee_id.0)
         .fetch_optional(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -48,7 +49,8 @@ impl RefereeRepository for RefereeRepositoryPg {
     }
 
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Referee>, Self::Error> {
-        let referees: Vec<RefereeDb> = sqlx::query_as(
+        let referees: Vec<RefereeDb> = sqlx::query_as!(
+            RefereeDb,
             "SELECT referee_id as id, name, club 
             FROM rustddd.referees
             ORDER BY name ASC"
@@ -65,14 +67,14 @@ impl RefereeRepository for RefereeRepositoryPg {
 
     async fn save(&self, referee: &Referee, tx_ctx: &mut Self::TxCtx) -> Result<(), Self::Error> {
         // NOTE: we do an upsert, which is only updating the club field, because only this one is allowed to change
-        let _result = sqlx::query(
+        let _result = sqlx::query!(
             "INSERT INTO rustddd.referees (referee_id, name, club) 
             VALUES ($1, $2, $3)
-            ON CONFLICT (referee_id) DO UPDATE SET club = $3"
+            ON CONFLICT (referee_id) DO UPDATE SET club = $3",
+            referee.id().0,
+            referee.name(),
+            referee.club(),
         )
-        .bind(referee.id().0)
-        .bind(referee.name())
-        .bind(referee.club())
         .execute(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;

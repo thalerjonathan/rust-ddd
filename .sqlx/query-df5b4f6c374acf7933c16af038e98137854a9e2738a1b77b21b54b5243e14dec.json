@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO rustddd.referees (referee_id, name, club) \n            VALUES ($1, $2, $3)\n            ON CONFLICT (referee_id) DO UPDATE SET club = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "df5b4f6c374acf7933c16af038e98137854a9e2738a1b77b21b54b5243e14dec"
+}
