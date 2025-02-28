@@ -79,12 +79,13 @@ impl FixtureRepository for FixtureRepositoryPg {
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Option<Fixture>, Self::Error> {
         // NOTE: need to force nullable for referees, see https://docs.rs/sqlx/0.4.2/sqlx/macro.query.html#force-nullable
-        let fixture: Option<FixtureDb> = sqlx::query_as(
+        let fixture: Option<FixtureDb> = sqlx::query_as!(
+            FixtureDb, 
             r#"SELECT f.fixture_id as id, f.date, f.status as "status: FixtureStatusDb", f.venue_id, f.team_home_id, f.team_away_id, f.first_referee_id as "first_referee_id?", f.second_referee_id as "second_referee_id?"
             FROM rustddd.fixtures f
             WHERE f.fixture_id = $1"#,
+            fixture_id.0
         )
-        .bind( fixture_id.0)
         .fetch_optional(&mut **tx_ctx)
         .await
         .map_err(|e| format!("FixtureRepositoryPg::find_by_id failed with {}", e.to_string()))?;
@@ -95,7 +96,8 @@ impl FixtureRepository for FixtureRepositoryPg {
     }
 
     async fn get_all(&self, tx_ctx: &mut Self::TxCtx) -> Result<Vec<Fixture>, Self::Error> {
-        let fixtures: Vec<FixtureDb> = sqlx::query_as(
+        let fixtures: Vec<FixtureDb> = sqlx::query_as!(
+            FixtureDb,
             r#"SELECT f.fixture_id as id, f.date, f.status as "status: FixtureStatusDb", f.venue_id, f.team_home_id, f.team_away_id, f.first_referee_id as "first_referee_id?", f.second_referee_id as "second_referee_id?"
             FROM rustddd.fixtures f
             ORDER BY f.date ASC"#
@@ -123,15 +125,16 @@ impl FixtureRepository for FixtureRepositoryPg {
         debug!("day_start: {}", day_start);
         debug!("day_end: {}", day_end);
 
-        let fixtures: Vec<FixtureDb> = sqlx::query_as(
+        let fixtures: Vec<FixtureDb> = sqlx::query_as!(
+            FixtureDb,
             r#"SELECT f.fixture_id as id, f.date, f.status as "status: FixtureStatusDb", f.venue_id, f.team_home_id, f.team_away_id, f.first_referee_id as "first_referee_id?", f.second_referee_id as "second_referee_id?"
             FROM rustddd.fixtures f
             WHERE f.date BETWEEN $1 AND $2 AND f.venue_id = $3
-            ORDER BY f.date ASC"#
+            ORDER BY f.date ASC"#,
+            day_start,
+            day_end,
+            venue_id.0
         )
-        .bind(day_start)
-        .bind(day_end)
-        .bind(venue_id.0)
         .fetch_all(&mut **tx_ctx)
         .await
         .map_err(|e| format!("FixtureRepositoryPg::find_by_day_and_venue failed with {}", e.to_string()))?;
@@ -155,15 +158,16 @@ impl FixtureRepository for FixtureRepositoryPg {
         debug!("day_start: {}", day_start);
         debug!("day_end: {}", day_end);
 
-        let fixtures: Vec<FixtureDb> = sqlx::query_as(
+        let fixtures: Vec<FixtureDb> = sqlx::query_as!(
+            FixtureDb,
             r#"SELECT f.fixture_id as id, f.date, f.status as "status: FixtureStatusDb", f.venue_id, f.team_home_id, f.team_away_id, f.first_referee_id as "first_referee_id?", f.second_referee_id as "second_referee_id?"
             FROM rustddd.fixtures f
             WHERE f.date BETWEEN $1 AND $2 AND (f.team_home_id = $3 OR f.team_away_id = $3)
-            ORDER BY f.date ASC"#
+            ORDER BY f.date ASC"#,
+            day_start,
+            day_end,
+            team_id.0
         )
-        .bind(day_start)
-        .bind(day_end)
-        .bind(team_id.0)
         .fetch_all(&mut **tx_ctx)
         .await
         .map_err(|e| format!("FixtureRepositoryPg::find_by_day_and_team failed with {}", e.to_string()))?;
@@ -176,20 +180,20 @@ impl FixtureRepository for FixtureRepositoryPg {
         let first_referee_id = fixture.first_referee_id().map(|r| r.0);
         let second_referee_id = fixture.second_referee_id().map(|r| r.0);
         // NOTE: we do an upsert that only updates the stuff that is allowed to change: cancelled, date, venue_id, first_referee_id, second_referee_id
-        sqlx::query(
+        sqlx::query!(
             "INSERT INTO rustddd.fixtures (fixture_id, date, venue_id, team_home_id, team_away_id, status, first_referee_id, second_referee_id) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (fixture_id) 
-            DO UPDATE SET date = $2, venue_id = $3, status = $6, first_referee_id = $7, second_referee_id = $8"
+            DO UPDATE SET date = $2, venue_id = $3, status = $6, first_referee_id = $7, second_referee_id = $8",
+            fixture.id().0,
+            fixture.date(),
+            fixture.venue_id().0,
+            fixture.team_home_id().0,
+            fixture.team_away_id().0,
+            status as FixtureStatusDb,
+            first_referee_id,
+            second_referee_id,
         )
-        .bind(fixture.id().0)
-        .bind(fixture.date())
-        .bind(fixture.venue_id().0)
-        .bind(fixture.team_home_id().0)
-        .bind(fixture.team_away_id().0)
-        .bind(status as FixtureStatusDb)
-        .bind(first_referee_id)
-        .bind(second_referee_id)
         .execute(&mut **tx_ctx)
         .await
         .map_err(|e| format!("FixtureRepositoryPg::save failed with {}", e.to_string()))?;

@@ -1,0 +1,72 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT f.fixture_id as id, f.date, f.status as \"status: FixtureStatusDb\", f.venue_id, f.team_home_id, f.team_away_id, f.first_referee_id as \"first_referee_id?\", f.second_referee_id as \"second_referee_id?\"\n            FROM rustddd.fixtures f\n            ORDER BY f.date ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "status: FixtureStatusDb",
+        "type_info": {
+          "Custom": {
+            "name": "fixture_status",
+            "kind": {
+              "Enum": [
+                "scheduled",
+                "cancelled"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "venue_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "team_home_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "team_away_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "first_referee_id?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "second_referee_id?",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "9949f05a5086cd0c728f7c6a153a4690f39936a715df39cd5e7a6d6e68d05cce"
+}
