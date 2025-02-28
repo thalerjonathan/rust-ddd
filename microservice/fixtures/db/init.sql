@@ -17,7 +17,6 @@ ALTER TABLE rustddd.fixtures REPLICA IDENTITY FULL;
 
 CREATE TABLE rustddd.domain_events_outbox (
     id UUID NOT NULL,
-    instance UUID NOT NULL,
     payload JSONB NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
@@ -25,7 +24,6 @@ ALTER TABLE rustddd.domain_events_outbox REPLICA IDENTITY FULL;
 
 CREATE TABLE rustddd.domain_events_inbox (
     id UUID NOT NULL,
-    instance UUID NOT NULL,
     payload JSONB NOT NULL,
     processed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL

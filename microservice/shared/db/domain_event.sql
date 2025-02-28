@@ -35,4 +35,4 @@ CREATE TRIGGER domain_events_trigger
 AFTER INSERT ON rustddd.domain_events FOR EACH ROW
 EXECUTE PROCEDURE domain_event_notification_trigger();
 
-INSERT INTO rustddd.domain_events (id, event_type, payload, instance, created_at) VALUES ('f633920b-38d1-49d5-b9bc-467e25af7946', 'Inbox', '{}', NOW());
+INSERT INTO rustddd.domain_events (id, event_type, payload, created_at) VALUES ('f633920b-38d1-49d5-b9bc-467e25af7946', 'Inbox', '{}', NOW());

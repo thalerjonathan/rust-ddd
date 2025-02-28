@@ -1,9 +1,10 @@
 use microservices_shared::domain_ids::{FixtureId, RefereeId};
-use sqlx::{Postgres, Transaction};
+use sqlx::{FromRow, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::domain::repositories::availability_repo::AvailabilityRepository;
 
+#[derive(FromRow)]
 struct AvailabilityDb {
     pub fixture_id: Uuid,
 }
@@ -26,11 +27,11 @@ impl AvailabilityRepository for AvailabilityRepositoryPg {
         referee_id: &RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), Self::Error> {
-        sqlx::query!(
+        sqlx::query(
             "INSERT INTO rustddd.availabilities (fixture_id, referee_id) VALUES ($1, $2)",
-            fixture_id.0,
-            referee_id.0
         )
+        .bind(fixture_id.0)
+        .bind(referee_id.0)
         .execute(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -44,11 +45,11 @@ impl AvailabilityRepository for AvailabilityRepositoryPg {
         referee_id: &RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<(), Self::Error> {
-        sqlx::query!(
+        sqlx::query(
             "DELETE FROM rustddd.availabilities WHERE fixture_id = $1 AND referee_id = $2",
-            fixture_id.0,
-            referee_id.0
         )
+        .bind(fixture_id.0)
+        .bind(referee_id.0)
         .execute(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -61,11 +62,10 @@ impl AvailabilityRepository for AvailabilityRepositoryPg {
         referee_id: &RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<Vec<FixtureId>, Self::Error> {
-        let availabilities = sqlx::query_as!(
-            AvailabilityDb,
+        let availabilities: Vec<AvailabilityDb> = sqlx::query_as(
             "SELECT fixture_id FROM rustddd.availabilities WHERE referee_id = $1",
-            referee_id.0
         )
+        .bind(referee_id.0)
         .fetch_all(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
@@ -82,15 +82,15 @@ impl AvailabilityRepository for AvailabilityRepositoryPg {
         referee_id: &RefereeId,
         tx_ctx: &mut Self::TxCtx,
     ) -> Result<bool, Self::Error> {
-        let result = sqlx::query!(
+        let count: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM rustddd.availabilities WHERE fixture_id = $1 AND referee_id = $2",
-            fixture_id.0,
-            referee_id.0
         )
+        .bind(fixture_id.0)
+        .bind(referee_id.0)
         .fetch_one(&mut **tx_ctx)
         .await
         .map_err(|e| e.to_string())?;
 
-        Ok(result.count.unwrap_or(0) > 0)
+        Ok(count > 0)
     }
 }

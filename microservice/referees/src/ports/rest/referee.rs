@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Path, State},
-    Extension, Json,
+    Json,
 };
 use log::{debug, error, info};
 use microservices_shared::domain_event_repo::DomainEventRepositoryPg;
@@ -12,7 +12,6 @@ use opentelemetry::{
 };
 use restinterface::{RefereeCreationDTO, RefereeDTO, RefereeIdDTO};
 use shared::app_error::AppError;
-use uuid::Uuid;
 
 use crate::{
     adapters::db::referee_repo_pg::RefereeRepositoryPg,
@@ -33,7 +32,6 @@ impl From<Referee> for RefereeDTO {
 
 pub async fn create_referee_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Json(ref_creation): Json<RefereeCreationDTO>,
 ) -> Result<Json<RefereeDTO>, AppError> {
     info!("Creating referee: {:?}", ref_creation);
@@ -47,7 +45,7 @@ pub async fn create_referee_handler(
     })?;
 
     let repo = RefereeRepositoryPg::new();
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     let referee = application::referee_services::create_referee(
         &ref_creation.name,
@@ -122,7 +120,6 @@ pub async fn get_all_referees_handler(
 
 pub async fn update_referee_club_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Path(referee_id): Path<RefereeIdDTO>,
     Json(club): Json<String>,
 ) -> Result<Json<String>, AppError> {
@@ -137,7 +134,7 @@ pub async fn update_referee_club_handler(
     })?;
 
     let repo = RefereeRepositoryPg::new();
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     let _ = application::referee_services::update_referee_club(
         referee_id.into(),

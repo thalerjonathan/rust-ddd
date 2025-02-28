@@ -30,8 +30,6 @@ use uuid::Uuid;
 pub struct DomainEventMessageUntyped {
     #[query(".payload.after.id")]
     pub id: Uuid,
-    #[query(".payload.after.instance")]
-    pub instance: Uuid,
     #[query(".payload.after.payload")]
     pub payload: String,
     #[query(".payload.after.created_at")]
@@ -41,7 +39,6 @@ pub struct DomainEventMessageUntyped {
 #[derive(Debug, Clone, Serialize)]
 pub struct DomainEventMessage {
     pub id: Uuid,
-    pub instance: Uuid,
     pub payload: DomainEvent,
     pub created_at: DateTime<Utc>,
 }
@@ -123,7 +120,6 @@ impl TryFrom<DomainEventMessageUntyped> for DomainEventMessage {
 
         Ok(DomainEventMessage {
             id: msg.id,
-            instance: msg.instance,
             payload: evt,
             created_at: msg.created_at
         })

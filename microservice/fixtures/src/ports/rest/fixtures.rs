@@ -3,7 +3,7 @@ use crate::domain::aggregates::fixture::Fixture;
 use crate::domain::repositories::fixture_repo::FixtureRepository;
 use crate::{application, AppState};
 use axum::extract::{Path, State};
-use axum::{Extension, Json};
+use axum::Json;
 use chrono::{DateTime, Utc};
 use log::debug;
 use microservices_shared::domain_event_repo::DomainEventRepositoryPg;
@@ -20,7 +20,6 @@ use uuid::Uuid;
 
 pub async fn create_fixture_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Json(fixture_creation): Json<FixtureCreationDTO>,
 ) -> Result<Json<FixtureDTO>, AppError> {
     debug!("Creating fixture: {:?}", fixture_creation);
@@ -40,7 +39,7 @@ pub async fn create_fixture_handler(
     let fixture_repo = FixtureRepositoryPg::new();
     let venue_resolver = VenueResolverImpl::new(redis_conn_arc_mutex.clone());
     let team_resolver = TeamResolverImpl::new(redis_conn_arc_mutex.clone());
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     let fixture = application::fixture_services::create_fixture(
         fixture_creation.date,
@@ -147,7 +146,6 @@ pub async fn get_all_fixtures_handler(
 
 pub async fn update_fixture_date_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Path(fixture_id): Path<FixtureIdDTO>,
     Json(date): Json<DateTime<Utc>>,
 ) -> Result<Json<()>, AppError> {
@@ -160,7 +158,7 @@ pub async fn update_fixture_date_handler(
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let fixture_repo = FixtureRepositoryPg::new();
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     let _ = application::fixture_services::update_fixture_date(
         fixture_id.into(),
@@ -181,7 +179,6 @@ pub async fn update_fixture_date_handler(
 
 pub async fn update_fixture_venue_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Path(fixture_id): Path<FixtureIdDTO>,
     Json(venue_id): Json<Uuid>,
 ) -> Result<Json<()>, AppError> {
@@ -201,7 +198,7 @@ pub async fn update_fixture_venue_handler(
 
     let fixture_repo = FixtureRepositoryPg::new();
     let venue_resolver = VenueResolverImpl::new(redis_conn_arc_mutex.clone());
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     let _ = application::fixture_services::update_fixture_venue(
         fixture_id.into(),
@@ -223,7 +220,6 @@ pub async fn update_fixture_venue_handler(
 
 pub async fn cancel_fixture_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Path(fixture_id): Path<FixtureIdDTO>,
 ) -> Result<Json<()>, AppError> {
     debug!("Cancelling fixture: {}", fixture_id.0);
@@ -235,7 +231,7 @@ pub async fn cancel_fixture_handler(
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let fixture_repo = FixtureRepositoryPg::new();
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     let _ = application::fixture_services::cancel_fixture(
         fixture_id.into(),
@@ -443,7 +439,7 @@ mod fixture_tests {
         let teams_pool = PgPool::connect(&teams_db_url).await.unwrap();
         let venues_pool = PgPool::connect(&venues_db_url).await.unwrap();
 
-        sqlx::query!("DELETE FROM rustddd.fixtures")
+        sqlx::query("DELETE FROM rustddd.fixtures")
             .execute(&fixtures_pool)
             .await
             .unwrap();

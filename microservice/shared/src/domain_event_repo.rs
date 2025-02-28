@@ -58,7 +58,7 @@ impl DomainEventRepositoryPg {
         tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
     ) -> Result<Option<DateTime<Utc>>, String> {
         let ret: Option<DomainEventInboxDb> = sqlx::query_as(
-            "SELECT id, instance, payload, processed_at, created_at 
+            "SELECT id, payload, processed_at, created_at 
             FROM rustddd.domain_events_inbox 
             WHERE id = $1"
         ).bind(event_id)
@@ -117,7 +117,7 @@ impl DomainEventOutboxRepository for DomainEventRepositoryPg {
 
         sqlx::query(
             "INSERT INTO rustddd.domain_events_outbox (id, payload, created_at)
-            VALUES ($1, $2, $3, $4)"
+            VALUES ($1, $2, $3)"
         )
         .bind(domain_event_outbox_db.id)
         .bind(domain_event_outbox_db.payload)

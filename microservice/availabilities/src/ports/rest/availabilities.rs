@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use axum::extract::{Path, State};
-use axum::{Extension, Json};
+use axum::Json;
 use log::{error, info};
 use microservices_shared::domain_event_repo::DomainEventRepositoryPg;
 use microservices_shared::resolvers::impls::{FixtureResolverImpl, RefereeResolverImpl};
 use restinterface::{FixtureIdDTO, RefereeIdDTO};
 use shared::app_error::AppError;
 use tokio::sync::Mutex;
-use uuid::Uuid;
+
 
 use crate::adapters::db::availability_repo_pg::AvailabilityRepositoryPg;
 use crate::application::availability_services::{
@@ -21,7 +21,6 @@ use opentelemetry::{
 };
 pub async fn declare_availability_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
     info!(
@@ -46,7 +45,7 @@ pub async fn declare_availability_handler(
     let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
     let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
     let availability_repo = AvailabilityRepositoryPg::new();
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     declare_availability(
         fixture_id.into(),
@@ -69,7 +68,6 @@ pub async fn declare_availability_handler(
 
 pub async fn withdraw_availability_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Path((fixture_id, referee_id)): Path<(FixtureIdDTO, RefereeIdDTO)>,
 ) -> Result<Json<()>, AppError> {
     info!(
@@ -94,7 +92,7 @@ pub async fn withdraw_availability_handler(
     let fixture_resolver = FixtureResolverImpl::new(redis_conn_arc_mutex.clone());
     let referee_resolver = RefereeResolverImpl::new(redis_conn_arc_mutex.clone());
     let availability_repo = AvailabilityRepositoryPg::new();
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     withdraw_availability(
         fixture_id.into(),

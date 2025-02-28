@@ -8,7 +8,7 @@ use crate::{
 };
 use axum::{
     extract::{Path, State},
-    Extension, Json,
+    Json,
 };
 use log::info;
 use microservices_shared::domain_event_repo::DomainEventRepositoryPg;
@@ -18,7 +18,6 @@ use opentelemetry::{
 };
 use restinterface::{VenueCreationDTO, VenueDTO, VenueIdDTO};
 use shared::app_error::AppError;
-use uuid::Uuid;
 
 impl From<Venue> for VenueDTO {
     fn from(venue: Venue) -> Self {
@@ -36,7 +35,6 @@ impl From<Venue> for VenueDTO {
 
 pub async fn create_venue_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Json(venue_creation): Json<VenueCreationDTO>,
 ) -> Result<Json<VenueDTO>, AppError> {
     info!("Creating venue: {:?}", venue_creation);
@@ -53,7 +51,7 @@ pub async fn create_venue_handler(
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let repo: VenueRepositoryPg = VenueRepositoryPg::new();
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     let venue = application::venue_services::create_venue(
         &venue_creation.name,

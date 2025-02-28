@@ -4,7 +4,6 @@ use availabilities::ports::rest::availabilities::{
     withdraw_availability_handler,
 };
 use axum::http::Method;
-use axum::Extension;
 use axum::{
     routing::{get, post},
     Router,
@@ -14,20 +13,18 @@ use clap::Parser;
 use microservices_shared::domain_events::{DomainEventCallbacksLoggerImpl, DomainEventConsumer};
 use sqlx::PgPool;
 use std::sync::Arc;
-use uuid::Uuid;
 
 use availabilities::AppState;
 use opentelemetry::{
     trace::{Span, Tracer},
     KeyValue,
 };
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
-    #[arg(short, long)]
+    #[arg(short, long, default_value_t = String::from("localhost:3456"))]
     server_host: String,
-    #[arg(short, long)]
-    instance_id: String,
 }
 
 #[tokio::main]
@@ -36,7 +33,6 @@ async fn main() {
 
     let args = Args::parse();
     let config = AppConfig::new_from_env();
-    let instance_id = Uuid::parse_str(&args.instance_id).unwrap();
 
     let tracer = microservices_shared::init_tracing(&config.otlp_endpoint, "availabilities");
     let mut span = tracer.start("application_start");
@@ -53,7 +49,6 @@ async fn main() {
         &config.kafka_url,
         &config.kafka_domain_events_topics,
         connection_pool.clone(),
-        instance_id.clone(),
         domain_event_callbacks,
     );
 
@@ -89,7 +84,6 @@ async fn main() {
             get(fetch_availabilities_for_referee_handler),
         )
         .layer(cors)
-        .layer(Extension(instance_id.clone()))
         .with_state(state_arc);
 
     let listener = tokio::net::TcpListener::bind(&args.server_host)

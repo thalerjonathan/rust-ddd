@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Path, State},
-    Extension, Json,
+    Json,
 };
 use log::info;
 use microservices_shared::domain_event_repo::DomainEventRepositoryPg;
@@ -12,7 +12,6 @@ use opentelemetry::{
 };
 use restinterface::{TeamCreationDTO, TeamDTO, TeamIdDTO};
 use shared::app_error::AppError;
-use uuid::Uuid;
 
 use crate::{
     adapters::db::team_repo_pg::TeamRepositoryPg,
@@ -33,7 +32,6 @@ impl From<Team> for TeamDTO {
 
 pub async fn create_team_handler(
     State(state): State<Arc<AppState>>,
-    Extension(instance_id): Extension<Uuid>,
     Json(team_creation): Json<TeamCreationDTO>,
 ) -> Result<Json<TeamDTO>, AppError> {
     info!("Creating team: {:?}", team_creation);
@@ -48,7 +46,7 @@ pub async fn create_team_handler(
         .map_err(|e| AppError::from_error(&e.to_string()))?;
 
     let repo = TeamRepositoryPg::new();
-    let domain_event_repo = DomainEventRepositoryPg::new(instance_id);
+    let domain_event_repo = DomainEventRepositoryPg::new();
 
     let team = create_team(
         &team_creation.name,
@@ -150,7 +148,7 @@ mod team_tests {
     async fn clear_tables() {
         let db_url = "postgres://postgres:postgres@localhost:5435/teams?application_name=rustddd&options=-c search_path%3Drustddd";
         let pool = PgPool::connect(&db_url).await.unwrap();
-        sqlx::query!("DELETE FROM rustddd.teams")
+        sqlx::query("DELETE FROM rustddd.teams")
             .execute(&pool)
             .await
             .unwrap();
