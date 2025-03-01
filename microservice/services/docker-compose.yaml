@@ -1,30 +1,314 @@
 version: "3.5"
 
 services:
+  #####################################
+  ### assignments service instances ###
+  #####################################
   rustddd-assignments-instance-1:
     build: 
       context: ../../
       dockerfile: microservice/services/assignments/Dockerfile
     image: rustddd-assignments
     container_name: rustddd-assignments-instance-1
+    network_mode: "host"
     shm_size: 512m
     environment:
+      - SERVER_HOST=localhost:4005
       - RUST_LOG=info
-      - DB_URL="postgres://postgres:postgres@localhost:5438/assignments?application_name=rustddd&options=-c search_path%3Drustddd"
-      - REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
-      - KAFKA_URL='localhost:9092'
-      - KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
-      - KAFKA_CONSUMER_GROUP='assignments'
-      - OTLP_ENDPOINT='http://localhost:4317'
-    ports:
-      - 4005:3456 # microservice REST endpoints
-      - 5438:5438 # DB
-      - 6379:6379 # Redis
-      - 9092:9092 # Kafka
-      - 4317:4317 # OTLP
-    restart: on-failure
+      - DB_URL=postgres://postgres:postgres@localhost:5438/assignments?application_name=rustddd&options=-c search_path%3Drustddd
+      - REDIS_URL=redis://default:rustddd@127.0.0.1:6379/
+      - KAFKA_URL=localhost:9092
+      - KAFKA_DOMAIN_EVENTS_TOPICS=assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox
+      - KAFKA_CONSUMER_GROUP=assignments
+      - OTLP_ENDPOINT=http://localhost:4317
     logging:
       driver: "json-file"
       options:
         max-size: "200k"
         max-file: "10"
+
+  rustddd-assignments-instance-2:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/assignments/Dockerfile
+    image: rustddd-assignments
+    container_name: rustddd-assignments-instance-2
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:5005
+      - RUST_LOG=info
+      - DB_URL=postgres://postgres:postgres@localhost:5438/assignments?application_name=rustddd&options=-c search_path%3Drustddd
+      - REDIS_URL=redis://default:rustddd@127.0.0.1:6379/
+      - KAFKA_URL=localhost:9092
+      - KAFKA_DOMAIN_EVENTS_TOPICS=assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox
+      - KAFKA_CONSUMER_GROUP=assignments
+      - OTLP_ENDPOINT=http://localhost:4317
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+  #####################################
+  #####################################
+  #####################################
+
+  ########################################
+  ### availabilities service instances ###
+  ########################################
+  rustddd-availabilities-instance-1:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/availabilities/Dockerfile
+    image: rustddd-availabilities
+    container_name: rustddd-availabilities-instance-1
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:4004
+      - RUST_LOG=info
+      - DB_URL="postgres://postgres:postgres@localhost:5437/availabilities?application_name=rustddd&options=-c search_path%3Drustddd"
+      - REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      - KAFKA_URL='localhost:9092'
+      - KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      - KAFKA_CONSUMER_GROUP='availabilities'
+      - OTLP_ENDPOINT='http://localhost:4317'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  rustddd-availabilities-instance-2:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/availabilities/Dockerfile
+    image: rustddd-availabilities
+    container_name: rustddd-availabilities-instance-2
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:5004
+      - RUST_LOG=info
+      - DB_URL="postgres://postgres:postgres@localhost:5437/availabilities?application_name=rustddd&options=-c search_path%3Drustddd"
+      - REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      - KAFKA_URL='localhost:9092'
+      - KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      - KAFKA_CONSUMER_GROUP='availabilities'
+      - OTLP_ENDPOINT='http://localhost:4317'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+  ########################################
+  ########################################
+  ########################################
+
+  ##################################
+  ### fixtures service instances ###
+  ##################################
+  rustddd-fixtures-instance-1:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/fixtures/Dockerfile
+    image: rustddd-fixtures
+    container_name: rustddd-fixtures-instance-1
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:5003
+      - RUST_LOG=info
+      - DB_URL="postgres://postgres:postgres@localhost:5436/fixtures?application_name=rustddd&options=-c search_path%3Drustddd"
+      - REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      - KAFKA_URL='localhost:9092'
+      - KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      - KAFKA_CONSUMER_GROUP='fixtures'
+      - OTLP_ENDPOINT='http://localhost:4317'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  rustddd-fixtures-instance-2:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/fixtures/Dockerfile
+    image: rustddd-fixtures
+    container_name: rustddd-fixtures-instance-2
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:5003
+      - RUST_LOG=info
+      - DB_URL="postgres://postgres:postgres@localhost:5436/fixtures?application_name=rustddd&options=-c search_path%3Drustddd"
+      - REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      - KAFKA_URL='localhost:9092'
+      - KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      - KAFKA_CONSUMER_GROUP='fixtures'
+      - OTLP_ENDPOINT='http://localhost:4317'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+  ##################################
+  ##################################
+  ##################################
+
+  ##################################
+  ### referees service instances ###
+  ##################################
+  rustddd-referees-instance-1:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/referees/Dockerfile
+    image: rustddd-referees
+    container_name: rustddd-referees-instance-1
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:4000
+      - RUST_LOG=info
+      - DB_URL="postgres://postgres:postgres@localhost:5433/referees?application_name=rustddd&options=-c search_path%3Dreferees"
+      - REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      - KAFKA_URL='localhost:9092'
+      - KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      - KAFKA_CONSUMER_GROUP='referees'
+      - OTLP_ENDPOINT='http://localhost:4317'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  rustddd-referees-instance-2:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/referees/Dockerfile
+    image: rustddd-referees
+    container_name: rustddd-referees-instance-2
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:5000
+      - RUST_LOG=info
+      - DB_URL="postgres://postgres:postgres@localhost:5433/referees?application_name=rustddd&options=-c search_path%3Dreferees"
+      - REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      - KAFKA_URL='localhost:9092'
+      - KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      - KAFKA_CONSUMER_GROUP='referees'
+      - OTLP_ENDPOINT='http://localhost:4317'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+  ##################################
+  ##################################
+  ##################################
+
+  ###############################
+  ### teams service instances ###
+  ###############################
+  rustddd-teams-instance-1:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/teams/Dockerfile
+    image: rustddd-teams
+    container_name: rustddd-teams-instance-1
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:4002
+      - RUST_LOG=info
+      - DB_URL="postgres://postgres:postgres@localhost:5435/teams?application_name=rustddd&options=-c search_path%3Drustddd"
+      - REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      - KAFKA_URL='localhost:9092'
+      - KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      - KAFKA_CONSUMER_GROUP='teams'
+      - OTLP_ENDPOINT='http://localhost:4317'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  rustddd-teams-instance-2:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/teams/Dockerfile
+    image: rustddd-teams
+    container_name: rustddd-teams-instance-2
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:5002
+      - RUST_LOG=info
+      - DB_URL="postgres://postgres:postgres@localhost:5435/teams?application_name=rustddd&options=-c search_path%3Drustddd"
+      - REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      - KAFKA_URL='localhost:9092'
+      - KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      - KAFKA_CONSUMER_GROUP='teams'
+      - OTLP_ENDPOINT='http://localhost:4317'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+  ##################################
+  ##################################
+  ##################################
+
+  ################################
+  ### venues service instances ###
+  ################################
+  rustddd-venues-instance-1:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/venues/Dockerfile
+    image: rustddd-venues
+    container_name: rustddd-venues-instance-1
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:4001
+      -  RUST_LOG=info
+      -  DB_URL="postgres://postgres:postgres@localhost:5434/venues?application_name=rustddd&options=-c search_path%3Drustddd"
+      -  REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      -  KAFKA_URL='localhost:9092'
+      -  KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      -  KAFKA_CONSUMER_GROUP='venues'
+      -  OTLP_ENDPOINT='http://localhost:4317'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  rustddd-venues-instance-2:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/venues/Dockerfile
+    image: rustddd-venues
+    container_name: rustddd-venues-instance-2
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:4001
+      -  RUST_LOG=info
+      -  DB_URL="postgres://postgres:postgres@localhost:5434/venues?application_name=rustddd&options=-c search_path%3Drustddd"
+      -  REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      -  KAFKA_URL='localhost:9092'
+      -  KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      -  KAFKA_CONSUMER_GROUP='venues'
+      -  OTLP_ENDPOINT='http://localhost:4317'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+  ################################
+  ################################
+  ################################

@@ -1,5 +1,6 @@
 #[derive(Debug, Clone)]
 pub struct AppConfig {
+    pub server_host: String,
     pub db_url: String,
     pub redis_url: String,
     pub kafka_url: String,
@@ -17,6 +18,7 @@ impl AppConfig {
             .collect();
 
         AppConfig {
+            server_host: get_from_env_or_panic("SERVER_HOST"),
             db_url: get_from_env_or_panic("DB_URL"),
             redis_url: get_from_env_or_panic("REDIS_URL"),
             kafka_url: get_from_env_or_panic("KAFKA_URL"),

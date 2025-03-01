@@ -3,7 +3,6 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use clap::Parser;
 
 use microservices_shared::domain_events::{DomainEventCallbacksLoggerImpl, DomainEventConsumer};
 use opentelemetry::{
@@ -18,23 +17,15 @@ use venues::ports::rest::venues::{
 };
 use venues::AppState;
 
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-struct Args {
-    #[arg(short, long, default_value_t = String::from("localhost:3456"))]
-    server_host: String,
-}
-
 #[tokio::main]
 async fn main() {
     env_logger::init();
 
-    let args = Args::parse();
     let config = AppConfig::new_from_env();
 
     let tracer = microservices_shared::init_tracing(&config.otlp_endpoint, "venues");
     let mut span = tracer.start("application_start");
-    span.set_attribute(KeyValue::new("server_host", args.server_host.clone()));
+    span.set_attribute(KeyValue::new("server_host", config.server_host.clone()));
 
     let tracer_arc = Arc::new(tracer);
 
@@ -73,7 +64,7 @@ async fn main() {
         .layer(cors)
         .with_state(state_arc);
 
-    let listener = tokio::net::TcpListener::bind(&args.server_host)
+    let listener = tokio::net::TcpListener::bind(&config.server_host)
         .await
         .unwrap();
 

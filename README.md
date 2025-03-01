@@ -104,16 +104,29 @@ Concluding I can say that I am very happy with Rusts abilities to implement Micr
 10. Create the Domain Event topics and Debezium Connectors for all services by running `sh create_debezium_connectors` from within the `./microsrvices` folder.
 11. Start Nginx by running `sh start_nginx.sh` from within the `./microservice` folder.
 12. Start Jaeger by running `sh start_jaeger.sh` from within the `./microservice` folder.
-13. Start all microservices by running `sh run_all.sh` from within the `./microservice` folder. Note that this will start 2 instances of each microservice.
+13. Start all microservices by running `sh build_and_run_allrun_all.sh` from within the `./microservice` folder. Note that this will start 2 instances of each microservice.
 14. Start the Frontend by running `sh run.sh` from within the `./frontend` folder. The first time it compiles the frontend from sourvce, which might take 1-2 minutes. Once finished, it opens a browser for you and displays the starting page.
 
-To stop all running microservices, you can run `sh stop_all.sh` from within the `./microservice` folder.
+To stop all running microservices, you can run `sh kill_all.sh` from within the `./microservice` folder.
 
-Each microservice has E2E tests, which can be run by calling `sh tests.sh` from within the respective microservice folder. Note that not each microservice needs all other services up and running but to make sure, simply run all of them (using `sh run_all.sh`). Also, given its an E2E test, you need to have Redis, Kafka and Nginx up and running.
-
+Each microservice has E2E tests, which can be run by calling `sh tests.sh` from within the respective microservice folder. Note that not each microservice needs all other services up and running but to make sure, simply run all of them (using `sh build_and_run_all.sh`). Also, given its an E2E test, you need to have Redis, Kafka and Nginx up and running.
 
 ### Running the Microservices via Docker compose
-TODO
+1. Make sure you have Docker with `docker compose` feature installed. 
+2. Start all databases of the microservices by running `sh start_all_db.sh` from within the `./microservice` folder. 
+3. Start Redis by running `sh start_redis.sh` from within the `./microservice` folder.
+4. Start Kafka by running `sh start_kafka.sh` from within the `./microservice` folder.
+5. Start Debezium by running `sh start_debezium.sh` from within the `./microservice` folder.
+6. Create the Domain Event topics and Debezium Connectors for all services by running `sh create_debezium_connectors` from within the `./microsrvices` folder.
+7. Start Nginx by running `sh start_nginx.sh` from within the `./microservice` folder.
+8. Start Jaeger by running `sh start_jaeger.sh` from within the `./microservice` folder.
+9. Start all services by running `sh run_services.sh` from within the `./microservice` folder.
+
+TODO describe how to run frontend
+
+To stop all running microservices, you can run `sh stop_services.sh` from within the `./microservice` folder.
+
+Each microservice has E2E tests, which can be run by calling `sh tests.sh` from within the respective microservice folder. Note that not each microservice needs all other services up and running but to make sure, simply run all of them (using `sh run_services.sh`). Also, given its an E2E test, you need to have Redis, Kafka and Nginx up and running.
 
 ### Running the Microservices via K8s using Minikube
-TODO
+TODO need to create full k8s deployment configs 
