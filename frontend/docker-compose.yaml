@@ -1,0 +1,18 @@
+version: "3.5"
+
+services:
+  rustddd-frontend:
+    build: 
+      context: ../
+      dockerfile: frontend/Dockerfile
+    image: rustddd-frontend
+    container_name: rustddd-frontend
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - PORT=8000
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
