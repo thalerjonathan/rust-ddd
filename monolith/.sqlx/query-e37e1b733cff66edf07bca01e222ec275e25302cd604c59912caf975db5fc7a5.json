@@ -1,0 +1,156 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT f.fixture_id as id, f.date, f.status as \"status: FixtureStatusDb\",\n                v.venue_id as venue_id, v.name as venue_name, v.street as venue_street, v.zip as venue_zip, v.city as venue_city, v.telephone as venue_telephone, v.email as venue_email,\n                th.team_id as team_home_id, th.name as team_home_name, th.club as team_home_club,\n                ta.team_id as team_away_id, ta.name as team_away_name, ta.club as team_away_club,\n                r1.referee_id as \"first_referee_id?\", r1.name as \"first_referee_name?\", r1.club as \"first_referee_club?\",\n                r2.referee_id as \"second_referee_id?\", r2.name as \"second_referee_name?\", r2.club as \"second_referee_club?\"\n            FROM rustddd.fixtures f\n            JOIN rustddd.venues v ON v.venue_id = f.venue_id\n            JOIN rustddd.teams th ON th.team_id = f.team_home_id\n            JOIN rustddd.teams ta ON ta.team_id = f.team_away_id\n            LEFT JOIN rustddd.referees r1 ON r1.referee_id = f.first_referee_id\n            LEFT JOIN rustddd.referees r2 ON r2.referee_id = f.second_referee_id\n            ORDER BY f.date ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "status: FixtureStatusDb",
+        "type_info": {
+          "Custom": {
+            "name": "fixture_status",
+            "kind": {
+              "Enum": [
+                "scheduled",
+                "cancelled"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "venue_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "venue_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "venue_street",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "venue_zip",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "venue_city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "venue_telephone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "venue_email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "team_home_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 11,
+        "name": "team_home_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "team_home_club",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 13,
+        "name": "team_away_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 14,
+        "name": "team_away_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "team_away_club",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "first_referee_id?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 17,
+        "name": "first_referee_name?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
+        "name": "first_referee_club?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 19,
+        "name": "second_referee_id?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 20,
+        "name": "second_referee_name?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 21,
+        "name": "second_referee_club?",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e37e1b733cff66edf07bca01e222ec275e25302cd604c59912caf975db5fc7a5"
+}

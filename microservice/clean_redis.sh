@@ -1,4 +1,4 @@
-docker stop redis-rustddd-microservices-redis-1
-docker rm redis-rustddd-microservices-redis-1
+docker stop rustddd-microservices-redis
+docker rm rustddd-microservices-redis
 
-sudo rm redis/data -rf
+sudo rm infra/redis/data -rf

@@ -1,2 +1,2 @@
 # --no-cache
-clear & docker build -t fixtures -f microservice/fixtures/Dockerfile .
+clear & docker build -t rustddd-fixtures -f microservice/services/fixtures/Dockerfile .

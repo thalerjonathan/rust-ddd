@@ -1,1 +1,1 @@
-docker compose -f apigateway/docker-compose.yaml up 
+docker compose -f infra/apigateway/docker-compose.yaml up -d

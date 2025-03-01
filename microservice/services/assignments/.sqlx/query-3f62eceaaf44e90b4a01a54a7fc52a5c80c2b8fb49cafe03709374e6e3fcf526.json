@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM rustddd.assignments WHERE fixture_id = $1 AND referee_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3f62eceaaf44e90b4a01a54a7fc52a5c80c2b8fb49cafe03709374e6e3fcf526"
+}

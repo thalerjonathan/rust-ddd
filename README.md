@@ -90,7 +90,7 @@ The key of how to *strive for eventual completion* while still retaining the sca
 
 Concluding I can say that I am very happy with Rusts abilities to implement Microservices: all the libraries I am using are of very high quality, have good examples and worked out of the box. Docker plays a fundamental role in implementing such a Microservice project locally, as it makes spinning up 6 Postgres DBs and all other infrastructure extremely easy. I continued to use AI via the Cursor IDE and as already in the weeks before it was a tremendous help.
 
-### Running the Microservices
+### Running the Microservices via Rust build
 
 1. Make sure you have Rust installed, see [Rustup](https://rustup.rs/).
 2. Make sure you have Docker with `docker compose` feature installed. 
@@ -110,3 +110,10 @@ Concluding I can say that I am very happy with Rusts abilities to implement Micr
 To stop all running microservices, you can run `sh stop_all.sh` from within the `./microservice` folder.
 
 Each microservice has E2E tests, which can be run by calling `sh tests.sh` from within the respective microservice folder. Note that not each microservice needs all other services up and running but to make sure, simply run all of them (using `sh run_all.sh`). Also, given its an E2E test, you need to have Redis, Kafka and Nginx up and running.
+
+
+### Running the Microservices via Docker compose
+TODO
+
+### Running the Microservices via K8s using Minikube
+TODO

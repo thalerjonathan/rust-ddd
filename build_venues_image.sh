@@ -1,2 +1,2 @@
 # --no-cache
-clear & docker build -t venues -f microservice/venues/Dockerfile .
+clear & docker build -t rustddd-venues -f microservice/services/venues/Dockerfile .

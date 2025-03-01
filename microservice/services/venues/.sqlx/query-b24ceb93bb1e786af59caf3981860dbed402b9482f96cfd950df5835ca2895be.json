@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT venue_id as id, name, street, zip, city, telephone, email\n            FROM rustddd.venues \n            WHERE venue_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "street",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "zip",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "telephone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "email",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "b24ceb93bb1e786af59caf3981860dbed402b9482f96cfd950df5835ca2895be"
+}

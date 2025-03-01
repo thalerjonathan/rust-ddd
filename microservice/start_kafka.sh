@@ -1,1 +1,1 @@
-docker compose -f kafka/docker-compose.yaml up -d
+docker compose -f infra/kafka/docker-compose.yaml up -d

@@ -1,1 +1,1 @@
-docker compose -f redis/docker-compose.yaml up -d
+docker compose -f infra/redis/docker-compose.yaml up -d

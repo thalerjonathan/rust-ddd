@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM rustddd.availabilities WHERE fixture_id = $1 AND referee_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a6d51d5da80e06ba7e60fd1261b8016cc27cec13b8b0f302ca355df773511f54"
+}

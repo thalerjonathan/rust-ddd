@@ -1,1 +1,1 @@
-docker compose -f tracing/docker-compose.yaml up
+docker compose -f infra/tracing/docker-compose.yaml up -d

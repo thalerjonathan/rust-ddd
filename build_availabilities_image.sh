@@ -1,2 +1,2 @@
 # --no-cache
-clear & docker build -t availabilities -f microservice/availabilities/Dockerfile .
+clear & docker build -t rustddd-availabilities -f microservice/services/availabilities/Dockerfile .

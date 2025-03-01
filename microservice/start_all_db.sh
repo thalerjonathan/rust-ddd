@@ -1,4 +1,4 @@
-cd ./assignments
+cd ./infra/db/assignments
 sh ./start_db.sh &
 
 cd ../availabilities

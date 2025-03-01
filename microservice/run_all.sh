@@ -1,4 +1,4 @@
-cd ./assignments
+cd ./services/assignments
 sh ./run_instance_1.sh &
 sh ./run_instance_2.sh &
 

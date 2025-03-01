@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  rustddd-microservices-redis:
+    image: redis:latest
+    container_name: rustddd-microservices-redis
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --loglevel warning --requirepass rustddd
+    volumes:
+      - ./data:/data

@@ -1,2 +1,2 @@
 # --no-cache
-clear & docker build -t assignments -f microservice/assignments/Dockerfile .
+clear & docker build -t rustddd-assignments -f microservice/services/assignments/Dockerfile .

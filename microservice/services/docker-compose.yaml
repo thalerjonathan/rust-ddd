@@ -1,0 +1,30 @@
+version: "3.5"
+
+services:
+  rustddd-assignments-instance-1:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/assignments/Dockerfile
+    image: rustddd-assignments
+    container_name: rustddd-assignments-instance-1
+    shm_size: 512m
+    environment:
+      - RUST_LOG=info
+      - DB_URL="postgres://postgres:postgres@localhost:5438/assignments?application_name=rustddd&options=-c search_path%3Drustddd"
+      - REDIS_URL='redis://default:rustddd@127.0.0.1:6379/'
+      - KAFKA_URL='localhost:9092'
+      - KAFKA_DOMAIN_EVENTS_TOPICS='assignments.rustddd.domain_events_outbox,availabilities.rustddd.domain_events_outbox,fixtures.rustddd.domain_events_outbox,referees.rustddd.domain_events_outbox,teams.rustddd.domain_events_outbox,venues.rustddd.domain_events_outbox'
+      - KAFKA_CONSUMER_GROUP='assignments'
+      - OTLP_ENDPOINT='http://localhost:4317'
+    ports:
+      - 4005:3456 # microservice REST endpoints
+      - 5438:5438 # DB
+      - 6379:6379 # Redis
+      - 9092:9092 # Kafka
+      - 4317:4317 # OTLP
+    restart: on-failure
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
