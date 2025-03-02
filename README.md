@@ -104,8 +104,8 @@ Concluding I can say that I am very happy with Rusts abilities to implement Micr
 10. Create the Domain Event topics and Debezium Connectors for all services by running `sh create_debezium_connectors` from within the `./microsrvices` folder.
 11. Start Nginx by running `sh start_nginx.sh` from within the `./microservice` folder.
 12. Start Jaeger by running `sh start_jaeger.sh` from within the `./microservice` folder.
-13. Start all microservices by running `sh build_and_run_allrun_all.sh` from within the `./microservice` folder. Note that this will start 2 instances of each microservice.
-14. Start the Frontend by running `sh run.sh` from within the `./frontend` folder. The first time it compiles the frontend from sourvce, which might take 1-2 minutes. Once finished, it opens a browser for you and displays the starting page.
+13. Start all microservices by running `sh build_and_run_all.sh` from within the `./microservice` folder. Note that this will start 2 instances of each microservice.
+14. Start the Frontend by running `sh build_and_run_frontend.sh` from within the `./frontend` folder. The first time it compiles the frontend from sourvce, which might take 1-2 minutes. Once finished, it opens a browser for you and displays the starting page.
 
 To stop all running microservices, you can run `sh kill_all.sh` from within the `./microservice` folder.
 
@@ -121,8 +121,7 @@ Each microservice has E2E tests, which can be run by calling `sh tests.sh` from 
 7. Start Nginx by running `sh start_nginx.sh` from within the `./microservice` folder.
 8. Start Jaeger by running `sh start_jaeger.sh` from within the `./microservice` folder.
 9. Start all services by running `sh run_services.sh` from within the `./microservice` folder.
-
-TODO describe how to run frontend
+10. Start the frontend by running `sh run_frontend.sh` from within the `./frontend` folder.
 
 To stop all running microservices, you can run `sh stop_services.sh` from within the `./microservice` folder.
 
@@ -130,3 +129,26 @@ Each microservice has E2E tests, which can be run by calling `sh tests.sh` from 
 
 ### Running the Microservices via K8s using Minikube
 TODO need to create full k8s deployment configs 
+
+The goal is to automatically start a k8s cluster with a single startscript where all microservices and frontend built, deployed and run from scratch, as well as all necessary infrastructure only requiring minikube and kubectl locally installed.
+To demonstrate the benefits of a k8s cluster the goal is to run everything with 3 replicas:
+- 3 replicas for each microservice, which is gonna require 3 partitions for each topic in Kafka.
+- 3 replicas for the frontend service.
+- 3 replicats of each of the 6 microservice Postgres, making it 18 DBs and volumes in total.
+- 3 replicas for Redis
+- Cluster of Kafka with 3 brokers, and 3 partitions for each topic to enable 3 replicas for each microservice.
+- 3 replicas of debezium.
+- 3 replicas of Nginx.
+- 3 replicas of Jaeger
+
+On top of this the goal is to experiment with Chaosmonkey to prove/test the resilience of the cluster setup.
+
+Cluster Setup
+- external service for frontend
+- internal services for all infrastructure 
+- stateful sets for DBs
+- config maps for microservice configuration
+- volumes for DB replicas
+- volumes for kafka
+- volumes for redis
+- secrets?

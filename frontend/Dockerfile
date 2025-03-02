@@ -29,10 +29,17 @@ COPY ./restinterface ./restinterface
 
 RUN cargo install trunk
 RUN rustup toolchain install nightly
+RUN rustup default nightly
 RUN rustup target add wasm32-unknown-unknown
 
-ENV PORT=8000
+# see https://docs.rs/getrandom/latest/getrandom/#webassembly-support
+ENV RUSTFLAGS='--cfg getrandom_backend="wasm_js"'
 
 WORKDIR /app/frontend
 
-ENTRYPOINT ["trunk serve --release --port $PORT --open"]
+# build frontend
+RUN trunk build --release
+
+# set default port
+ENV PORT=8080
+ENTRYPOINT ["sh", "-c", "trunk serve --release --port $PORT"]

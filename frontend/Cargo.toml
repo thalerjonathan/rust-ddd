@@ -8,9 +8,10 @@ restinterface = { path = "../restinterface" }
 console_error_panic_hook = "0.1.7"
 leptos = { version = "0.6.15", features = ["csr", "nightly"] }
 leptos_router = { version = "0.6.15", features = ["csr"] }
-reqwest = { version = "0.12.8", features = ["json"] }
-serde = { version = "1.0.210", features = ["derive"] }
+reqwest = { version = "0.12.12", features = ["json"] }
+serde = { version = "1.0.218", features = ["derive"] }
 console_log = "1.0"
-log = "0.4.22"
-chrono = { version = "0.4.38", features = ["serde"] }
-uuid = { version = "1.8.0", features = ["v4", "serde"] }
+log = "0.4.26"
+chrono = { version = "0.4.40", features = ["serde"] }
+uuid = { version = "1.15.1", features = ["v4", "serde", "rng-getrandom"] }
+getrandom = { version = "0.3.1", features = ["wasm_js"] }
