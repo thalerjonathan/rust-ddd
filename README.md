@@ -112,6 +112,8 @@ To stop all running microservices, you can run `sh kill_all.sh` from within the 
 Each microservice has E2E tests, which can be run by calling `sh tests.sh` from within the respective microservice folder. Note that not each microservice needs all other services up and running but to make sure, simply run all of them (using `sh build_and_run_all.sh`). Also, given its an E2E test, you need to have Redis, Kafka and Nginx up and running.
 
 ### Running the Microservices via Docker compose
+This was done at a later point, without the use/help of Cursor.
+
 1. Make sure you have Docker with `docker compose` feature installed. 
 2. Start all databases of the microservices by running `sh start_all_db.sh` from within the `./microservice` folder. 
 3. Start Redis by running `sh start_redis.sh` from within the `./microservice` folder.
@@ -120,14 +122,16 @@ Each microservice has E2E tests, which can be run by calling `sh tests.sh` from 
 6. Create the Domain Event topics and Debezium Connectors for all services by running `sh create_debezium_connectors` from within the `./microsrvices` folder.
 7. Start Nginx by running `sh start_nginx.sh` from within the `./microservice` folder.
 8. Start Jaeger by running `sh start_jaeger.sh` from within the `./microservice` folder.
-9. Start all services by running `sh run_services.sh` from within the `./microservice` folder.
-10. Start the frontend by running `sh run_frontend.sh` from within the `./frontend` folder.
+9. Start all services by running `sh run_services.sh` from within the `./microservice` folder (if you are doing this the first time, this will take a while to build all services).
+10. Start the frontend by running `sh run_frontend.sh` from within the `./frontend` folder (if you are doing this the first time, this will take a bit to build the frontend).
 
 To stop all running microservices, you can run `sh stop_services.sh` from within the `./microservice` folder.
 
 Each microservice has E2E tests, which can be run by calling `sh tests.sh` from within the respective microservice folder. Note that not each microservice needs all other services up and running but to make sure, simply run all of them (using `sh run_services.sh`). Also, given its an E2E test, you need to have Redis, Kafka and Nginx up and running.
 
 ### Running the Microservices via K8s using Minikube
+This was done at a later point, without the use/help of Cursor.
+
 TODO need to create full k8s deployment configs 
 
 The goal is to automatically start a k8s cluster with a single startscript where all microservices and frontend built, deployed and run from scratch, as well as all necessary infrastructure only requiring minikube and kubectl locally installed.
@@ -152,3 +156,18 @@ Cluster Setup
 - volumes for kafka
 - volumes for redis
 - secrets?
+
+## Adding RBAC using Keycloak as Idp
+This was done at a later point, without the use/help of Cursor.
+
+TODO
+
+- Add a new auth service that interacts with Idp to get a token via credentials and by returning a HTTP-Only cookie, so JS/SPA cannot access/tamper with it, making it secure, e.g. `Set-Cookie: access_token=XYZ; HttpOnly; Secure; SameSite=Strict`
+- SPA sends Access token in each request to Backend which happens automatically via the HTTP-Only cookie.
+- Implement conditional rendering in SPA based on logged in status that is fetched when loading the SPA, see next.
+- The new auth service has an /auth/status endpoint that checks if the HTTP-Only cookie is present (which is attached automatically) and can therefore extract and introspect. It is used by the SPA to check if it is logged in: if SPA loads, it checks this endpoint and depending whether logged in or not it displays a login site
+- Each Microservice validates the token against Idp Keycloak using JWK endpoint to avoid storing client_id and client_secret:
+    - Microservice fetches public key from Keycloak https://keycloak.example.com/realms/{realm-name}/protocol/openid-connect/certs 
+    - Validate signature and claims (and expiration?) using public key
+- Each Microsercice also checks Access Token expiration - when Access Token has expired, SPA needs to get a new one via the login service through a /refresh endpoint.
+    - Question is, how to access the Refresh Token – only feasible and secure way in this case is to store it in the login service and use a HashMap store from some kind of user-id to refresh token
