@@ -21,3 +21,7 @@ sh ./run_instance_2.sh &
 cd ../venues
 sh ./run_instance_1.sh &
 sh ./run_instance_2.sh &
+
+cd ../auth
+sh ./run_instance_1.sh &
+sh ./run_instance_2.sh &

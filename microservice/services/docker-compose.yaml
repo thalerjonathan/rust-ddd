@@ -312,3 +312,50 @@ services:
   ################################
   ################################
   ################################
+
+
+  ##############################
+  ### auth service instance ###
+  ##############################
+  rustddd-auth-instance-1:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/auth/Dockerfile
+    image: rustddd-auth
+    container_name: rustddd-auth-instance-1
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:1234
+      - IDP_HOST=localhost:8080
+      - IDP_REALM=rustddd
+      - REDIS_URL=redis://default:rustddd@127.0.0.1:6379/
+      - RUST_LOG=info
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  rustddd-auth-instance-2:
+    build: 
+      context: ../../
+      dockerfile: microservice/services/auth/Dockerfile
+    image: rustddd-auth
+    container_name: rustddd-auth-instance-2
+    network_mode: "host"
+    shm_size: 512m
+    environment:
+      - SERVER_HOST=localhost:1235
+      - IDP_HOST=localhost:8080
+      - IDP_REALM=rustddd
+      - REDIS_URL=redis://default:rustddd@127.0.0.1:6379/
+      - RUST_LOG=info
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+  ################################
+  ################################
+  ################################

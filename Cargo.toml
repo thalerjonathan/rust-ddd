@@ -13,4 +13,5 @@ members = [
     "microservice/services/fixtures",
     "microservice/services/availabilities",
     "microservice/services/assignments",
+    "microservice/services/auth",
 ]

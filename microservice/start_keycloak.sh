@@ -1,0 +1,1 @@
+docker-compose -f infra/idp/docker-compose.yml up

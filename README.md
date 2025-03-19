@@ -162,12 +162,12 @@ This was done at a later point, without the use/help of Cursor.
 
 TODO
 
-- Add a new auth service that interacts with Idp to get a token via credentials and by returning a HTTP-Only cookie, so JS/SPA cannot access/tamper with it, making it secure, e.g. `Set-Cookie: access_token=XYZ; HttpOnly; Secure; SameSite=Strict`
-- SPA sends Access token in each request to Backend which happens automatically via the HTTP-Only cookie.
-- Implement conditional rendering in SPA based on logged in status that is fetched when loading the SPA, see next.
-- The new auth service has an /auth/status endpoint that checks if the HTTP-Only cookie is present (which is attached automatically) and can therefore extract and introspect. It is used by the SPA to check if it is logged in: if SPA loads, it checks this endpoint and depending whether logged in or not it displays a login site
-- Each Microservice validates the token against Idp Keycloak using JWK endpoint to avoid storing client_id and client_secret:
+- DONE: Implement a new auth service that interacts with Idp to get a token via credentials and by returning a HTTP-Only cookie, so JS/SPA cannot access/tamper with it, making it secure, e.g. `Set-Cookie: access_token=XYZ; HttpOnly; SameSite=Lax`
+- DONE: The new auth service has an /auth/status endpoint that checks if the HTTP-Only cookie is present (which is attached automatically) and can therefore extract and introspect.
+- TODO: Implement conditional rendering in SPA based on logged in status from /auth/status that is fetched when loading the SPA. Depending whether logged in or not it displays a login site
+- TODO: SPA sends Access token in each request to Backend which happens automatically via the HTTP-Only cookie.
+- TODO: Each Microservice validates the token against Idp Keycloak using JWK endpoint to avoid storing client_id and client_secret:
     - Microservice fetches public key from Keycloak https://keycloak.example.com/realms/{realm-name}/protocol/openid-connect/certs 
     - Validate signature and claims (and expiration?) using public key
-- Each Microsercice also checks Access Token expiration - when Access Token has expired, SPA needs to get a new one via the login service through a /refresh endpoint.
-    - Question is, how to access the Refresh Token – only feasible and secure way in this case is to store it in the login service and use a HashMap store from some kind of user-id to refresh token
+- TODO Each Microsercice also checks Access Token expiration - when Access Token has expired, SPA needs to get a new one via the login service through a /refresh endpoint.
+    - Question is, how to access the Refresh Token – only feasible and secure way in this case is to store it in the login service and use Redis to store some kind of user-id to refresh token
