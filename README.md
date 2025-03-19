@@ -164,10 +164,10 @@ TODO
 
 - DONE: Implement a new auth service that interacts with Idp to get a token via credentials and by returning a HTTP-Only cookie, so JS/SPA cannot access/tamper with it, making it secure, e.g. `Set-Cookie: access_token=XYZ; HttpOnly; SameSite=Lax`
 - DONE: The new auth service has an /auth/status endpoint that checks if the HTTP-Only cookie is present (which is attached automatically) and can therefore extract and introspect.
-- TODO: Implement conditional rendering in SPA based on logged in status from /auth/status that is fetched when loading the SPA. Depending whether logged in or not it displays a login site
-- TODO: SPA sends Access token in each request to Backend which happens automatically via the HTTP-Only cookie.
+- DONE: SPA sends Access token in each request to Backend/Microservices which happens automatically via the HTTP-Only cookie.
+- TODO: Implement conditional rendering in SPA based on logged in status from /auth/status that is fetched when loading the SPA. Depending whether logged in or not it displays a login site for credentials.
 - TODO: Each Microservice validates the token against Idp Keycloak using JWK endpoint to avoid storing client_id and client_secret:
     - Microservice fetches public key from Keycloak https://keycloak.example.com/realms/{realm-name}/protocol/openid-connect/certs 
     - Validate signature and claims (and expiration?) using public key
-- TODO Each Microsercice also checks Access Token expiration - when Access Token has expired, SPA needs to get a new one via the login service through a /refresh endpoint.
-    - Question is, how to access the Refresh Token – only feasible and secure way in this case is to store it in the login service and use Redis to store some kind of user-id to refresh token
+    - Maybe introspection endpoint works also for public client (without client_secret)
+- TODO When Access Token has expired, communicated back to SPA which needs to get a new one via the login service through a /auth/refresh endpoint, which gets the refresh token from Redis.

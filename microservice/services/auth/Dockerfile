@@ -11,6 +11,7 @@ WORKDIR /app
 # Copy the source code
 COPY ./microservice/services/auth ./microservice/services/auth
 COPY ./microservice/services/shared ./microservice/services/shared
+COPY ./restinterface ./restinterface
 COPY ./shared ./shared
 
 WORKDIR /app/microservice/services/auth
